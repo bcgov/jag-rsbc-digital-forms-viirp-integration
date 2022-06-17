@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ca.bc.gov.open</groupId>
+    <artifactId>digitalforms</artifactId>
+    <version>1.0</version>
+	
+	<name>digitalforms VI/IRP</name>
+	<packaging>pom</packaging>
+	<url>https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration</url>
+	
+	<properties>
+        <java.version>11</java.version>
+    </properties>
+
+    <modules>
+        <module>digitalforms-api</module>
+    </modules>
+
+</project>

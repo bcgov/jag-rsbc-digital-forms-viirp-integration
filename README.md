@@ -21,7 +21,7 @@ This is the root level of this project.
 | Service            | Java, SpringFramework     |
 | Test framework     | TBD						 |
 | Application Server | Spring Boot / Tomcat      |
-| Runtime            | Pathfinder OpenShift      |
+| Runtime            | BC DevOps OpenShift      |
 
 ### Building the application
 

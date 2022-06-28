@@ -1,0 +1,59 @@
+openapi: 3.0.1
+info:
+  title: Digital Forms VI IRP
+  description: Digital Forms Vehicle Impoundments and Prohibitions API, Version 1
+  contact:
+    name: Digital Forms VI IRP
+  version: 1.0.0
+servers:
+- url: //localhost:8080
+paths:
+  /api/v1/search/{correlationId}:
+    get:
+      tags:
+      - Search
+      summary: Search Notice Number
+      security:
+        - basicAuth: []
+      parameters:
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true  
+      - name: noticeNo
+        in: query
+        description: noticeNo
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchNoticeNumberServiceResponse'
+        401:
+          description: Unauthorized
+          content: {}
+        403:
+          description: Forbidden
+          content: {}
+        404:
+          description: Not Found
+          content: {}        
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    SearchNoticeNumberServiceResponse:
+      type: object
+      properties:
+        impoundmentId:
+          type: integer
+          format: int64
+        prohibitionId:
+          type: integer
+          format: int64

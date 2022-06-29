@@ -16,6 +16,7 @@
     </properties>
 
     <modules>
+		<module>digitalforms-api-specification</module>
         <module>digitalforms-api</module>
     </modules>
 

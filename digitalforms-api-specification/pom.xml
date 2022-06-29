@@ -150,7 +150,7 @@
                             <modelPackage>ca.bc.gov.open.digitalformsapi.viirp.model</modelPackage>
                             <supportingFilesToGenerate>ApiUtil.java</supportingFilesToGenerate>
                             <configOptions>
-                                <delegatePattern>false</delegatePattern>
+                                <delegatePattern>true</delegatePattern>
                             </configOptions>
                         </configuration>
                     </execution>

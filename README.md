@@ -38,11 +38,11 @@ TBD
 
 	- clean install package
 
-- Launch the **digitalforms-VIIRP-api** from the Boot Dashboard.
+- Launch the **digitalforms-api** from the Boot Dashboard.
 
 **2. Using command line**
 
-- Run in order:
+- From the digitalforms-api level,  Run in order:
 
 ```
 mvn clean install -Pdefault-profile

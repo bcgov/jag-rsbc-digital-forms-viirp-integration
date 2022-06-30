@@ -4,11 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import ca.bc.gov.open.digitalformsapi.viirp.api.ConfigurationApiDelegate;
+import ca.bc.gov.open.digitalformsapi.viirp.api.CodeTablesApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetConfigurationServiceResponse;
 
 @Service
-public class ConfigurationApiDelegateImpl implements ConfigurationApiDelegate{
+public class CodeTablesApiDelegateImpl implements CodeTablesApiDelegate{
 	
 	@Override
 	public ResponseEntity<GetConfigurationServiceResponse> configurationCorrelationIdGet(String correlationId) {

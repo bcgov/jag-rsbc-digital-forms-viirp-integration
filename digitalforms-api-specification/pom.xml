@@ -106,20 +106,10 @@
             <version>${spring-boot-starter-web-version}</version>
         </dependency>
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${springfox-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>${springfox-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.threeten</groupId>
-            <artifactId>threetenbp</artifactId>
-            <version>${threetenbp-version}</version>
-        </dependency>
+        	<groupId>org.springdoc</groupId>
+	      	<artifactId>springdoc-openapi-ui</artifactId>
+	      	<version>1.6.9</version>
+		</dependency>
         <dependency>
             <groupId>com.github.joschi.jackson</groupId>
             <artifactId>jackson-datatype-threetenbp</artifactId>
@@ -150,6 +140,7 @@
                             <modelPackage>ca.bc.gov.open.digitalformsapi.viirp.model</modelPackage>
                             <supportingFilesToGenerate>ApiUtil.java</supportingFilesToGenerate>
                             <configOptions>
+                            	<useTags>true</useTags>
                                 <delegatePattern>true</delegatePattern>
                             </configOptions>
                         </configuration>

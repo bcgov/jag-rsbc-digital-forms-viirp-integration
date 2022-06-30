@@ -19,10 +19,22 @@ These values must be set as environmental variables if running the API locally (
 | VAR1 							  | value1	         |
 | VAR2                            | value2           |
 
+## API Services
 
-### Running the application locally
+After running the `digitalforms-api` from the directory `/digitalforms-api/`, these services should be available:
 
-TODO
+| Name                  | URL                                          | Notes
+| --------------------- | -------------------------------------------- | --------------------------------------------
+| digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/ | The root URL for the API service endpoints
+
+
+### Building and installing the application locally
+
+`mvn clean install`
+
+### Starting the API locally
+
+`mvn spring-boot:start`
 
 ### Security
 

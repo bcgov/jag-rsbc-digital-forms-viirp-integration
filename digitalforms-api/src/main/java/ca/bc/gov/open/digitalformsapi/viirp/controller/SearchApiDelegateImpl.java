@@ -8,7 +8,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.api.SearchApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.SearchNoticeNumberServiceResponse;
 
 @Service
-public class SearchAPIDelegateImpl implements SearchApiDelegate {
+public class SearchApiDelegateImpl implements SearchApiDelegate {
 	
 	@Override
 	public ResponseEntity<SearchNoticeNumberServiceResponse> searchCorrelationIdGet(String correlationId,

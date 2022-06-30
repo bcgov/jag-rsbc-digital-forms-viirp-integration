@@ -4,11 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import ca.bc.gov.open.digitalformsapi.viirp.api.DfDocumentApiDelegate;
+import ca.bc.gov.open.digitalformsapi.viirp.api.DfPayloadsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 
 @Service
-public class DfDocumentApiDelegateImpl implements DfDocumentApiDelegate{
+public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate{
 	
 	@Override
 	public ResponseEntity<GetDFPayloadServiceResponse> dfDocumentDfIdCorrelationIdGet(Long dfId,

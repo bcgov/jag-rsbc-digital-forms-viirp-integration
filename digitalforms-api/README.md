@@ -23,9 +23,10 @@ These values must be set as environmental variables if running the API locally (
 
 After running the `digitalforms-api` from the directory `/digitalforms-api/`, these services should be available:
 
-| Name                  | URL                                          | Notes
-| --------------------- | -------------------------------------------- | --------------------------------------------
-| digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/ | The root URL for the API service endpoints
+| Name                  | URL                                          						| Notes
+| --------------------- | ----------------------------------------------------------------- | --------------------------------------------
+| digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/ 						| The root URL for the API service endpoints
+| digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/swagger-ui/index.html | The Swagger-UI tool to query the API
 
 
 ### Building and installing the application locally

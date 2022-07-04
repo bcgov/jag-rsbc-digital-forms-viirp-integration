@@ -23,18 +23,14 @@ This is the root level of this project.
 | Application Server | Spring Boot / Tomcat      |
 | Runtime            | BC DevOps OpenShift      |
 
-### Building the application
-
-TBD
-
 ### Running the application
 
 
 **1. Using Eclipse or Spring Tool Suite 4 (STS4)**
 
-- Import as a Maven project from the root level. Dependent API should load automatically.
+- Import as a Maven project from digitalforms (parent) level. Dependent API and Specification modules should load automatically.
 
-- Create a run configuration for the POM:  
+- Create a run configuration for the parent POM:  
 
 	- clean install package
 
@@ -42,10 +38,16 @@ TBD
 
 **2. Using command line**
 
-- From the digitalforms-api level,  Run in order:
+- 1. From the digitalforms (parent) level, run: 
 
 ```
-mvn clean install -Pdefault-profile
+mvn clean install
+
+```
+
+- 2. From the digitalforms-api level, run:
+
+```
 mvn spring-boot:run
 ```
 

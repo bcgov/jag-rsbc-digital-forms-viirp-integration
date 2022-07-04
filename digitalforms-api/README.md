@@ -29,13 +29,20 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/swagger-ui/index.html | The Swagger-UI tool to query the API
 
 
-### Building and installing the application locally
+### Building, installing and running the application locally
 
-`mvn clean install`
+From the digitalforms (parent) level, run: 
 
-### Starting the API locally
+```
+mvn clean install
 
-`mvn spring-boot:start`
+```
+
+Then, from the digitalforms-api level, run:
+
+```
+mvn spring-boot:run
+```
 
 ### Security
 

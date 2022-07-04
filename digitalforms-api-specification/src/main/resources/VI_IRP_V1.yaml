@@ -36,11 +36,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateImpoundmentServiceResponse'
         400: 
-          description: Bad Request
-          content: {}
+          $ref: '#/components/responses/400BadRequest'
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
   /impoundments/{impoundmentId}/{correlationId}:
     get:
       security:
@@ -69,14 +67,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetImpoundmentServiceResponse'
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}
+          $ref: '#/components/responses/404NotFound'
   /search/{correlationId}:
     get:
       tags:
@@ -103,14 +98,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/SearchNoticeNumberServiceResponse'
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}        
+          $ref: '#/components/responses/404NotFound'       
   /prohibitions/{correlationId}:
     post:
       security:
@@ -142,11 +134,9 @@ paths:
           description: Created
           content: {}
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
   /prohibitions/{prohibitionId}/{correlationId}:
     get:
       security:
@@ -175,14 +165,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetProhibitionServiceResponse'
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}
+          $ref: '#/components/responses/404NotFound'
   /document/{correlationId}:
     post:
       security:
@@ -211,15 +198,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/vipsDocumentResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/errorMessage'
+          $ref: '#/components/responses/400BadRequest'
         401:
-          description: Unauthorized
+          $ref: '#/components/responses/401NotAuthorized'
         404:
-          description: Not Found
+          $ref: '#/components/responses/404NotFound'
   /document/{documentId}/{correlationId}:
     get:
       tags:
@@ -260,20 +243,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/vipsDocumentResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/errorMessage'        
+          $ref: '#/components/responses/400BadRequest'        
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}        
+          $ref: '#/components/responses/404NotFound'  
   /documents/{correlationId}:
     get:
       tags:
@@ -307,14 +283,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetDocumentsServiceResponse'
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}
+          $ref: '#/components/responses/404NotFound'
   /document/association/notice/{documentId}/{correlationId}:
     post:
       tags:
@@ -353,14 +326,11 @@ paths:
           description: Created
           content: {}
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}
+          $ref: '#/components/responses/404NotFound'
       x-codegen-request-body-name: body        
   /dfDocument/{dfId}/{correlationId}:
     get:
@@ -390,14 +360,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetDFPayloadServiceResponse'
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}
+          $ref: '#/components/responses/404NotFound'
   /configuration/{correlationId}:
     get:
       security:
@@ -419,19 +386,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetConfigurationServiceResponse'
         401:
-          description: Unauthorized
-          content: {}
+          $ref: '#/components/responses/401NotAuthorized'
         403:
-          description: Forbidden
-          content: {}
+          $ref: '#/components/responses/403Forbidden'
         404:
-          description: Not Found
-          content: {}
+          $ref: '#/components/responses/404NotFound'
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
+  responses:
+    400BadRequest:
+      description: Bad Request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    401NotAuthorized:
+      description: The requester is unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    403Forbidden:
+      description: Forbidden.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    404NotFound:
+      description: Not Found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
   schemas:
     VipsRegistrationCreate:
       type: object

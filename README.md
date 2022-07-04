@@ -42,7 +42,6 @@ This is the root level of this project.
 
 ```
 mvn clean install
-
 ```
 
 - 2. From the digitalforms-api level, run:

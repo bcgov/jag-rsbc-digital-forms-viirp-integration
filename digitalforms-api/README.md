@@ -35,7 +35,6 @@ From the digitalforms (parent) level, run:
 
 ```
 mvn clean install
-
 ```
 
 Then, from the digitalforms-api level, run:

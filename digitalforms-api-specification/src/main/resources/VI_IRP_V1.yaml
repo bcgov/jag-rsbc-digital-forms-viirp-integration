@@ -124,15 +124,12 @@ paths:
               $ref: '#/components/schemas/CreateProhibition'
         required: false
       responses:
-        200:
-          description: Successful operation
+        201:
+          description: Created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateProhibitionServiceResponse'
-        201:
-          description: Created
-          content: {}
         401:
           $ref: '#/components/responses/401NotAuthorized'
         403:
@@ -191,8 +188,8 @@ paths:
               $ref: '#/components/schemas/storeVIPSDocument'
         required: false
       responses:
-        200:
-          description: Success
+        201:
+          description: Created
           content:
             application/json:
               schema:
@@ -316,15 +313,12 @@ paths:
               $ref: '#/components/schemas/VipsNoticeObj'
         required: true
       responses:
-        200:
-          description: Successful operation
+        201:
+          description: Created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssociateDocumentToNoticeServiceResponse'
-        201:
-          description: Created
-          content: {}
         401:
           $ref: '#/components/responses/401NotAuthorized'
         403:
@@ -382,7 +376,7 @@ paths:
         200:
           description: Status 200
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: '#/components/schemas/GetConfigurationServiceResponse'
         401:
@@ -921,8 +915,6 @@ components:
     GetProhibitionServiceResponse:
       type: object
       properties:
-        respMsg:
-          type: string
         result:
           $ref: '#/components/schemas/VipsProhibitionObj'
     VipsProhibitionObj:
@@ -1109,8 +1101,6 @@ components:
           type: integer
           format: int64
           description: VIPS schema Id. 
-        respMsg:
-          type: string
     vipsDocumentResponse:
       type: object
       properties:

@@ -27,7 +27,7 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 | --------------------- | ----------------------------------------------------------------- | --------------------------------------------
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/ 						| The root URL for the API service endpoints
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/swagger-ui/index.html | The Swagger-UI tool to query the API
-
+| digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/actuator/health		| Health check actuator endpoint
 
 ### Building, installing and running the application locally
 
@@ -54,7 +54,7 @@ TODO
 
 ### Actuator
 
-TODO
+See above, API Services. 
 
 ### Files and Directories
 

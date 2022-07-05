@@ -38,12 +38,12 @@ This is the root level of this project.
 
 **2. Using command line**
 
-From the *digitalforms* (parent) level, run: 
+From the **digitalforms** (parent) level, run: 
 ```
 mvn clean install
 ```
 
-Then, from the *digitalforms-api* level, run:
+Then, from the **digitalforms-api** level, run:
 ```
 mvn spring-boot:run
 ```

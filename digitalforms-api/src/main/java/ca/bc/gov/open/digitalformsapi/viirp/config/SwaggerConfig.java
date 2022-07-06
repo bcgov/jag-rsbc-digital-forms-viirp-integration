@@ -10,11 +10,11 @@ import io.swagger.v3.oas.models.info.Info;
 public class SwaggerConfig {
 	
 	@Bean
-    public OpenAPI springShopOpenAPI() {
-	      return new OpenAPI().info(new Info()
-	              .title("VIPS Integration API")
-	              .description("VIPS Integration API")
-	              .version("v1.0"));
+	public OpenAPI vipsIntegrationOpenAPI() {
+		return new OpenAPI().info(new Info()
+		          .title("VIPS Integration API")
+		          .description("VIPS Integration API")
+		          .version("v1.0"));
 	}
 
 }

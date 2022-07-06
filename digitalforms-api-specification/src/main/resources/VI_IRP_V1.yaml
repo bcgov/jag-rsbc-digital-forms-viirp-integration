@@ -167,7 +167,7 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
-  /document/{correlationId}:
+  /documents/{correlationId}:
     post:
       security:
         - basicAuth: []
@@ -200,7 +200,7 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         404:
           $ref: '#/components/responses/404NotFound'
-  /document/{documentId}/{correlationId}:
+  /documents/{documentId}/{correlationId}:
     get:
       tags:
       - Documents
@@ -247,7 +247,7 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'  
-  /documents/{correlationId}:
+  /documents/list/{correlationId}:
     get:
       tags:
       - Documents
@@ -278,14 +278,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetDocumentsServiceResponse'
+                $ref: '#/components/schemas/GetDocumentsListServiceResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
         403:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
-  /document/association/notice/{documentId}/{correlationId}:
+  /documents/association/notice/{documentId}/{correlationId}:
     post:
       tags:
       - Documents
@@ -1155,14 +1155,9 @@ components:
             $ref: '#/components/schemas/VipsConfigurationObj'
           respMsg:
             type: string
-    GetDocumentsServiceResponse:
+    GetDocumentsListServiceResponse:
       type: object
       properties:
-        respCd:
-          type: integer
-          format: int32
-        respMsg:
-          type: string
         results:
           type: array
           items:

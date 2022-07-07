@@ -4,16 +4,16 @@ info:
   description: Digital Forms Vehicle Impoundments and Prohibitions API, Version 1
   contact:
     name: Digital Forms VI IRP
-  version: 1.0.0
+  version: 1.0
 servers:
 - url: //localhost:8080
 paths:
   /impoundments/{correlationId}:
     post:
-      security:
-        - basicAuth: []
       tags:
       - Impoundments
+      security:
+        - basicAuth: []
       summary: Create impoundment
       parameters:
         - in: path
@@ -39,21 +39,20 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-  /impoundments/{impoundmentId}/{correlationId}:
+  /impoundments/{noticeNo}/{correlationId}:
     get:
-      security:
-        - basicAuth: []
       tags:
       - Impoundments
+      security:
+        - basicAuth: []
       summary: Retrieve impoundment
       parameters:
-      - name: impoundmentId
+      - name: noticeNo
         in: path
-        description: impoundmentId
+        description: notice number
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
       - name: correlationId
         in: path
         schema:
@@ -72,43 +71,12 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
-  /search/{correlationId}:
-    get:
-      tags:
-      - Search
-      summary: Search Notice Number
-      security:
-        - basicAuth: []
-      parameters:
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true  
-      - name: noticeNo
-        in: query
-        description: noticeNo
-        schema:
-          type: string
-      responses:
-        200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SearchNoticeNumberServiceResponse'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
-        404:
-          $ref: '#/components/responses/404NotFound'       
   /prohibitions/{correlationId}:
     post:
-      security:
-        - basicAuth: []
       tags:
       - Prohibitions
+      security:
+        - basicAuth: []
       summary: Create Prohibition
       parameters:
       - name: correlationId
@@ -134,21 +102,20 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         403:
           $ref: '#/components/responses/403Forbidden'
-  /prohibitions/{prohibitionId}/{correlationId}:
+  /prohibitions/{noticeNo}/{correlationId}:
     get:
-      security:
-        - basicAuth: []
       tags:
       - Prohibitions
+      security:
+        - basicAuth: []
       summary: Retrieve prohibition
       parameters:
-      - name: prohibitionId
+      - name: noticeNo
         in: path
-        description: prohibitionId
+        description: notice number
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
       - name: correlationId
         in: path
         schema:
@@ -202,11 +169,11 @@ paths:
           $ref: '#/components/responses/404NotFound'
   /documents/{documentId}/{correlationId}:
     get:
+      security:
+        - basicAuth: []
       tags:
       - Documents
       summary: Retrieve VIPS document (Base64 or PDF)
-      security:
-        - basicAuth: []
       parameters:
       - name: correlationId
         in: path
@@ -247,31 +214,24 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'  
-  /documents/list/{correlationId}:
+  /documents/list/{noticeNo}/{correlationId}:
     get:
-      tags:
-      - Documents
       security:
         - basicAuth: []
+      tags:
+      - Documents  
       summary: Retrieve documents meta data (list)
       parameters:
-      - name: correlationId
+      - name: noticeNo
         in: path
         schema:
           type: string
         required: true  
-      - name: impoundmentId
-        in: query
-        description: impoundmentId
+      - name: correlationId
+        in: path
         schema:
-          type: integer
-          format: int64
-      - name: prohibitionId
-        in: query
-        description: prohibitionId
-        schema:
-          type: integer
-          format: int64
+          type: string
+        required: true
       responses:
         200:
           description: Successful operation
@@ -324,17 +284,16 @@ paths:
         403:
           $ref: '#/components/responses/403Forbidden'
         404:
-          $ref: '#/components/responses/404NotFound'
-      x-codegen-request-body-name: body        
-  /dfDocument/{dfId}/{correlationId}:
+          $ref: '#/components/responses/404NotFound'        
+  /dfpayloads/{noticeNo}/{correlationId}:
     get:
+      tags:
+      - DfPayloads
       security:
         - basicAuth: []
-      tags:
-      - DF Payloads
       summary: Retrieve a Digital Forms JSON payload (Impoundment or Prohibition). Response likely to change depending on content in DF schema. 
       parameters:
-      - name: dfId
+      - name: noticeNo
         in: path
         description: Digital Forms access key to Impoundment or Prohibition
         required: true
@@ -359,12 +318,12 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
-  /configuration/{correlationId}:
+  /codetables/{correlationId}:
     get:
+      tags:
+      - Codetables
       security:
         - basicAuth: []
-      tags:
-      - Code tables
       summary: Get code table values
       parameters:
       - name: correlationId
@@ -378,7 +337,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetConfigurationServiceResponse'
+                $ref: '#/components/schemas/GetCodetablesServiceResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
         403:
@@ -464,8 +423,6 @@ components:
     GetImpoundmentServiceResponse:
       type: object
       properties:
-        respMsg:
-          type: string
         result:
           $ref: '#/components/schemas/VipsImpoundObj'
     VipsNoticeObj:
@@ -475,15 +432,6 @@ components:
           type: string
         noticeTypeCd:
           type: string
-    SearchNoticeNumberServiceResponse:
-      type: object
-      properties:
-        impoundmentId:
-          type: integer
-          format: int64
-        prohibitionId:
-          type: integer
-          format: int64
     AssociateDocumentToNoticeServiceResponse:
       type: object
       properties:
@@ -592,14 +540,6 @@ components:
     CreateImpoundmentServiceResponse:
       type: object
       properties:
-        vipsImpoundmentId:
-          type: integer
-          format: int64
-          description: VIPS schema Id.
-        dfId:
-          type: integer
-          format: int64
-          description: Digital Forms access key to Impoundment or Prohibition
         respMsg:
           type: string
     VipsAddressCreateObj:
@@ -801,10 +741,6 @@ components:
     VipsImpoundObj:
       type: object
       properties:
-        dfId: 
-          type: integer
-          format: int64
-          description: Digital Forms access key to Impoundment or Prohibition
         cancelled:
           type: boolean
         dlJurisdictionCd:
@@ -920,10 +856,6 @@ components:
     VipsProhibitionObj:
       type: object
       properties:
-        dfId: 
-          type: integer
-          format: int64
-          description: Digital Forms access key to Impoundment or Prohibition
         cancelled:
           type: boolean
         cityNm:
@@ -1093,10 +1025,6 @@ components:
     CreateProhibitionServiceResponse:
       type: object
       properties:
-        dfId:
-          type: integer
-          format: int64
-          description: Digital Forms access key to Impoundment or Prohibition 
         vipsProhibitionId:
           type: integer
           format: int64
@@ -1148,7 +1076,7 @@ components:
         pageCount:
           type: integer
           format: int32
-    GetConfigurationServiceResponse:
+    GetCodetablesServiceResponse:
         type: object
         properties:
           configuration:
@@ -1365,17 +1293,10 @@ components:
       type: object
       description: Digital Forms Schema Payload Response. Likely to change depending on requirements of RSI Processors
       properties:
-        impoundmentNoticeNo: 
+        noticeNo: 
           type: string
-        impoundmentId:
+        noticeType:
           type: string
-        prohibitionNoticeNo:
-          type: string
-        prohibitionId:
-          type: string
-        payloadId:
-          type: integer
-          format: int64 
         payload:
           type: string
     VipsImpoundmentBasicsObj:

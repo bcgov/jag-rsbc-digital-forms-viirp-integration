@@ -23,10 +23,10 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	}
 	
 	@Override
-	public ResponseEntity<GetImpoundmentServiceResponse> impoundmentsImpoundmentIdCorrelationIdGet(Integer impoundmentId,
+	public ResponseEntity<GetImpoundmentServiceResponse> impoundmentsNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {
 		
-		System.out.println("Heard a call to the endpoint 'impoundmentsImpoundmentIdCorrelationIdGet' with impoundmentId " + impoundmentId + 
+		System.out.println("Heard a call to the endpoint 'impoundmentsImpoundmentIdCorrelationIdGet' with noticeNo " + noticeNo + 
 				" and correlationId " + correlationId);
 		
 		return new ResponseEntity<>(HttpStatus.OK);

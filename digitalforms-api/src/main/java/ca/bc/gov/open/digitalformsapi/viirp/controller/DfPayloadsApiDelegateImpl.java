@@ -11,10 +11,10 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate{
 	
 	@Override
-	public ResponseEntity<GetDFPayloadServiceResponse> dfDocumentDfIdCorrelationIdGet(Long dfId,
+	public ResponseEntity<GetDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdGet(Long noticeNo,
 	        String correlationId) {
 		
-		System.out.println("Heard a call to the endpoint 'dfDocumentDfIdCorrelationIdGet' with dfId " + dfId + " and correlationId " + correlationId);
+		System.out.println("Heard a call to the endpoint 'dfDocumentNoticeNoCorrelationIdGe' with noticeNo " + noticeNo + " and correlationId " + correlationId);
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}

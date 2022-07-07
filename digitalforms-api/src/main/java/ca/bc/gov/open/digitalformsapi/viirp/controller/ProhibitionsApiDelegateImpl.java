@@ -23,10 +23,10 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 	}
 	
 	@Override
-	public ResponseEntity<GetProhibitionServiceResponse> prohibitionsProhibitionIdCorrelationIdGet(Integer prohibitionId,
+	public ResponseEntity<GetProhibitionServiceResponse> prohibitionsNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {
 		
-		System.out.println("Heard a call to the endpoint 'prohibitionsProhibitionIdCorrelationIdGet' with prohibitionId " + prohibitionId + 
+		System.out.println("Heard a call to the endpoint 'prohibitionsNoticeNoCorrelationIdGet' with noticeNo " + noticeNo + 
 				" and correlationId " + correlationId);
 		
 		return new ResponseEntity<>(HttpStatus.OK);

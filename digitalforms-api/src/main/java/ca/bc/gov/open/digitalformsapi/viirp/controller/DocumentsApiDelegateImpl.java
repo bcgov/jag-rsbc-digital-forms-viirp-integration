@@ -15,13 +15,11 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	
 	@Override
-	public ResponseEntity<GetDocumentsListServiceResponse> documentsListCorrelationIdGet(
-			String correlationId,
-	        Long impoundmentId,
-	        Long prohibitionId) {
+	public ResponseEntity<GetDocumentsListServiceResponse> documentsListNoticeNoCorrelationIdGet(String noticeNo,
+	        String correlationId) {
 		
-		System.out.println("Heard a call to the endpoint 'documentsListCorrelationIdGet' with correlationId " + correlationId + 
-				", impoundmentId " + impoundmentId + " and prohibitionId " + prohibitionId);
+		System.out.println("Heard a call to the endpoint 'documentsListNoticeNoCorrelationIdGet' with correlationId " + correlationId + 
+				" and noticeNo " + noticeNo);
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}

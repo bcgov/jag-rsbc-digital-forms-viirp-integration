@@ -31,13 +31,22 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 
 ### Building, installing and running the application locally
 
-From the digitalforms (parent) level, run: 
+1) After clone run:  
+ 
+```
+ git submodule update --init 
+```
+this will pull the last working version of jag-vips-client (submodule).
+
+2) Set the compiler version to java 11
+
+3) From the digitalforms (parent) level, run: 
 
 ```
 mvn clean install
 ```
 
-Then, from the digitalforms-api level, run:
+4) From the digitalforms-api level, run:
 
 ```
 mvn spring-boot:run

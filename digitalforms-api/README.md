@@ -90,7 +90,7 @@ digitalforms-api/
 | `documents`       | Document operations                 |
 | `df payloads`    | Digital Forms Payload operations     |
 | `code tables`    | Code Table value operations          |
-| `search`          | Search operations  	                 |
+| `utility`          | Utility operations  	                 |
 
 - Note: Please see Swagger2 endpoints for a complete breakdown of API Operations and
   parameters

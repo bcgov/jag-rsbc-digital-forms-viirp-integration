@@ -16,6 +16,7 @@
     </properties>
 
     <modules>
+        <module>jag-vips-client/src/jag-vips-client</module>
 		<module>digitalforms-api-specification</module>
         <module>digitalforms-api</module>
     </modules>

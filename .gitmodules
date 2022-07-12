@@ -1,0 +1,3 @@
+[submodule "jag-vips-client"]
+	path = jag-vips-client
+	url = https://github.com/bcgov/jag-vips-client.git

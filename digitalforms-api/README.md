@@ -31,13 +31,22 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 
 ### Building, installing and running the application locally
 
-From the digitalforms (parent) level, run: 
+1) After clone run:  
+ 
+```
+ git submodule update --init 
+```
+this will pull the last working version of jag-vips-client (submodule).
+
+2) Set the compiler version to java 11
+
+3) From the digitalforms (parent) level, run: 
 
 ```
 mvn clean install
 ```
 
-Then, from the digitalforms-api level, run:
+4) From the digitalforms-api level, run:
 
 ```
 mvn spring-boot:run
@@ -72,6 +81,12 @@ digitalforms-api/
 		└── util 	# Contains API Util files
 ```
 
+### Remote dependency 
+
+This API contains a shared dependency, jag-vips-client, used by other projects including DPS and Digital Forms, Reviews.
+Endpoint and user / password data must be set as environmental variables if running locally or set as Openshift 
+secrets when in the DEV/TEST/PROD environments.
+
 ### API Operations categories.
 
 | Category            | Summary                              |
@@ -81,7 +96,7 @@ digitalforms-api/
 | `documents`       | Document operations                 |
 | `df payloads`    | Digital Forms Payload operations     |
 | `code tables`    | Code Table value operations          |
-| `search`          | Search operations  	                 |
+| `utility`          | Utility operations  	                 |
 
 - Note: Please see Swagger2 endpoints for a complete breakdown of API Operations and
   parameters

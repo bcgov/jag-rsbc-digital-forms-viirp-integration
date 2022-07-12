@@ -4,7 +4,7 @@ info:
   description: Digital Forms Vehicle Impoundments and Prohibitions API, Version 1
   contact:
     name: Digital Forms VI IRP
-  version: 1.0
+  version: "1.0"
 servers:
 - url: //localhost:8080
 paths:
@@ -343,7 +343,34 @@ paths:
         403:
           $ref: '#/components/responses/403Forbidden'
         404:
-          $ref: '#/components/responses/404NotFound'
+          $ref: '#/components/responses/404NotFound'    
+  /utility/vipsords/ping/{correlationId}:
+    get:
+      tags:
+      - Utility
+      security:
+        - basicAuth: []
+      summary: VIPS Health Check Ping
+      parameters:
+      - name: correlationId
+        in: path
+        description: correlation id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VipsPingServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        403:
+          $ref: '#/components/responses/403Forbidden'
+        404:
+          $ref: '#/components/responses/404NotFound'          
 components:
   securitySchemes:
     basicAuth:
@@ -1341,4 +1368,13 @@ components:
         surnameNm:
           type: string
         thirdGivenNm:
-          type: string          
+          type: string
+    VipsPingServiceResponse:
+      type: object
+      properties:
+         status:
+          type: string
+         host: 
+          type: string
+         instance: 
+          type: string                  

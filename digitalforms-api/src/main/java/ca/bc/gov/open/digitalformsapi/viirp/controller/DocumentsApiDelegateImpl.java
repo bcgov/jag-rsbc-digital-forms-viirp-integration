@@ -1,5 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -14,12 +16,13 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 @Service
 public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	
+	private final Logger logger = LoggerFactory.getLogger(DocumentsApiDelegateImpl.class);
+	
 	@Override
 	public ResponseEntity<GetDocumentsListServiceResponse> documentsListNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {
 		
-		System.out.println("Heard a call to the endpoint 'documentsListNoticeNoCorrelationIdGet' with correlationId " + correlationId + 
-				" and noticeNo " + noticeNo);
+		logger.info("Heard a call to the endpoint 'documentsListNoticeNoCorrelationIdGet' with noticeNo " + noticeNo);
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
@@ -30,8 +33,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	        Long documentId,
 	        VipsNoticeObj body) {
 		
-		System.out.println("Heard a call to the endpoint 'documentsAssociationNoticeDocumentIdCorrelationIdPost' with correlationId " + correlationId + 
-				", documentId " + documentId + " and VipsNoticeObj " + body.toString());
+		logger.info("Heard a call to the endpoint 'documentsAssociationNoticeDocumentIdCorrelationIdPost' with documentId " + documentId);
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
@@ -41,8 +43,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			String correlationId,
 	        StoreVIPSDocument storeVIPSDocument) {
 		
-		System.out.println("Heard a call to the endpoint 'documentsCorrelationIdPost' with correlationId " + correlationId + 
-				" and VipsNoticeObj " + storeVIPSDocument.toString());
+		logger.info("Heard a call to the endpoint 'documentsCorrelationIdPost'");
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
@@ -54,8 +55,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	        Boolean b64,
 	        Boolean url) {
 		
-		System.out.println("Heard a call to the endpoint 'documentsDocumentIdCorrelationIdGet' with correlationId " + correlationId + 
-				", documentId " + documentId + ", b64 " + b64 + ", url " + url);
+		logger.info("Heard a call to the endpoint 'documentsDocumentIdCorrelationIdGet' with documentId " + documentId + ", b64 " + b64 + ", url " + url);
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}

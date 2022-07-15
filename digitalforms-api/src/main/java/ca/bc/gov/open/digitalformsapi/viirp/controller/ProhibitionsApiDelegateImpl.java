@@ -1,5 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -12,12 +14,13 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.GetProhibitionServiceResponse;
 @Service
 public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 	
+	private final Logger logger = LoggerFactory.getLogger(ProhibitionsApiDelegateImpl.class);
+	
 	@Override
 	public ResponseEntity<CreateProhibitionServiceResponse> prohibitionsCorrelationIdPost(String correlationId,
 	        CreateProhibition createProhibition) {
 		
-		System.out.println("Heard a call to the endpoint 'prohibitionsCorrelationIdPost' with correlationId " + correlationId + 
-				" and CreateProhibition " + createProhibition.toString());
+		logger.info("Heard a call to the endpoint 'prohibitionsCorrelationIdPost'");
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
@@ -26,8 +29,7 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 	public ResponseEntity<GetProhibitionServiceResponse> prohibitionsNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {
 		
-		System.out.println("Heard a call to the endpoint 'prohibitionsNoticeNoCorrelationIdGet' with noticeNo " + noticeNo + 
-				" and correlationId " + correlationId);
+		logger.info("Heard a call to the endpoint 'prohibitionsNoticeNoCorrelationIdGet' with noticeNo " + noticeNo);
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}

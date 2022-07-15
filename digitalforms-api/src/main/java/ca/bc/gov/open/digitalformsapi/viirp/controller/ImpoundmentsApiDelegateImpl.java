@@ -1,5 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -12,12 +14,13 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
 @Service
 public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	
+	private final Logger logger = LoggerFactory.getLogger(ImpoundmentsApiDelegateImpl.class);
+	
 	@Override
 	public ResponseEntity<CreateImpoundmentServiceResponse> impoundmentsCorrelationIdPost(String correlationId,
 	        CreateImpoundment createImpoundment) {
 		
-		System.out.println("Heard a call to the endpoint 'impoundmentsCorrelationIdPost' with correlationId " + correlationId + 
-				" and CreateImpoundment " + createImpoundment.toString());
+		logger.info("Heard a call to the endpoint 'impoundmentsCorrelationIdPost'");
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
@@ -26,8 +29,7 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	public ResponseEntity<GetImpoundmentServiceResponse> impoundmentsNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {
 		
-		System.out.println("Heard a call to the endpoint 'impoundmentsImpoundmentIdCorrelationIdGet' with noticeNo " + noticeNo + 
-				" and correlationId " + correlationId);
+		logger.info("Heard a call to the endpoint 'impoundmentsImpoundmentIdCorrelationIdGet' with noticeNo " + noticeNo);
 		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}

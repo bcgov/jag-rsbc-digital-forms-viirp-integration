@@ -1,0 +1,44 @@
+# Digital Forms API Application properties. 
+# Note: Values prefixed with $ are externalized values and must be set via OS Secrets or if running locally 
+# using environmental variables with same name.
+
+endpoint:
+  vips-rest-api:
+    password: ${DIGITALFORMS_VIPSAPI_PASSWORD}
+    url: ${DIGITALFORMS_VIPSAPI_URL}
+    username: ${DIGITALFORMS_VIPSAPI_USERNAME}
+    timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT}
+    retry:
+      # The maximum number of retry attempts to allow
+      count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT}
+      # The Duration of the fixed delays
+      delay: ${DIGITALFORMS_VIPSAPI_RETRY_DELAY}
+      
+    
+management:
+  endpoint:
+    beans:
+      cache:
+        # Actuator bean time to live. Inhibits caching of 'No param' endpoints.
+        time-to-live: 10s
+    #Actuator Health Endpoint Configuration    
+    health:
+      show-components: always
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        # Actuator endpoint exposure
+        include: health
+        
+server:
+  port: 8082
+  servlet:
+    context-path: /digitalforms-viirp/v1
+    
+# VIPS ORDS CLIENT properties
+vips:
+  client:
+    basePath: ${DIGITALFORMS_VIPSORDS_BASEPATH}
+    password: ${DIGITALFORMS_VIPSORDS_PASSWORD}
+    username: ${DIGITALFORMS_VIPSORDS_USER}

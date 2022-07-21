@@ -4,15 +4,15 @@
 
 endpoint:
   vips-rest-api:
-    password: ${DIGITALFORMS_VIPSAPI_PASSWORD}
-    url: ${DIGITALFORMS_VIPSAPI_URL}
-    username: ${DIGITALFORMS_VIPSAPI_USERNAME}
-    timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT}
+    password: ${DIGITALFORMS_VIPSAPI_PASSWORD:}
+    url: ${DIGITALFORMS_VIPSAPI_URL:}
+    username: ${DIGITALFORMS_VIPSAPI_USERNAME:}
+    timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT:2000}
     retry:
       # The maximum number of retry attempts to allow
-      count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT}
+      count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT:3}
       # The Duration of the fixed delays
-      delay: ${DIGITALFORMS_VIPSAPI_RETRY_DELAY}
+      delay: ${DIGITALFORMS_VIPSAPI_RETRY_DELAY:5}
       
     
 management:

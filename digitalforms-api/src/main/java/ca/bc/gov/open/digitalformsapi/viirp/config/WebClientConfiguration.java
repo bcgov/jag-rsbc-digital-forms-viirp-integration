@@ -14,7 +14,6 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
-import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -27,20 +26,20 @@ public class WebClientConfiguration {
 	private final Logger logger = LoggerFactory.getLogger(WebClientConfiguration.class);
 	
 	@Autowired
-    DigitalFormsConstants constants;
+    ConfigProperties properties;
 	
 	@Bean
     public WebClient vipsWebClient() {
         final var httpClient = HttpClient
                 .create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, constants.getVipsRestApiTimeout())
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, properties.getVipsRestApiTimeout())
                 .doOnConnected(connection -> {
-                    connection.addHandlerLast(new ReadTimeoutHandler(constants.getVipsRestApiTimeout(), TimeUnit.MILLISECONDS));
-                    connection.addHandlerLast(new WriteTimeoutHandler(constants.getVipsRestApiTimeout(), TimeUnit.MILLISECONDS));
+                    connection.addHandlerLast(new ReadTimeoutHandler(properties.getVipsRestApiTimeout(), TimeUnit.MILLISECONDS));
+                    connection.addHandlerLast(new WriteTimeoutHandler(properties.getVipsRestApiTimeout(), TimeUnit.MILLISECONDS));
                 });
 
         return WebClient.builder()
-                .baseUrl(constants.getVipsRestApiUrl())
+                .baseUrl(properties.getVipsRestApiUrl())
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
                 .filter(retryFilter())
@@ -57,7 +56,7 @@ public class WebClientConfiguration {
 		return (request, next) ->
 			next.exchange(request)
 	        	.retryWhen(
-		            Retry.fixedDelay(constants.getVipsRestApiRetryCount(), Duration.ofSeconds(constants.getVipsRestApiRetryDelay()))
+		            Retry.fixedDelay(properties.getVipsRestApiRetryCount(), Duration.ofSeconds(properties.getVipsRestApiRetryDelay()))
 		            .doAfterRetry(retrySignal -> {
 	                    logger.info("Retried " + retrySignal.totalRetries());
 	                })

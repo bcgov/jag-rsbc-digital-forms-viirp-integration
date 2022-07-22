@@ -14,10 +14,24 @@ This is the API level of this of this project.
 
 These values must be set as environmental variables if running the API locally (As run configuration in STS4 or Eclipse)
 
-| Name                            | Example Value    |
-| ------------------------------- | ---------------- |
-| VAR1 							  | value1	         |
-| VAR2                            | value2           |
+| Name                            | Example Value               |
+| ------------------------------- | --------------------------- |
+| DIGITALFORMS_VIPSAPI_URL 	      | http://localhost:8080/api/  |
+| DIGITALFORMS_VIPSAPI_USERNAME   | username                    |
+| DIGITALFORMS_VIPSAPI_PASSWORD   | password                    |
+| DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |
+| DIGITALFORMS_VIPSORDS_USER      | user                        |
+| DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |
+
+### Optional Environmental Variables
+
+These values can be set as environmental variables to overwrite the default values if running the API locally (As run configuration in STS4 or Eclipse)
+
+| Name                            | Default Value               |
+| ------------------------------- | --------------------------- |
+| DIGITALFORMS_VIPSAPI_TIMEOUT 	  | 2000                        |
+| DIGITALFORMS_VIPSAPI_RETRY_COUNT| 3                           |
+| DIGITALFORMS_VIPSAPI_RETRY_DELAY| 5                           |
 
 ## API Services
 

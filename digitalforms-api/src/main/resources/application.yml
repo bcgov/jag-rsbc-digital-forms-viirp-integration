@@ -40,3 +40,9 @@ vips:
     basePath: ${DIGITALFORMS_VIPSORDS_BASEPATH}
     password: ${DIGITALFORMS_VIPSORDS_PASSWORD}
     username: ${DIGITALFORMS_VIPSORDS_USER}
+    
+digitalforms:
+  client:
+    basePath: ${DIGITALFORMS_ORDS_BASEPATH}
+    password: ${DIGITALFORMS_ORDS_PASSWORD}
+    username: ${DIGITALFORMS_ORDS_USER}

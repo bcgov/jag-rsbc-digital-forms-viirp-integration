@@ -22,6 +22,9 @@ These values must be set as environmental variables if running the API locally (
 | DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |
 | DIGITALFORMS_VIPSORDS_USER      | user                        |
 | DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |
+| DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |
+| DIGITALFORMS_ORDS_USER          | user						|
+| DIGITALFORMS_ORDS_PASSWORD      | password					|
 
 ### Optional Environmental Variables
 
@@ -83,15 +86,13 @@ See above, API Services.
 ```
 digitalforms-api/
     └── src/../
-	 └── digitalforms
-	 └── viirp
+	 └── digitalformsapi/viirp
 		├── config 	# Contains API Configuration files
 		├── controller 	# Contains API controller files
 		├── exception 	# Contains API Exception files
-		├── model 	# Contains API Model files
+		├── interceptor 	# Contains MDC interceptor files
 		├── security 	# Contains API Security files
 		├── service 	# Contains API Service files
-		├── swagger2 	# Contains API Swagger files
 		└── util 	# Contains API Util files
 ```
 

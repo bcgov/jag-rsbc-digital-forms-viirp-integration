@@ -1,3 +1,6 @@
 [submodule "jag-vips-client"]
 	path = jag-vips-client
 	url = https://github.com/bcgov/jag-vips-client.git
+[submodule "jag-digitalforms-client"]
+	path = jag-digitalforms-client
+	url = https://github.com/bcgov/jag-digitalforms-client.git

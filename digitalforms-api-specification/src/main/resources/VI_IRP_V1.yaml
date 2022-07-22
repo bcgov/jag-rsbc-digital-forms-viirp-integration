@@ -344,13 +344,13 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'    
-  /utility/vipsords/ping/{correlationId}:
+  /utility/ords/ping/{correlationId}:
     get:
       tags:
       - Utility
       security:
         - basicAuth: []
-      summary: VIPS Health Check Ping
+      summary: ORDS Health Check Ping
       parameters:
       - name: correlationId
         in: path
@@ -364,7 +364,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VipsPingServiceResponse'
+                $ref: '#/components/schemas/PingResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
         403:
@@ -1369,12 +1369,9 @@ components:
           type: string
         thirdGivenNm:
           type: string
-    VipsPingServiceResponse:
+    PingResponse:
       type: object
       properties:
-         status:
-          type: string
-         host: 
-          type: string
-         instance: 
-          type: string                  
+        responseMessage:
+          type: object
+      title: PingResponse

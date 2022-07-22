@@ -1,19 +1,6 @@
 # Digital Forms API Application properties. 
 # Note: Values prefixed with $ are externalized values and must be set via OS Secrets or if running locally 
-# using environmental variables with same name.
-
-endpoint:
-  vips-rest-api:
-    password: ${DIGITALFORMS_VIPSAPI_PASSWORD:}
-    url: ${DIGITALFORMS_VIPSAPI_URL:}
-    username: ${DIGITALFORMS_VIPSAPI_USERNAME:}
-    timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT:2000}
-    retry:
-      # The maximum number of retry attempts to allow
-      count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT:3}
-      # The Duration of the fixed delays
-      delay: ${DIGITALFORMS_VIPSAPI_RETRY_DELAY:5}
-      
+# using environmental variables with same name.      
     
 management:
   endpoint:
@@ -38,6 +25,17 @@ server:
     
 # VIPS ORDS CLIENT properties
 vips:
+  rest-api:
+    password: ${DIGITALFORMS_VIPSAPI_PASSWORD:}
+    url: ${DIGITALFORMS_VIPSAPI_URL:}
+    username: ${DIGITALFORMS_VIPSAPI_USERNAME:}
+    timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT:2000}
+    retry:
+      # The maximum number of retry attempts to allow
+      count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT:3}
+      # The Duration of the fixed delays
+      delay: ${DIGITALFORMS_VIPSAPI_RETRY_DELAY:5}
+      
   client:
     basePath: ${DIGITALFORMS_VIPSORDS_BASEPATH}
     password: ${DIGITALFORMS_VIPSORDS_PASSWORD}

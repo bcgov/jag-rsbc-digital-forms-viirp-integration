@@ -5,7 +5,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
-import lombok.AllArgsConstructor;
 
 /**
  * 
@@ -15,11 +14,16 @@ import lombok.AllArgsConstructor;
  *
  */
 @Service
-@AllArgsConstructor
 public class VipsRestServiceImpl implements VipsRestService {
 	
 	private final WebClient webClient;
 	private final ConfigProperties properties;
+	
+	public VipsRestServiceImpl(WebClient webClient, ConfigProperties properties) {
+		super();
+		this.webClient = webClient;
+		this.properties = properties;
+	}
 
 	@Override
 	public GetCodetablesServiceResponse getCodeTableValues(String correlationId) {

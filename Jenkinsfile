@@ -36,7 +36,7 @@ pipeline {
 
         
         stage('Deploy (PR)') {
-            // agent { label 'deploy' }
+            agent { label 'master' }
             steps {
                 echo "Deploying PR ..."
             }

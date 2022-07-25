@@ -2,7 +2,7 @@ pipeline {
     agent none
     options {
         disableResume()
-        disableConcurrentBuilds()
+        timeout(time: 24, unit: 'HOURS')
     }
     stages {
         // stage('Abort Previously Running Jobs') {

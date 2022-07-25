@@ -2,16 +2,17 @@ pipeline {
     agent none
     options {
         disableResume()
+        disableConcurrentBuilds(abortPrevious: true)
     }
     stages {
-        stage('Abort Previously Running Jobs') {
-            steps {
-                echo "Aborting all running jobs ..."                
-                script {
-                    abortAllPreviousBuildInProgress(currentBuild)
-                }
-            }
-        }
+        // stage('Abort Previously Running Jobs') {
+        //     steps {
+        //         echo "Aborting all running jobs ..."                
+        //         script {
+        //             abortAllPreviousBuildInProgress(currentBuild)
+        //         }
+        //     }
+        // }
         stage('Build and Deploy Inputs') {
            agent none
            steps {

@@ -6,11 +6,10 @@ pipeline {
     stages {
         stage('Abort Previously Running Jobs') {
             steps {
-                echo "Aborting all running jobs ..."
-                
-                // script {
-                //     abortAllPreviousBuildInProgress(currentBuild)
-                // }
+                echo "Aborting all running jobs ..."                
+                script {
+                    abortAllPreviousBuildInProgress(currentBuild)
+                }
             }
         }
         stage('Build and Deploy Inputs') {
@@ -29,12 +28,13 @@ pipeline {
                     cd openshift
                     oc process -f api-build.yml --param-file build-params.yml --param VERSION=build-${env.CHANGE_ID} --param SUFFIX=-build-${env.CHANGE_ID} --param SOURCE_REPOSITORY_REF=${env.CHANGE_BRANCH} | oc apply -f -
                     oc start-build vips-api-build --wait
-
                     """
                 }
 
             }
         }
+
+        
         stage('Deploy (PR)') {
             // agent { label 'deploy' }
             steps {

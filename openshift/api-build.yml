@@ -40,11 +40,11 @@ objects:
   - kind: BuildConfig
     apiVersion: v1
     metadata:
-      name: ${NAME}-${SUFFIX}
+      name: ${NAME}${BUILD_CONFIG_SUFFIX}
       labels:
         app: ${APP}
-        component: ${NAME}${SUFFIX}
-        name: ${NAME}${SUFFIX}
+        component: ${NAME}${BUILD_CONFIG_SUFFIX}
+        name: ${NAME}${BUILD_CONFIG_SUFFIX}
     spec:
       source:
         type: Git
@@ -83,8 +83,8 @@ objects:
         to:
           kind: ImageStreamTag
           name: ${NAME}-image:${VERSION}
-      triggers:
-        - type: ConfigChange
+      # triggers:
+      #   - type: ConfigChange
 parameters:
   - name: APP
     displayName: App
@@ -138,6 +138,10 @@ parameters:
     displayName: Namespace
     required: true
     description: The Namespace where the ImageStream resides.
+  - name: BUILD_CONFIG_SUFFIX
+    displayName: Build Config Suffix
+    required: true
+    description: Suffix_for_buildconfig
     # value: amlana21-dev
   # - name: OUTPUT_IMAGE_TAG
   #   displayName: Output Image Tag

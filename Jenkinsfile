@@ -35,8 +35,7 @@ pipeline {
 
                     // cd openshift
                     // oc process -f api-build-1.yaml --param-file build-params.yml --param VERSION=build-${env.CHANGE_ID} --param SUFFIX=-build-${env.CHANGE_ID} --param SOURCE_REPOSITORY_REF=${env.CHANGE_BRANCH}
-                    sh """
-                    
+                    sh """                    
                     oc get pods
 
 

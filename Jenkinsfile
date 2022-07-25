@@ -25,18 +25,9 @@ pipeline {
             steps {
                 // build_app()
                 script {
-                    // sh """
-                    //     echo ${env.CHANGE_ID}
-                    //     echo ${env.CHANGE_BRANCH}
-                    //     echo ${env.CHANGE_TARGET}
-                    // """
-                    // oc login --token=sha256~yXZppgKJWNXXyMY8dBhPzKuDwV0c7qy5Zp-0J_AO1Pg --server=https://api.sandbox-m2.ll9k.p1.openshiftapps.com:6443
-                    // oc projects
-
-                    // cd openshift
-                    // oc process -f api-build-1.yaml --param-file build-params.yml --param VERSION=build-${env.CHANGE_ID} --param SUFFIX=-build-${env.CHANGE_ID} --param SOURCE_REPOSITORY_REF=${env.CHANGE_BRANCH}
                     sh """                    
-                    oc get pods -n c220ad-dev
+                    cd openshift
+                    oc process -f api-build.yaml --param-file build-params.yml --param VERSION=build-${env.CHANGE_ID} --param SUFFIX=-build-${env.CHANGE_ID} --param SOURCE_REPOSITORY_REF=${env.CHANGE_BRANCH} | oc apply -f -
 
 
                     """

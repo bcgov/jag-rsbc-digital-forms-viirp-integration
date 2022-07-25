@@ -1,0 +1,10 @@
+APP: vips-api
+NAME: vips-api
+VERSION: "1.0"
+SUFFIX: -dev
+SOURCE_REPOSITORY_URL: https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration.git
+GIT_REPO_DEPLOY_KEY: vips-api-repo-key
+SOURCE_REPOSITORY_REF: new2
+SOURCE_IMAGE_NAME: vips-api-buildimage
+SOURCE_IMAGE_TAG: "1.0"
+SOURCE_IMAGE_NAMESPACE: amlana21-dev

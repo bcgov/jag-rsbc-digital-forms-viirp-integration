@@ -50,7 +50,7 @@ objects:
         type: Git
         git:
           uri: ${SOURCE_REPOSITORY_URL}
-          ref: ${SOURCE_REPOSITORY_REF}
+          ref: ${SOURCE_REPOSITORY_REF}-1
         # sourceSecret:
         #   name: ${GIT_REPO_DEPLOY_KEY}
       completionDeadlineSeconds: 1440

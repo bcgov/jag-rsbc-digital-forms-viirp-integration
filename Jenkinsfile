@@ -2,7 +2,7 @@ pipeline {
     agent none
     options {
         disableResume()
-        disableConcurrentBuilds(abortPrevious: true)
+        disableConcurrentBuilds()
     }
     stages {
         // stage('Abort Previously Running Jobs') {

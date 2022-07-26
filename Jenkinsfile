@@ -47,11 +47,6 @@ pipeline {
                 script{
                     def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
                     if(PR_Deploy_STATUS==1){
-                        // sh """                    
-                        //     cd openshift
-                        //     oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
-                        //     oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}
-                        //   """
                         echo "No existing PR environments to scale down!!"
                     }else{
                         sh """
@@ -59,17 +54,7 @@ pipeline {
 
                         """
                     }
-                    // echo "PR Deploy Read Status: ${PR_Deploy_STATUS}"
                 }
-                
-            //     script {
-            //         sh """                    
-            //         cd openshift
-            //         oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
-            //         oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}
-            //         """
-            //     }
-            // }
             }
         }
 
@@ -91,12 +76,14 @@ pipeline {
                 }
             }
         }
+
+        
         stage('Deploy (DEV)') {
-            // agent { label 'deploy' }
-            // when {
-            //     expression { return env.CHANGE_TARGET == 'master';}
-            //     beforeInput true
-            // }
+            agent { label 'master' }
+            when {
+                expression { return env.CHANGE_TARGET == 'master';}
+                beforeInput true
+            }
             input {
                 message "Should we continue with deployment to DEV?"
                 ok "Yes!"
@@ -106,11 +93,11 @@ pipeline {
             }
         }
         stage('Deploy (TEST)') {
-            // agent { label 'deploy' }
-            // when {
-            //     expression { return env.CHANGE_TARGET == 'master';}
-            //     beforeInput true
-            // }
+            agent { label 'master' }
+            when {
+                expression { return env.CHANGE_TARGET == 'master';}
+                beforeInput true
+            }
             input {
                 message "Should we continue with deployment to TEST?"
                 ok "Yes!"
@@ -120,11 +107,11 @@ pipeline {
             }
         }
         stage('Deploy (PROD)') {
-            // agent { label 'deploy' }
-            // when {
-            //     expression { return env.CHANGE_TARGET == 'master';}
-            //     beforeInput true
-            // }
+            agent { label 'master' }
+            when {
+                expression { return env.CHANGE_TARGET == 'master';}
+                beforeInput true
+            }
             input {
                 message "Should we continue with deployment to PROD?"
                 ok "Yes!"
@@ -168,11 +155,14 @@ void confirm_build(){
                 choice(name: 'AUTO_DEPLOY_TO', choices: ['PR'], description: 'Deploy to'),
                 booleanParam(defaultValue: true, name: 'RUN_TEST', description: 'Execute automated testing'),
                 booleanParam(defaultValue: false, name: 'SKIP_BUILD', description: 'Skip Build Step?')]
+                // env.SKIP_DEV="true"
+                // env.SKIP_TEST ="true"
       }
 
       // Capture the preference of whether to skip dev and stage deployments
       env.SKIP_DEV = INPUT_PARAMS.SKIP_DEV;
       env.SKIP_STAGE = INPUT_PARAMS.SKIP_STAGE;
+      env.SKIP_TEST = INPUT_PARAMS.TEST;
       env.SKIP_BUILD = INPUT_PARAMS.SKIP_BUILD;
 
       if (INPUT_PARAMS.AUTO_DEPLOY_TO == 'PR') {

@@ -77,6 +77,7 @@ objects:
   kind: HorizontalPodAutoscaler
   metadata:
     creationTimestamp: null
+    namespace: ${NAMESPACE}
     labels: null
     name: ${NAME}-${COMPONENT}${SUFFIX}
   spec:
@@ -94,6 +95,7 @@ objects:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     name: ${NAME}-${COMPONENT}${SUFFIX}
+    namespace: ${NAMESPACE}
   spec:
     ports:
     - name: 8080-tcp
@@ -109,6 +111,7 @@ objects:
   metadata:
     creationTimestamp: null
     name: ${NAME}-${COMPONENT}${SUFFIX}
+    namespace: ${NAMESPACE}
   spec:
     # host: ${NAME}-${COMPONENT}${SUFFIX}
     path: ""

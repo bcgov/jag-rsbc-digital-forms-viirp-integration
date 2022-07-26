@@ -49,7 +49,7 @@ pipeline {
                     sh """                    
                     cd openshift
                     oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
-                    oc rollout status vips-api-deployment-pr-${env.CHANGE_ID}
+                    oc rollout status deploy/vips-api-deployment-pr-${env.CHANGE_ID}
                     """
                 }
             }

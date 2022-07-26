@@ -44,8 +44,11 @@ pipeline {
             
             steps {
                 echo "Checking existing PR.."
-                def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr1-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
-                echo "PR Deploy Read Status: ${PR_Deploy_STATUS}"
+                script{
+                    def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr1-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                    echo "PR Deploy Read Status: ${PR_Deploy_STATUS}"
+                }
+                
             //     script {
             //         sh """                    
             //         cd openshift

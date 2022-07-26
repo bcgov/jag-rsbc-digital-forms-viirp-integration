@@ -39,10 +39,30 @@ pipeline {
             }
         }
 
+        stage('Scale Down PR') {
+            agent { label 'master' }
+            
+            steps {
+                echo "Checking existing PR.."
+                def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr1-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                echo "PR Deploy Read Status: ${PR_Deploy_STATUS}"
+            //     script {
+            //         sh """                    
+            //         cd openshift
+            //         oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
+            //         oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}
+            //         """
+            //     }
+            // }
+        }
+
         
         stage('Deploy (PR)') {
             agent { label 'master' }
-            
+            input {
+                message "Should we continue with deployment to PR?"
+                ok "Yes!"
+            }
             steps {
                 echo "Deploying PR ..."
                 script {

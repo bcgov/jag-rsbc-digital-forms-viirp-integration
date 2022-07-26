@@ -23,7 +23,7 @@ pipeline {
             agent { label 'master' }
             options { skipDefaultCheckout(false) }
             when {
-                expression { return env.SKIP_BUILD == false;}
+                expression { return env.SKIP_BUILD == "false";}
                 beforeInput true
             }
             steps {

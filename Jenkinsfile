@@ -40,6 +40,13 @@ pipeline {
             agent { label 'master' }
             steps {
                 echo "Deploying PR ..."
+                script {
+                    sh """                    
+                    cd openshift
+                    oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
+                    oc rollout status vips-api-deployment-pr-${env.CHANGE_ID}
+                    """
+                }
             }
         }
         stage('Deploy (DEV)') {

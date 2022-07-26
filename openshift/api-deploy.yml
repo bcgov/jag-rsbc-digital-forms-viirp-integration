@@ -29,6 +29,7 @@ parameters:
 - name: NAMESPACE
   # value: 
 - name: BUILD_VERSION
+- name: BUILD_CONFIG_SUFFIX
 - name: IMAGE_NAMESPACE
 # - name: IMAGE_NAME
 #   value: 

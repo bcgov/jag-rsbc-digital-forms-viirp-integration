@@ -22,6 +22,10 @@ pipeline {
         stage('Build') {
             agent { label 'master' }
             options { skipDefaultCheckout(false) }
+            when {
+                expression { return env.SKIP_BUILD == false;}
+                beforeInput true
+            }
             steps {
                 // build_app()
                 script {
@@ -38,6 +42,7 @@ pipeline {
         
         stage('Deploy (PR)') {
             agent { label 'master' }
+            
             steps {
                 echo "Deploying PR ..."
                 script {
@@ -125,7 +130,7 @@ void confirm_build(){
             parameters: [
                 choice(name: 'AUTO_DEPLOY_TO', choices: ['PR'], description: 'Deploy to'),
                 booleanParam(defaultValue: true, name: 'RUN_TEST', description: 'Execute automated testing'),
-                booleanParam(defaultValue: false, name: 'DEBUG_LOGGING', description: 'Enable debugging')]
+                booleanParam(defaultValue: false, name: 'SKIP_BUILD', description: 'Skip Build Step?')]
       }
 
       // Capture the preference of whether to skip dev and stage deployments

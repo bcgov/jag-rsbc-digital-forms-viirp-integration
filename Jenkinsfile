@@ -52,11 +52,12 @@ pipeline {
                         //     oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
                         //     oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}
                         //   """
+                        echo "No existing PR environments to scale down!!"
                     }else{
-                        // sh """
-                        //     cd openshift
+                        sh """
+                            oc scale -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID} --replicas=0
 
-                        // """
+                        """
                     }
                     // echo "PR Deploy Read Status: ${PR_Deploy_STATUS}"
                 }

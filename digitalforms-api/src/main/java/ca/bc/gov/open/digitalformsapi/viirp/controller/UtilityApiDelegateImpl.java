@@ -51,11 +51,13 @@ public class UtilityApiDelegateImpl implements UtilityApiDelegate{
 		} catch (ApiException e) {
 			String msg = "Error encountered while pinging VIPS ORDS Health endpoint: " + e.getMessage();
 			e.printStackTrace();
+			logger.error(msg);
 			throw new DigitalFormsException(msg, e);
 			
 		} catch (ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.handler.ApiException  e) {
 			String msg = "Error encountered while pinging DigitalForms ORDS Health endpoints: " + e.getMessage();
 			e.printStackTrace();
+			logger.error(msg);
 			throw new DigitalFormsException(msg, e);
 			
 		}

@@ -136,6 +136,7 @@ void confirm_build(){
       // Capture the preference of whether to skip dev and stage deployments
       env.SKIP_DEV = INPUT_PARAMS.SKIP_DEV;
       env.SKIP_STAGE = INPUT_PARAMS.SKIP_STAGE;
+      env.SKIP_BUILD = INPUT_PARAMS.SKIP_BUILD;
 
       if (INPUT_PARAMS.AUTO_DEPLOY_TO == 'PR') {
           env.AUTO_DEPLOY_TO = '1'
@@ -160,7 +161,7 @@ void confirm_build(){
         env.DEBUG_LOGGING = "DEBUG="
       }
 
-      echo "Confirming build and deploy of branch ${env.CHANGE_BRANCH}. AUTO_DEPLOY_TO: ${INPUT_PARAMS.AUTO_DEPLOY_TO}, SKIP_STAGE: ${INPUT_PARAMS.SKIP_STAGE}, RUN_TEST: ${INPUT_PARAMS.RUN_TEST}, DEBUG_LOGGING: ${INPUT_PARAMS.DEBUG_LOGGING}."
+      echo "Confirming build and deploy of branch ${env.CHANGE_BRANCH}. AUTO_DEPLOY_TO: ${INPUT_PARAMS.AUTO_DEPLOY_TO}, SKIP_BUILD: ${INPUT_PARAMS.SKIP_BUILD}, RUN_TEST: ${INPUT_PARAMS.RUN_TEST}, DEBUG_LOGGING: ${INPUT_PARAMS.DEBUG_LOGGING}."
   }
 }
 

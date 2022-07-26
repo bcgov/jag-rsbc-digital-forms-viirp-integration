@@ -2,6 +2,8 @@ package ca.bc.gov.open.digitalformsapi.viirp.exception;
 
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import ca.bc.gov.open.digitalformsapi.viirp.controller.UtilityApiDelegateImpl;
 import ca.bc.gov.open.digitalformsapi.viirp.model.ErrorMessage;
 
 
@@ -24,9 +27,14 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.ErrorMessage;
 @RestControllerAdvice
 public class ControllerExceptionHandler {
 	
+  private final Logger logger = LoggerFactory.getLogger(ControllerExceptionHandler.class);	
+	
   @ExceptionHandler(DigitalFormsException.class)
   @ResponseBody
   public ResponseEntity<ErrorMessage> digitalFormsException(DigitalFormsException ex, WebRequest request) {
+	  
+	logger.error(ex.getMessage()); 
+	  
     ErrorMessage message = new ErrorMessage();
     message.setStatusMessage(ex.getMessage());
     

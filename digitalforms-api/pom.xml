@@ -47,6 +47,14 @@
 			<scope>compile</scope>
 		</dependency>
 		
+		<!-- DIGITALFORMS ORDS library dependency (Shared with DF Reviews) -->
+		<dependency>
+			<groupId>ca.bc.gov.open</groupId>
+			<artifactId>digitalforms-ords-client</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		
 		<!-- logback -->
 		<dependency>
 			<groupId>ch.qos.logback</groupId>

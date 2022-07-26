@@ -45,11 +45,18 @@ pipeline {
             steps {
                 echo "Checking existing PR.."
                 script{
-                    def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr1-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                    def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
                     if(PR_Deploy_STATUS==1){
-                        echo "new pr"
+                        // sh """                    
+                        //     cd openshift
+                        //     oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
+                        //     oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}
+                        //   """
                     }else{
-                        echo "update pr"
+                        // sh """
+                        //     cd openshift
+
+                        // """
                     }
                     // echo "PR Deploy Read Status: ${PR_Deploy_STATUS}"
                 }

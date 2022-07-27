@@ -12,10 +12,21 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 public interface VipsRestService {
 	
 	/**
-	 * Retrieves a {@link GetCodetablesServiceResponse} by proxying the VIPS WS call to the 'configuration' endpoint
+	 * Retrieves a  by proxying the VIPS WS call to the 'configuration' endpoint
 	 * 
 	 * @param correlationId
 	 * @return
 	 */
 	public GetCodetablesServiceResponse getCodeTableValues(String correlationId);
+	
+	/**
+	 * 
+	 * Proxies request to VIPS to create an impoundment.  
+	 * Response (@link CreateImpoundmentServiceResponse}
+	 * 
+	 * @param correlationId
+	 * @return
+	 */
+	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(String correlationId, ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment);
+	
 }

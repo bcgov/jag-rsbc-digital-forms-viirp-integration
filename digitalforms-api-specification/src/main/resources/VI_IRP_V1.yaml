@@ -532,16 +532,12 @@ components:
     CreateImpoundment:
       type: object
       required:
-        - dfJsonPayload
         - vipsDocumentIdArray
         - vipsImpoundCreate
         - vipsImpoundmentArray
         - vipsRegistrationCreateArray
         - vipsVehicleCreate
       properties:
-        dfJsonPayload:
-          type: string
-          description: DF JSON Impoundment form payload for storage in DF Schema
         vipsDocumentIdArray:
           type: array
           items:

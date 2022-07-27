@@ -122,7 +122,9 @@ pipeline {
                     }
 
                     stage('Deploy (Dev)'){
-
+                        steps{
+                            echo 'deploying to dev'
+                        }
                     }
                 // }                
             }

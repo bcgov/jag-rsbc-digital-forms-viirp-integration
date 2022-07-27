@@ -108,12 +108,12 @@ pipeline {
                     steps{
                         echo "Checking existing PR.."
                         script{
-                            def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-dev-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                            def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-dev -o jsonpath='{.metadata.name}'", returnStatus: true )
                             if(DEV_Deploy_STATUS==1){
                                 echo "No existing Dev deployments to scale down!!"
                             }else{
                                 sh """
-                                oc scale -n c220ad-dev deploy/vips-api-deployment-dev-${env.CHANGE_ID} --replicas=0
+                                oc scale -n c220ad-dev deploy/vips-api-deployment-dev --replicas=0
                                 """
                             }
                         }
@@ -126,8 +126,8 @@ pipeline {
                             script {
                                 sh """                    
                                 cd openshift
-                                oc process -f api-deploy.yml --param-file dev-deploy-params.yml --param SUFFIX=-dev-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
-                                oc rollout status -n c220ad-dev deploy/vips-api-deployment-dev-${env.CHANGE_ID}
+                                oc process -f api-deploy.yml --param-file dev-deploy-params.yml --param SUFFIX=-dev --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
+                                oc rollout status -n c220ad-dev deploy/vips-api-deployment-dev
                                 """
                             }
                         }

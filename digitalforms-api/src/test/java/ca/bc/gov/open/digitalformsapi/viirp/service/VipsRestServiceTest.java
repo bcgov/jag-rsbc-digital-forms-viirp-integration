@@ -39,7 +39,7 @@ public class VipsRestServiceTest {
     @Mock WebClient.ResponseSpec responseMock;
     
     @Autowired
-	VipsRestServiceImpl service;
+	VipsRestService service;
     
     @Before
     public void setUp() {

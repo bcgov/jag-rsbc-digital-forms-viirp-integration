@@ -106,7 +106,7 @@ pipeline {
             stages{
                     stage('Scale down Dev'){
                     steps{
-                        echo "Checking existing PR.."
+                        echo "Checking existing Dev.."
                         script{
                             def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-dev -o jsonpath='{.metadata.name}'", returnStatus: true )
                             if(DEV_Deploy_STATUS==1){
@@ -151,10 +151,40 @@ pipeline {
                 message "Should we continue with deployment to TEST?"
                 ok "Yes!"
             }
-            steps {
-                echo "Deploying ..."
+            stages{
+                    stage('Scale down Test'){
+                    steps{
+                        echo "Checking existing Test.."
+                        script{
+                            def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-test vips-api-deployment-test -o jsonpath='{.metadata.name}'", returnStatus: true )
+                            if(DEV_Deploy_STATUS==1){
+                                echo "No existing Test deployments to scale down!!"
+                            }else{
+                                sh """
+                                oc scale -n c220ad-test deploy/vips-api-deployment-test --replicas=0
+                                """
+                            }
+                        }
+                    }
+                    }
+
+                    stage('Deploy (Test)'){
+                        steps{
+                            echo "Deploying Test ..."
+                            script {
+                                sh """                    
+                                cd openshift
+                                oc process -f api-deploy.yml --param-file test-deploy-params.yml --param SUFFIX=-test --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
+                                oc rollout status -n c220ad-test deploy/vips-api-deployment-test
+                                """
+                            }
+                        }
+                    }            
             }
         }
+
+
+
         stage('Deploy (PROD)') {
             agent { label 'master' }
             when {

@@ -104,7 +104,8 @@ pipeline {
             }
             
             stages{
-                stage('Scale down Dev'){
+                stages{
+                    stage('Scale down Dev'){
                     steps{
                         echo "Checking existing PR.."
                         script{
@@ -118,11 +119,12 @@ pipeline {
                             }
                         }
                     }
-                }
+                    }
 
-                stage('Deploy (Dev)'){
+                    stage('Deploy (Dev)'){
 
-                }
+                    }
+                }                
             }
         }
 

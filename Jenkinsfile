@@ -41,7 +41,12 @@ pipeline {
 
         stage('Scale Down PR') {
             agent { label 'master' }
-            
+            when {
+                allOf {
+                     expression { env.SKIP_PR != "true" }
+                 }
+                beforeInput true
+            }
             steps {
                 echo "Checking existing PR.."
                 script{
@@ -61,6 +66,12 @@ pipeline {
         
         stage('Deploy (PR)') {
             agent { label 'master' }
+            when {
+                allOf {
+                     expression { env.SKIP_PR != "true" }
+                 }
+                beforeInput true
+            }
             input {
                 message "Should we continue with deployment to PR?"
                 ok "Yes!"
@@ -81,7 +92,10 @@ pipeline {
         stage('Deploy (DEV)') {
             agent { label 'master' }
             when {
-                expression { return env.CHANGE_TARGET == 'master';}
+                allOf {
+                     expression { env.SKIP_DEV != "true" }
+                     expression { env.CHANGE_TARGET == 'master' }
+                 }
                 beforeInput true
             }
             input {
@@ -95,7 +109,10 @@ pipeline {
         stage('Deploy (TEST)') {
             agent { label 'master' }
             when {
-                expression { return env.CHANGE_TARGET == 'master';}
+                allOf {
+                     expression { env.SKIP_TEST != "true" }
+                     expression { env.CHANGE_TARGET == 'master' }
+                 }
                 beforeInput true
             }
             input {
@@ -109,7 +126,10 @@ pipeline {
         stage('Deploy (PROD)') {
             agent { label 'master' }
             when {
-                expression { return env.CHANGE_TARGET == 'master';}
+                allOf {
+                     expression { env.SKIP_PROD != "true" }
+                     expression { env.CHANGE_TARGET == 'master' }
+                 }
                 beforeInput true
             }
             input {
@@ -136,10 +156,17 @@ void confirm_build(){
       if (env.CHANGE_TARGET == 'master' && env.CHANGE_BRANCH.indexOf('patch/') != 0) {
         INPUT_PARAMS = input message: 'Build and deploy the latest changes?', ok: 'Yes',
             parameters: [
-                choice(name: 'AUTO_DEPLOY_TO', choices: ['PR','DEV','TEST'].join('\n'), description: 'Deploy to'),
+                // choice(name: 'AUTO_DEPLOY_TO', choices: ['PR','DEV','TEST'].join('\n'), description: 'Deploy to'),
+                booleanParam(defaultValue: false, name: 'SKIP_PR', description: 'Skip PR Deployment'),
                 booleanParam(defaultValue: false, name: 'SKIP_DEV', description: 'Skip Dev Deployment'),
-                booleanParam(defaultValue: true, name: 'RUN_TEST', description: 'Execute automated testing'),
-                booleanParam(defaultValue: false, name: 'DEBUG_LOGGING', description: 'Enable debugging')]
+                booleanParam(defaultValue: false, name: 'SKIP_TEST', description: 'Skip Test Deployment'),
+                booleanParam(defaultValue: false, name: 'SKIP_PROD', description: 'Skip Prod Deployment'),
+                booleanParam(defaultValue: false, name: 'SKIP_BUILD', description: 'Skip Build Step?'),
+                booleanParam(defaultValue: true, name: 'RUN_TEST', description: 'Execute automated testing')]
+        env.SKIP_PR = INPUT_PARAMS.SKIP_PR;
+        env.SKIP_DEV = INPUT_PARAMS.SKIP_DEV;
+        env.SKIP_PROD = INPUT_PARAMS.SKIP_PROD;
+        env.SKIP_TEST = INPUT_PARAMS.TEST;
       }
       else if (env.CHANGE_TARGET.indexOf('release') == 0 && env.CHANGE_BRANCH.indexOf('patch/') != 0) {
         INPUT_PARAMS = input message: 'Build and deploy the latest changes?', ok: 'Yes',
@@ -152,17 +179,19 @@ void confirm_build(){
       else {
         INPUT_PARAMS = input message: 'Build and deploy the latest changes?', ok: 'Yes',
             parameters: [
-                choice(name: 'AUTO_DEPLOY_TO', choices: ['PR'], description: 'Deploy to'),
+                // choice(name: 'AUTO_DEPLOY_TO', choices: ['PR'], description: 'Deploy to'),
+                booleanParam(defaultValue: false, name: 'SKIP_PR', description: 'Skip PR Deployment'),
                 booleanParam(defaultValue: true, name: 'RUN_TEST', description: 'Execute automated testing'),
                 booleanParam(defaultValue: false, name: 'SKIP_BUILD', description: 'Skip Build Step?')]
+        env.SKIP_PR = INPUT_PARAMS.SKIP_PR;
                 // env.SKIP_DEV="true"
                 // env.SKIP_TEST ="true"
       }
 
       // Capture the preference of whether to skip dev and stage deployments
-      env.SKIP_DEV = INPUT_PARAMS.SKIP_DEV;
-      env.SKIP_STAGE = INPUT_PARAMS.SKIP_STAGE;
-      env.SKIP_TEST = INPUT_PARAMS.TEST;
+    //   env.SKIP_DEV = INPUT_PARAMS.SKIP_DEV;
+    //   env.SKIP_STAGE = INPUT_PARAMS.SKIP_STAGE;
+    //   env.SKIP_TEST = INPUT_PARAMS.TEST;
       env.SKIP_BUILD = INPUT_PARAMS.SKIP_BUILD;
 
       if (INPUT_PARAMS.AUTO_DEPLOY_TO == 'PR') {

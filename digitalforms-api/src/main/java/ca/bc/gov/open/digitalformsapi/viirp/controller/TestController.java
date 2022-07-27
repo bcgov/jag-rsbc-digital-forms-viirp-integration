@@ -15,6 +15,6 @@ public class TestController {
  
     @RequestMapping("/test")
     public String hello() {
-        return "This is the test RESTful endpoint.";
+        return "This is the test RESTful endpoint.v2.33";
     }  
 }

@@ -102,10 +102,33 @@ pipeline {
                 message "Should we continue with deployment to DEV?"
                 ok "Yes!"
             }
-            steps {
-                echo "Deploying to DEV..."
+            
+            stages{
+                stage('Scale down Dev'){
+                    steps{
+                        echo "Checking existing PR.."
+                        script{
+                            def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-dev-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                            if(PR_Deploy_STATUS==1){
+                                echo "No existing PR environments to scale down!!"
+                            }else{
+                                sh """
+                                oc scale -n c220ad-dev deploy/vips-api-deployment-dev-${env.CHANGE_ID} --replicas=0
+                                """
+                            }
+                        }
+                    }
+                }
+
+                stage('Deploy (Dev)'){
+
+                }
             }
         }
+
+
+
+
         stage('Deploy (TEST)') {
             agent { label 'master' }
             when {

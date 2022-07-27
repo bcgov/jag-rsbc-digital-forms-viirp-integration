@@ -2,16 +2,17 @@ pipeline {
     agent none
     options {
         disableResume()
+        timeout(time: 24, unit: 'HOURS')
     }
     stages {
-        stage('Abort Previously Running Jobs') {
-            steps {
-                echo "Aborting all running jobs ..."                
-                script {
-                    abortAllPreviousBuildInProgress(currentBuild)
-                }
-            }
-        }
+        // stage('Abort Previously Running Jobs') {
+        //     steps {
+        //         echo "Aborting all running jobs ..."                
+        //         script {
+        //             abortAllPreviousBuildInProgress(currentBuild)
+        //         }
+        //     }
+        // }
         stage('Build and Deploy Inputs') {
            agent none
            steps {
@@ -21,32 +22,68 @@ pipeline {
         stage('Build') {
             agent { label 'master' }
             options { skipDefaultCheckout(false) }
+            when {
+                expression { return env.SKIP_BUILD == "false";}
+                beforeInput true
+            }
             steps {
                 // build_app()
                 script {
                     sh """                    
                     cd openshift
                     oc process -f api-build.yml --param-file build-params.yml --param VERSION=build-${env.CHANGE_ID} --param SUFFIX=-build-${env.CHANGE_ID} --param SOURCE_REPOSITORY_REF=${env.CHANGE_BRANCH} | oc apply -f -
-                    oc start-build vips-api-build --wait
+                    oc start-build vips-api-build --follow --wait
                     """
                 }
 
             }
         }
 
-        
-        stage('Deploy (PR)') {
-            // agent { label 'deploy' }
+        stage('Scale Down PR') {
+            agent { label 'master' }
+            
             steps {
-                echo "Deploying PR ..."
+                echo "Checking existing PR.."
+                script{
+                    def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                    if(PR_Deploy_STATUS==1){
+                        echo "No existing PR environments to scale down!!"
+                    }else{
+                        sh """
+                            oc scale -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID} --replicas=0
+
+                        """
+                    }
+                }
             }
         }
+
+        
+        stage('Deploy (PR)') {
+            agent { label 'master' }
+            input {
+                message "Should we continue with deployment to PR?"
+                ok "Yes!"
+            }
+            steps {
+                echo "Deploying PR ..."
+                script {
+                    sh """                    
+                    cd openshift
+                    oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
+                    oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}
+                    """
+                }
+            }
+        }
+
+        
         stage('Deploy (DEV)') {
-            // agent { label 'deploy' }
-            // when {
-            //     expression { return env.CHANGE_TARGET == 'master';}
-            //     beforeInput true
-            // }
+            agent { label 'master' }
+            when {
+                expression { return env.CHANGE_TARGET == 'master';}
+                beforeInput true
+            }
             input {
                 message "Should we continue with deployment to DEV?"
                 ok "Yes!"
@@ -56,11 +93,11 @@ pipeline {
             }
         }
         stage('Deploy (TEST)') {
-            // agent { label 'deploy' }
-            // when {
-            //     expression { return env.CHANGE_TARGET == 'master';}
-            //     beforeInput true
-            // }
+            agent { label 'master' }
+            when {
+                expression { return env.CHANGE_TARGET == 'master';}
+                beforeInput true
+            }
             input {
                 message "Should we continue with deployment to TEST?"
                 ok "Yes!"
@@ -70,11 +107,11 @@ pipeline {
             }
         }
         stage('Deploy (PROD)') {
-            // agent { label 'deploy' }
-            // when {
-            //     expression { return env.CHANGE_TARGET == 'master';}
-            //     beforeInput true
-            // }
+            agent { label 'master' }
+            when {
+                expression { return env.CHANGE_TARGET == 'master';}
+                beforeInput true
+            }
             input {
                 message "Should we continue with deployment to PROD?"
                 ok "Yes!"
@@ -117,12 +154,16 @@ void confirm_build(){
             parameters: [
                 choice(name: 'AUTO_DEPLOY_TO', choices: ['PR'], description: 'Deploy to'),
                 booleanParam(defaultValue: true, name: 'RUN_TEST', description: 'Execute automated testing'),
-                booleanParam(defaultValue: false, name: 'DEBUG_LOGGING', description: 'Enable debugging')]
+                booleanParam(defaultValue: false, name: 'SKIP_BUILD', description: 'Skip Build Step?')]
+                // env.SKIP_DEV="true"
+                // env.SKIP_TEST ="true"
       }
 
       // Capture the preference of whether to skip dev and stage deployments
       env.SKIP_DEV = INPUT_PARAMS.SKIP_DEV;
       env.SKIP_STAGE = INPUT_PARAMS.SKIP_STAGE;
+      env.SKIP_TEST = INPUT_PARAMS.TEST;
+      env.SKIP_BUILD = INPUT_PARAMS.SKIP_BUILD;
 
       if (INPUT_PARAMS.AUTO_DEPLOY_TO == 'PR') {
           env.AUTO_DEPLOY_TO = '1'
@@ -147,7 +188,7 @@ void confirm_build(){
         env.DEBUG_LOGGING = "DEBUG="
       }
 
-      echo "Confirming build and deploy of branch ${env.CHANGE_BRANCH}. AUTO_DEPLOY_TO: ${INPUT_PARAMS.AUTO_DEPLOY_TO}, SKIP_STAGE: ${INPUT_PARAMS.SKIP_STAGE}, RUN_TEST: ${INPUT_PARAMS.RUN_TEST}, DEBUG_LOGGING: ${INPUT_PARAMS.DEBUG_LOGGING}."
+      echo "Confirming build and deploy of branch ${env.CHANGE_BRANCH}. AUTO_DEPLOY_TO: ${INPUT_PARAMS.AUTO_DEPLOY_TO}, SKIP_BUILD: ${INPUT_PARAMS.SKIP_BUILD}, RUN_TEST: ${INPUT_PARAMS.RUN_TEST}, DEBUG_LOGGING: ${INPUT_PARAMS.DEBUG_LOGGING}."
   }
 }
 

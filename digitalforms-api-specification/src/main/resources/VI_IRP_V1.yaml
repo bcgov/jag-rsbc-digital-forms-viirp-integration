@@ -340,10 +340,8 @@ paths:
                 $ref: '#/components/schemas/GetCodetablesServiceResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
-        404:
-          $ref: '#/components/responses/404NotFound'    
+        500:
+          $ref: '#/components/responses/500ServerError'
   /utility/ords/ping/{correlationId}:
     get:
       tags:
@@ -397,6 +395,12 @@ components:
             $ref: '#/components/schemas/errorMessage'
     404NotFound:
       description: Not Found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    500ServerError:
+      description: Internal Server Error.
       content:
         application/json:
           schema:

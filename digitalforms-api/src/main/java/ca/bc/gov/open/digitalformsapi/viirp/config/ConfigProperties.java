@@ -31,6 +31,16 @@ public class ConfigProperties {
     
     @Value("${vips.rest-api.retry.delay}")
     private long vipsRestApiRetryDelay;
+    
+    @Value("${vips.rest-api.credentials.guid}")
+    private String vipsRestApiCredentialsGuid;
+    
+    @Value("${vips.rest-api.credentials.user}")
+    private String vipsRestApiCredentialsUser;
+    
+    @Value("${vips.rest-api.credentials.displayname}")
+    private String vipsRestApiCredentialsDisplayname;
+    
 
 	public String getVipsRestApiUrl() {
 		return vipsRestApiUrl;
@@ -78,6 +88,30 @@ public class ConfigProperties {
 
 	public void setVipsRestApiRetryDelay(long vipsRestApiRetryDelay) {
 		this.vipsRestApiRetryDelay = vipsRestApiRetryDelay;
+	}
+
+	public String getVipsRestApiCredentialsGuid() {
+		return vipsRestApiCredentialsGuid;
+	}
+
+	public void setVipsRestApiCredentialsGuid(String vipsRestApiCredentialsGuid) {
+		this.vipsRestApiCredentialsGuid = vipsRestApiCredentialsGuid;
+	}
+
+	public String getVipsRestApiCredentialsUser() {
+		return vipsRestApiCredentialsUser;
+	}
+
+	public void setVipsRestApiCredentialsUser(String vipsRestApiCredentialsUser) {
+		this.vipsRestApiCredentialsUser = vipsRestApiCredentialsUser;
+	}
+
+	public String getVipsRestApiCredentialsDisplayname() {
+		return vipsRestApiCredentialsDisplayname;
+	}
+
+	public void setVipsRestApiCredentialsDisplayname(String vipsRestApiCredentialsDisplayname) {
+		this.vipsRestApiCredentialsDisplayname = vipsRestApiCredentialsDisplayname;
 	}
     
 }

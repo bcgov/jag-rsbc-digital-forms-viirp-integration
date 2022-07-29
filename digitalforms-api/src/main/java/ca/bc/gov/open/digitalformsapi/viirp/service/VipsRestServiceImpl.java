@@ -5,6 +5,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -37,4 +39,26 @@ public class VipsRestServiceImpl implements VipsRestService {
                 .block();
 	}
 
+	/**
+	 * 
+	 * createImpoundment. 
+	 * Returns VIPS CreateImpoundmentServiceResponse type  
+	 * 
+	 */
+	@Override
+	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(String correlationId, ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment) {
+		
+		return webClient
+                .post()
+                .uri("/cases/impoundments")
+                .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
+                .body(Mono.just(impoundment), ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment.class) // body of request.
+                .retrieve()
+                .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse.class) // body of response (need VIPS class)
+        		.block();
+	}
+	
 }

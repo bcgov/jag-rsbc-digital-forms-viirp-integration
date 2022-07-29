@@ -620,7 +620,7 @@ components:
         - noticeSubjectCd
         - noticeTypeCd
         - originalCauseCds
-        - policeDetachmentId
+        - policeDetatchmentId
         - policeFileNo
       properties:
         dlJurisdictionCd:
@@ -658,7 +658,7 @@ components:
             type: string
             maxLength: 10
             description: For impoundments no max limit on array size.
-        policeDetachmentId:
+        policeDetatchmentId:
           type: integer
           format: int64
           maxLength: 15
@@ -968,7 +968,7 @@ components:
         - noticeSubjectCd
         - noticeTypeCd
         - originalCauseCd
-        - policeDetachmentId
+        - policeDetatchmentId
       properties:
         cityNm:
           type: string
@@ -1012,7 +1012,7 @@ components:
           type: string
           maxLength: 10
           description: For prohibitions this is a single value.  
-        policeDetachmentId:
+        policeDetatchmentId:
           type: integer
           format: int64
           maxLength: 15

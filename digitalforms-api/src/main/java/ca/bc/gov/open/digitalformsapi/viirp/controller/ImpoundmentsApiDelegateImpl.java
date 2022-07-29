@@ -46,14 +46,17 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
+			logger.error("VIPS " + _resp.toString());
 			throw new DigitalFormsException("Failed to created impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
+			logger.error("VIPS " + _resp.toString());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to created impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		}
 		
-		return new ResponseEntity<>(HttpStatus.OK);
+		return new ResponseEntity<>(resp, HttpStatus.OK);
+		
 	}
-	
+
 	@Override
 	public ResponseEntity<GetImpoundmentServiceResponse> impoundmentsNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {

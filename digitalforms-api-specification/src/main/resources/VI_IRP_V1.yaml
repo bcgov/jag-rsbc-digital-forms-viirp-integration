@@ -615,6 +615,7 @@ components:
     VipsImpoundmentCreate:
       type: object
       required: 
+        - ImpoundmentDt
         - impoundmentNoticeNo
         - noticeSubjectCd
         - noticeTypeCd
@@ -636,8 +637,8 @@ components:
           maxLength: 15
         impoundmentDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX 
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset
         impoundmentNoticeNo:
           type: string
@@ -673,8 +674,8 @@ components:
           maxLength: 30 
         projectedReleaseDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset
         seizureLocationTxt:
           type: string
@@ -861,8 +862,8 @@ components:
       properties:
         birthDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset 
         dlJurisdictionCd:
           type: string
@@ -981,23 +982,23 @@ components:
           maxLength: 1
         effectiveDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset
         expiryDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset
         incidentDtm:
           type: string
-          format: date-time
-          example: "2018-10-22T09:30:01.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T12:50:000-07.00"
           description: ISO-8601. Date and time with offset
         noticeServedDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset
         noticeSubjectCd:
           type: string
@@ -1037,13 +1038,13 @@ components:
           maxLength: 4000
         tempDlEffectiveDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset
         tempDlExpiryDt:
           type: string
-          format: date-time
-          example: "2018-10-22T00:00:00.000-07:00"
+          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+          example: "2021-01-30T00:00:000-07.00"
           description: ISO-8601. Date only with offset
     CreateProhibitionServiceResponse:
       type: object

@@ -33,4 +33,10 @@ public final class CreateImpoundmentServiceResponse extends VipswsBasicResponse 
 		this.impoundmentId = impoundmentId;
 	}
 
+	@Override
+	public String toString() {
+		return "CreateImpoundmentServiceResponse [impoundmentId=" + impoundmentId + ", respCd=" + respCd + ", respMsg="
+				+ respMsg + "]";
+	}
+
 }

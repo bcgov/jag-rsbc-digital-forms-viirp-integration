@@ -26,9 +26,13 @@ server:
 # VIPS ORDS CLIENT properties
 vips:
   rest-api:
-    password: ${DIGITALFORMS_VIPSAPI_PASSWORD:}
     url: ${DIGITALFORMS_VIPSAPI_URL:}
+    password: ${DIGITALFORMS_VIPSAPI_PASSWORD:}
     username: ${DIGITALFORMS_VIPSAPI_USERNAME:}
+    credentials: 
+      guid: ${DIGITALFORMS_VIPSAPI_CREDS_GUID:}
+      user: ${DIGITALFORMS_VIPSAPI_CREDS_USER:}
+      displayname: ${DIGITALFORMS_VIPSAPI_CREDS_DISPLAYNAME:}
     timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT:2000}
     retry:
       # The maximum number of retry attempts to allow

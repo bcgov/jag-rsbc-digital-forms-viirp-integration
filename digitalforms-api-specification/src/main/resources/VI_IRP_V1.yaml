@@ -35,8 +35,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateImpoundmentServiceResponse'
-        400: 
-          $ref: '#/components/responses/400BadRequest'
+        500:
+          $ref: '#/components/responses/500ServerError'
         401:
           $ref: '#/components/responses/401NotAuthorized'
   /impoundments/{noticeNo}/{correlationId}:
@@ -619,7 +619,7 @@ components:
     VipsImpoundmentCreate:
       type: object
       required: 
-        - ImpoundmentDt
+        - impoundmentDt
         - impoundmentNoticeNo
         - noticeSubjectCd
         - noticeTypeCd
@@ -641,8 +641,8 @@ components:
           maxLength: 15
         impoundmentDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX 
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         impoundmentNoticeNo:
           type: string
@@ -678,8 +678,8 @@ components:
           maxLength: 30 
         projectedReleaseDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         seizureLocationTxt:
           type: string
@@ -866,8 +866,8 @@ components:
       properties:
         birthDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset 
         dlJurisdictionCd:
           type: string
@@ -986,23 +986,23 @@ components:
           maxLength: 1
         effectiveDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         expiryDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         incidentDtm:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T12:50:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date and time with offset
         noticeServedDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         noticeSubjectCd:
           type: string
@@ -1042,13 +1042,13 @@ components:
           maxLength: 4000
         tempDlEffectiveDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         tempDlExpiryDt:
           type: string
-          format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-          example: "2021-01-30T00:00:000-07.00"
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
     CreateProhibitionServiceResponse:
       type: object

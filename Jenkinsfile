@@ -54,12 +54,12 @@ pipeline {
             steps {
                 echo "Checking existing PR.."
                 script{
-                    def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr-${env.CHANGE_ID} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                    def PR_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-dev vips-api-deployment-pr-${env.CHANGE_ID}-${env.API_RELEASE_VERSION}  -o jsonpath='{.metadata.name}'", returnStatus: true )
                     if(PR_Deploy_STATUS==1){
                         echo "No existing PR environments to scale down!!"
                     }else{
                         sh """
-                            oc scale -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID} --replicas=0
+                            oc scale -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}-${env.API_RELEASE_VERSION}  --replicas=0
 
                         """
                     }
@@ -85,8 +85,8 @@ pipeline {
                 script {
                     sh """                    
                     cd openshift
-                    oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
-                    oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}
+                    oc process -f api-deploy.yml --param-file pr-deploy-params.yml --param SUFFIX=-pr-${env.CHANGE_ID} --param BUILD_VERSION=${env.CHANGE_ID} --param API_VERSION=${env.API_RELEASE_VERSION} | oc apply -f -
+                    oc rollout status -n c220ad-dev deploy/vips-api-deployment-pr-${env.CHANGE_ID}-${env.API_RELEASE_VERSION} 
                     """
                 }
             }

@@ -130,7 +130,7 @@ pipeline {
                             script {
                                 sh """                    
                                 cd openshift
-                                oc process -f api-deploy.yml --param-file dev-deploy-params.yml --param SUFFIX=-dev --param BUILD_VERSION=${env.API_RELEASE_VERSION} --param API_VERSION=${env.API_RELEASE_VERSION}  | oc apply -f -
+                                oc process -f api-deploy.yml --param-file dev-deploy-params.yml --param SUFFIX=-dev --param BUILD_VERSION=${env.CHANGE_ID} --param API_VERSION=${env.API_RELEASE_VERSION}  | oc apply -f -
                                 oc rollout status -n c220ad-dev deploy/vips-api-deployment-dev-${env.API_RELEASE_VERSION} 
                                 """
                             }

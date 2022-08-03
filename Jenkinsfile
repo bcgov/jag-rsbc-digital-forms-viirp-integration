@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        API_RELEASE_VERSION = '1.0'
+        API_RELEASE_VERSION = '1'
     }
     stages {
         // stage('Abort Previously Running Jobs') {

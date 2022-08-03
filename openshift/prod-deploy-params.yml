@@ -1,0 +1,7 @@
+NAME: vips-api
+COMPONENT: deployment
+SUFFIX: -prod
+NAMESPACE: c220ad-prod
+IMAGE_NAMESPACE: c220ad-tools
+BUILD_CONFIG_SUFFIX: build
+BUILD_VERSION: 25

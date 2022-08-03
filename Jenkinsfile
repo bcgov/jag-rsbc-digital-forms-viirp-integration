@@ -160,12 +160,12 @@ pipeline {
                     steps{
                         echo "Checking existing Test.."
                         script{
-                            def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-test vips-api-deployment-test -o jsonpath='{.metadata.name}'", returnStatus: true )
+                            def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-test vips-api-deployment-test-${env.API_RELEASE_VERSION} -o jsonpath='{.metadata.name}'", returnStatus: true )
                             if(DEV_Deploy_STATUS==1){
                                 echo "No existing Test deployments to scale down!!"
                             }else{
                                 sh """
-                                oc scale -n c220ad-test deploy/vips-api-deployment-test --replicas=0
+                                oc scale -n c220ad-test deploy/vips-api-deployment-test-${env.API_RELEASE_VERSION} --replicas=0
                                 """
                             }
                         }
@@ -178,8 +178,8 @@ pipeline {
                             script {
                                 sh """                    
                                 cd openshift
-                                oc process -f api-deploy.yml --param-file test-deploy-params.yml --param SUFFIX=-test --param BUILD_VERSION=${env.CHANGE_ID} | oc apply -f -
-                                oc rollout status -n c220ad-test deploy/vips-api-deployment-test
+                                oc process -f api-deploy.yml --param-file test-deploy-params.yml --param SUFFIX=-test --param BUILD_VERSION=${env.CHANGE_ID} --param API_VERSION=${env.API_RELEASE_VERSION} | oc apply -f -
+                                oc rollout status -n c220ad-test deploy/vips-api-deployment-test-${env.API_RELEASE_VERSION}
                                 """
                             }
                         }
@@ -202,8 +202,35 @@ pipeline {
                 message "Should we continue with deployment to PROD?"
                 ok "Yes!"
             }
-            steps {
-                echo "Deploying ..."
+            stages{
+                    stage('Scale down Prod'){
+                    steps{
+                        echo "Checking existing Prod.."
+                        script{
+                            def DEV_Deploy_STATUS = sh ( script: "cd openshift && oc get deploy -n c220ad-prod vips-api-deployment-prod-${env.API_RELEASE_VERSION} -o jsonpath='{.metadata.name}'", returnStatus: true )
+                            if(DEV_Deploy_STATUS==1){
+                                echo "No existing Prod deployments to scale down!!"
+                            }else{
+                                sh """
+                                oc scale -n c220ad-prod deploy/vips-api-deployment-prod-${env.API_RELEASE_VERSION} --replicas=0
+                                """
+                            }
+                        }
+                    }
+                    }
+
+                    stage('Deploy (Prod)'){
+                        steps{
+                            echo "Deploying Prod ..."
+                            script {
+                                sh """                    
+                                cd openshift
+                                oc process -f api-deploy.yml --param-file prod-deploy-params.yml --param SUFFIX=-prod --param BUILD_VERSION=${env.CHANGE_ID} --param API_VERSION=${env.API_RELEASE_VERSION} | oc apply -f -
+                                oc rollout status -n c220ad-prod deploy/vips-api-deployment-prod-${env.API_RELEASE_VERSION}
+                                """
+                            }
+                        }
+                    }            
             }
         }
     }

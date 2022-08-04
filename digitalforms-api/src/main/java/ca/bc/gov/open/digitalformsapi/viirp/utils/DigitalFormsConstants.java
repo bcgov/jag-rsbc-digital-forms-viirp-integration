@@ -32,4 +32,10 @@ public final class DigitalFormsConstants {
 	public static final String DIGITALFORMS_SUCCESS_MSG = "success";
 	
 	
+	//VIPS WS Constants
+	public static final String ICBC_DATE_FORMAT = "yyyy-MM-dd";
+	public static final String ICBC_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	public static final String VIPS_DISPLAY_DATE_FORMAT = "yyyy-MM-dd";
+	
+	
 }

@@ -1,6 +1,8 @@
 package ca.bc.gov.open.digitalformsapi.viirp.service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 
 /**
  * 
@@ -28,5 +30,29 @@ public interface VipsRestService {
 	 * @return
 	 */
 	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(String correlationId, ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment);
+
+	/**
+	 * 
+	 * Returns a {@link SearchImpoundmentsServiceResponse} by calling VIPS WS to search for a given Notice Number.
+	 * 
+	 * @See ImpoundmentsApiDelegateImpl. 
+	 * 
+	 * @param correlationId
+	 * @param noticeNo
+	 * @return
+	 */
+	public SearchImpoundmentsServiceResponse searchImpoundment(String correlationId, String noticeNo);
+	
+	
+	/**
+	 * 
+	 * Returns a {@link SearchImpoundmentsServiceResponse} by calling VIPS WS to search for a given impoundment Id.
+	 * 
+	 * 
+	 * @param correlationId
+	 * @param impoundmentId
+	 * @return
+	 */
+	public GetImpoundmentServiceResponse getImpoundment(String correlationId, Long impoundmentId);
 	
 }

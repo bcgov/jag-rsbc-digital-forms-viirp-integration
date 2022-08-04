@@ -356,7 +356,7 @@ public class ImpoundmentsApiControllerTests {
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
         Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
         
-        // Mock underlying VIPS REST Get Impoundment response returning no impoundment event though the
+        // Mock underlying VIPS REST Get Impoundment response returning no impoundment even though the
         // search return with an impoundment Id. (Very BAD case for VIPS if this ever happened)
         ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse vipsImpoundmentNone = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse();
         vipsImpoundmentNone.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);

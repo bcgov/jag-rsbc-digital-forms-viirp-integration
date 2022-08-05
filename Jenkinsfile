@@ -251,6 +251,10 @@ void confirm_build(){
       if (env.CHANGE_TARGET == null || env.CHANGE_BRANCH == null){
         currentBuild.result = 'ABORTED'
         echo('Skipping non PR change')
+        env.SKIP_PR = "true";
+        env.SKIP_DEV = "true";
+        env.SKIP_PROD = "true";
+        env.SKIP_TEST = "true";
         return
       }
       if (env.CHANGE_TARGET == 'master' && env.CHANGE_BRANCH.indexOf('patch/') != 0) {

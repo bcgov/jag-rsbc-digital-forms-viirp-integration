@@ -13,7 +13,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
@@ -24,7 +23,7 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	
 	@Autowired
 	private VipsRestService digitalformsApiService;
-	
+
 	/**
 	 * POST Impoundment (TO VIPS WS) 
 	 * 
@@ -101,8 +100,16 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			// Depending on the result code from VIPS, we set the response Entity accordingly. 
 			if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 				
-				// Populate response object from VIPS response object (This removes the VIPS WS resultCd, resultMsg, etc.) 
-				resp.setResult(_resp2.getResult());
+				// Make sure response has the expected impoundment detail. If this fails we have a bigger problem in VIPS
+				// as the prior VIPS search said that there was an impoundment for the id returned above. 
+				if (null != _resp2.getResult()) {
+				
+					// Populate response object from VIPS response object (This removes the VIPS WS resultCd, resultMsg, etc.) 
+					resp.setResult(_resp2.getResult());
+					
+				} else {
+					throw new ResourceNotFoundException("No impoundment returned when a prior search indicated there was an impoundment linked to impoundment id  : " + impoundmentId);
+				}
 				
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
 				logger.error("VIPS " + _resp2.toString());

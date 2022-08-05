@@ -27,7 +27,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateImpoundment'
-        required: false
+        required: true
       responses:
         201:
           description: Created

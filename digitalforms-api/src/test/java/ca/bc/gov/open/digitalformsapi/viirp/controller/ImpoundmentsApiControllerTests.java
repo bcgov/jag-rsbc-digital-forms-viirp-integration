@@ -27,13 +27,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsAddressCreateObj;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundmentCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsLicenceCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsRegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsVehicleCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
@@ -52,6 +56,10 @@ public class ImpoundmentsApiControllerTests {
     
     private CreateImpoundment createImpoundment;
     
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse vipsSearch;
+    
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse vipsImpoundment; 
+    
     @Autowired
     ConfigProperties properties;
     
@@ -60,7 +68,7 @@ public class ImpoundmentsApiControllerTests {
     	
 		MockitoAnnotations.openMocks(this);
 		
-		// Create Mock POST Request
+		// Mock POST Impoundment body 
 		createImpoundment = new CreateImpoundment();
 		VipsImpoundmentCreate vipsImpoundmentCreate = new VipsImpoundmentCreate();
 		vipsImpoundmentCreate.setDlJurisdictionCd("BC");
@@ -127,6 +135,21 @@ public class ImpoundmentsApiControllerTests {
 		createImpoundment.setVipsVehicleCreate(vipsVehicleCreate); // 3
 		createImpoundment.setVipsDocumentIdArray(vipsDocumentIdArray); // 4
 		createImpoundment.setVipsImpoundmentArray(vipsImpoundmentArray); // 5
+		
+		//Mock VIPS WS Notice number for Impoundment Search response
+		vipsSearch = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse();
+		List<VipsImpoundmentBasicsObj> results = new ArrayList<VipsImpoundmentBasicsObj>();
+		VipsImpoundmentBasicsObj obj = new VipsImpoundmentBasicsObj();
+		obj.setImpoundmentId(DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID);
+		results.add(obj);
+		vipsSearch.setResult(results);
+		
+		// Mock VIPS WS GET Impoundment response. 
+		vipsImpoundment = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse();
+		VipsImpoundObj vipsImpoundObj = new VipsImpoundObj();
+		vipsImpoundObj.setDlJurisdictionCd("BC");
+		vipsImpoundObj.setImpoundmentDt("2018-10-22T00:00:00.000-07:00");
+		vipsImpoundment.setResult(vipsImpoundObj);
 		
 	}
     
@@ -205,6 +228,231 @@ public class ImpoundmentsApiControllerTests {
 	    	      .andExpect(status().isInternalServerError());
 	    
 	}
+    
+    @DisplayName("GET, Search Success  - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETSearchSuccess() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Impoundment response in good case 
+		vipsImpoundment.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsImpoundment.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.getImpoundment(correlationId, impoundmentId)).thenReturn(vipsImpoundment);
+        
+        // Create successful search notice number call with impoundmentId and validate response 
+        ResponseEntity<GetImpoundmentServiceResponse> controllerResponse = controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+        GetImpoundmentServiceResponse result = controllerResponse.getBody();
+        Assert.assertEquals("BC", result.getResult().getDlJurisdictionCd());
+        
+    }
+    
+    @DisplayName("GET, Search Not Found  - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETSearchNotFound() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	
+    	ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse vipsSearchNotFound = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse();
+		List<VipsImpoundmentBasicsObj> results = new ArrayList<VipsImpoundmentBasicsObj>();
+		
+		//empty response object from VIPS means negative search result. 
+		vipsSearchNotFound.setResult(results); 
+    	
+    	// Mock underlying VIPS REST Search 
+		vipsSearchNotFound.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearchNotFound.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearchNotFound);
+    	
+    	// Ensure ResourceNotFoundException type is thrown in this case
+    	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+    			controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
+    
+    }
+    
+    @DisplayName("GET, Search Result size > 1 - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETSearchResultSizeGreaterThanOne() throws Exception {
+    	
+       	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    
+    	//add one more impoundment ID to the search results.
+    	VipsImpoundmentBasicsObj obj2 = new VipsImpoundmentBasicsObj();
+		obj2.setImpoundmentId(22222223L); 
+		vipsSearch.getResult().add(obj2);
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
+        
+
+    }
+    
+    @DisplayName("GET, Search VIPS General Failure - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETSearchVIPSGenFailure() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
+    	
+    	
+    }
+    
+    @DisplayName("GET, Search VIPS Internal Java Failure - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETSearchVIPSInternalFailure() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
+    	
+    	
+    }
+    
+    
+    @DisplayName("GET, Impoundment Not Found - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETImpoundmentNotFound() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Impoundment response returning no impoundment even though the
+        // search return with an impoundment Id. (Very BAD case for VIPS if this ever happened)
+        ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse vipsImpoundmentNone = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse();
+        vipsImpoundmentNone.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+ 		vipsImpoundmentNone.setResult(null); // no impoundment in the response 
+        
+		vipsImpoundment.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.getImpoundment(correlationId, impoundmentId)).thenReturn(vipsImpoundmentNone);
+        
+        // Ensure ResourceNotFoundException type is thrown in this case
+    	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+    			controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
+    	
+    	
+    }
+    
+    @DisplayName("GET, Impoundment General Failure - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETVIPSImpoundmentGenFailure() throws Exception {
+    	
+      	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Impoundment response reporting general failure 
+		vipsImpoundment.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
+	    Mockito.when(service.getImpoundment(correlationId, impoundmentId)).thenReturn(vipsImpoundment);
+	    
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
+    	
+    	
+    }
+    
+    @DisplayName("GET, Impoundment VIPS Internal Java Failure - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETVIPSImpoundmentInternalFailure() throws Exception {
+    	
+       	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Impoundment response reporting internal Java failure 
+		vipsImpoundment.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
+	    Mockito.when(service.getImpoundment(correlationId, impoundmentId)).thenReturn(vipsImpoundment);
+	    
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
+    	
+   
+    }
+    
+    @DisplayName("GET, Impoundment missing CorrelationId or Notice No - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiGETVIPSImpoundmentMissingCorrlelationOrNotice() throws Exception {
+    
+		   mvc.perform( MockMvcRequestBuilders
+		  	      .post("/impoundments")
+		  	      .content(asJsonString(createImpoundment))
+		  	      .contentType(MediaType.APPLICATION_JSON)
+		  	      .accept(MediaType.APPLICATION_JSON))
+		  	      .andExpect(status().isNotFound());
+    
+		   mvc.perform( MockMvcRequestBuilders
+			  	      .post("/impoundments/123456")
+			  	      .content(asJsonString(createImpoundment))
+			  	      .contentType(MediaType.APPLICATION_JSON)
+			  	      .accept(MediaType.APPLICATION_JSON))
+			  	      .andExpect(status().isInternalServerError());
+    }
+    
+    @DisplayName("POST, Impoundment missing body - Impoundment Delegate")  
+    @Test
+	public void testImpoundmentApiPOSTVIPSImpoundmentNoBody() throws Exception {
+    
+		   mvc.perform( MockMvcRequestBuilders
+		  	      .post("/impoundments/1234567/22222222")
+		  	      .contentType(MediaType.APPLICATION_JSON)
+		  	      .accept(MediaType.APPLICATION_JSON))
+		  	      .andExpect(status().isInternalServerError());
+    
+    }
     
     /**
      * Utility method to convert JSOB object to string. 

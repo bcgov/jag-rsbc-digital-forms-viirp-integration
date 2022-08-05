@@ -5,3 +5,5 @@ NAMESPACE: c220ad-dev
 IMAGE_NAMESPACE: c220ad-tools
 BUILD_CONFIG_SUFFIX: build
 BUILD_VERSION: 25
+SECRET1_NAME: digitalforms-api
+SECRET2_NAME: df-vips-integration-api

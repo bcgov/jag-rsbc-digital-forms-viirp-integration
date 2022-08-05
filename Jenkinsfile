@@ -5,7 +5,7 @@ pipeline {
         timeout(time: 24, unit: 'HOURS')
     }
 
-    
+
 
     environment {
         API_RELEASE_VERSION = '1'
@@ -248,6 +248,11 @@ pipeline {
 void confirm_build(){
   script {
       def INPUT_PARAMS
+      if (env.CHANGE_TARGET == null || env.CHANGE_BRANCH == null){
+        currentBuild.result = 'ABORTED'
+        echo('Skipping non PR change')
+        return
+      }
       if (env.CHANGE_TARGET == 'master' && env.CHANGE_BRANCH.indexOf('patch/') != 0) {
         INPUT_PARAMS = input message: 'Build and deploy the latest changes?', ok: 'Yes',
             parameters: [

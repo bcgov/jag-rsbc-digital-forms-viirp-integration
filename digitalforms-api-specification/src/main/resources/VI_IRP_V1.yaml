@@ -1079,7 +1079,6 @@ components:
         - mime_sub_type
         - auth_guid
         - file_object
-        - pageCount
       properties:
         type_code:
           type: string
@@ -1101,6 +1100,14 @@ components:
           type: string
           format: byte
           description: base64-encoded file content
+        notice_type_code:
+          type: string
+          description: notice type code. One of IRP, ADP, UL, or IMP. 
+          maxLength: 3  
+        notice_subject_code:
+          type: string
+          description: notice subject code. One of PERS or VEHI 
+          maxLength: 4   
         pageCount:
           type: integer
           format: int32

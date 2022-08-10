@@ -68,14 +68,14 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		VipsDocumentOrdsResponse _resp;
 		try {
 			_resp = documentApi.storeDocumentPost(
-						storeVIPSDocument.getTypeCode(),			//required
-						storeVIPSDocument.getMimeType(), 			//required
-						storeVIPSDocument.getMimeSubType(),			//required	 
-						storeVIPSDocument.getAuthGuid(),			//required
-						storeVIPSDocument.getFileObject(), 			//required
-						storeVIPSDocument.getNoticeTypeCode(),		//optional 
-						storeVIPSDocument.getNoticeSubjectCode(),	//optional
-						storeVIPSDocument.getPageCount());			//optional
+						storeVIPSDocument.getTypeCode(),				//required
+						storeVIPSDocument.getMimeType(), 				//required
+						storeVIPSDocument.getMimeSubType(),				//required	 
+						storeVIPSDocument.getAuthGuid(),				//required
+						storeVIPSDocument.getFileObject(), 				//required 
+						storeVIPSDocument.getNoticeTypeCode(),			//optional 
+						storeVIPSDocument.getNoticeSubjectCode(),		//optional
+						storeVIPSDocument.getPageCount());				//optional
 			
 			// Depending on the result code from the VIPS store document call, set the response entity accordingly. 
 			if (_resp.getStatusCode().equals(String.valueOf(DigitalFormsConstants.VIPSWS_SUCCESS_CD))) {

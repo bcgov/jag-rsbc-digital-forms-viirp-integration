@@ -187,33 +187,21 @@ paths:
         schema:
           type: integer
           format: int64
-      - name: b64
-        in: query
-        description: Boolean. Base64 response 
-        schema:
-          type: boolean
-          default: false
-      - name: url
-        in: query
-        description: Boolean. Indicates url reference response only 
-        schema:
-          type: boolean
-          default: false
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/vipsDocumentResponse'
+                $ref: '#/components/schemas/vipsGetDocumentByIdResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'
         400:
-          $ref: '#/components/responses/400BadRequest'        
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
         404:
-          $ref: '#/components/responses/404NotFound'  
+          $ref: '#/components/responses/404NotFound'
   /documents/list/{noticeNo}/{correlationId}:
     get:
       security:
@@ -1062,7 +1050,13 @@ components:
       properties:
         document_id:
           type: string
-          description: Doc id to be attached to impoundment or prohibition. 
+          description: Doc id to be attached to impoundment or prohibition.
+    vipsGetDocumentByIdResponse:
+      type: object
+      properties:
+        document:
+          type: string
+          description: The Document returned as a base64 string for the given documentId.
     errorMessage:
       type: object
       required:

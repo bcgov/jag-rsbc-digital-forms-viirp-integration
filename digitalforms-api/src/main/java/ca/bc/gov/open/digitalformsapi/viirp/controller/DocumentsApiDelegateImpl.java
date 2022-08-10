@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.DocumentsApiDelegate;
+import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
@@ -24,6 +25,9 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	
 	@Autowired
 	private DocumentApi documentApi;
+	
+	@Autowired
+	private  ConfigProperties properties;
 	
 	private final Logger logger = LoggerFactory.getLogger(DocumentsApiDelegateImpl.class);
 	
@@ -71,7 +75,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 						storeVIPSDocument.getTypeCode(),				//required
 						storeVIPSDocument.getMimeType(), 				//required
 						storeVIPSDocument.getMimeSubType(),				//required	 
-						storeVIPSDocument.getAuthGuid(),				//required
+						properties.getVipsRestApiCredentialsGuid(),		//required  Note: Uses same auth as VIPS WS API. 
 						storeVIPSDocument.getFileObject(), 				//required 
 						storeVIPSDocument.getNoticeTypeCode(),			//optional 
 						storeVIPSDocument.getNoticeSubjectCode(),		//optional

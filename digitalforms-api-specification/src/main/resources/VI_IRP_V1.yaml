@@ -1092,10 +1092,6 @@ components:
           type: string
           description: mime sub type, example pdf
           maxLength: 20
-        auth_guid:
-          type: string
-          description: auth guid of caller. Note that this will have to be created for DF. 
-          maxLength: 100
         file_object:
           type: string
           format: byte

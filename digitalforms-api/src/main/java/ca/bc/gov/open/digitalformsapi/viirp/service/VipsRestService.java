@@ -1,6 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 
@@ -54,5 +55,15 @@ public interface VipsRestService {
 	 * @return
 	 */
 	public GetImpoundmentServiceResponse getImpoundment(String correlationId, Long impoundmentId);
+	
+	/**
+	 * 
+	 * Returns a {@link VipsGetDocumentByIdResponse} by calling VIPS WS to return a document Base64 for a given document Id.
+	 * 
+	 * @param correlationId
+	 * @param documentId
+	 * @return
+	 */
+	public VipsGetDocumentByIdResponse getDocumentAsBase64(String correlationId, Long documentId);
 	
 }

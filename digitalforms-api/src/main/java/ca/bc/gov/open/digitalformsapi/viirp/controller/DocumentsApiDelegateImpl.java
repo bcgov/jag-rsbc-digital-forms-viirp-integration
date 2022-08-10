@@ -31,6 +31,9 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	
 	private final Logger logger = LoggerFactory.getLogger(DocumentsApiDelegateImpl.class);
 	
+	@Autowired
+	private VipsRestService digitalformsApiService;
+	
 	@Override
 	public ResponseEntity<GetDocumentsListServiceResponse> documentsListNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {
@@ -108,15 +111,15 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	}
 	
 	@Override
-	public ResponseEntity<VipsDocumentResponse> documentsDocumentIdCorrelationIdGet(
+	public ResponseEntity<VipsGetDocumentByIdResponse> documentsDocumentIdCorrelationIdGet(
 			String correlationId,
-	        Long documentId,
-	        Boolean b64,
-	        Boolean url) {
+	        Long documentId) {
 		
-		logger.info("Heard a call to the endpoint 'documentsDocumentIdCorrelationIdGet' with documentId " + documentId + ", b64 " + b64 + ", url " + url);
+		logger.info("Heard a call to the endpoint 'documentsDocumentIdCorrelationIdGet' with documentId " + documentId);
 		
-		return new ResponseEntity<>(HttpStatus.OK);
+		VipsGetDocumentByIdResponse documentResponse = digitalformsApiService.getDocumentAsBase64(correlationId, documentId);
+		
+		return new ResponseEntity<>(documentResponse, HttpStatus.OK);
 	}
 
 }

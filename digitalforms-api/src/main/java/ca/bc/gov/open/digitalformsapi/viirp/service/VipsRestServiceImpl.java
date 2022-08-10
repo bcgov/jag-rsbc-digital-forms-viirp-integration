@@ -5,6 +5,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
@@ -102,6 +103,33 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
                 .bodyToMono(GetImpoundmentServiceResponse.class) // body of response (VIPS WS class)
+        		.block();
+	}
+	
+	/**	  
+	 * getDocument. 
+	 * 
+	 * VIPS WS response object returned for given document Id. 
+ 	 * 
+	 */
+	@Override
+	public VipsGetDocumentByIdResponse getDocumentAsBase64(String correlationId, Long documentId) {
+		
+		return webClient
+                .get()
+                .uri("/documents/" + documentId + "?b64=true&url=false")
+                .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
+                .retrieve()
+                .bodyToMono(String.class) // Get the base64 encoded string from the response
+                .map(base64String -> {
+                	// Add base64 string to the response object
+                    VipsGetDocumentByIdResponse response = new VipsGetDocumentByIdResponse();
+                    response.setDocument(base64String);
+                    return response;
+                })
         		.block();
 	}
 	

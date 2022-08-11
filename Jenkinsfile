@@ -37,12 +37,14 @@ pipeline {
                 expression { return env.SKIP_BUILD == "false";}
                 beforeInput true
             }
+            // oc start-build vips-api-build --follow --wait
             steps {
                 script {
                     sh """                    
                     cd openshift
                     oc process -f api-build.yml --param-file build-params.yml --param VERSION=build-${env.CHANGE_ID} --param SUFFIX=-build-${env.CHANGE_ID} --param SOURCE_REPOSITORY_REF=${env.CHANGE_BRANCH} | oc apply -f -
-                    oc start-build vips-api-build --follow --wait
+                    
+                    oc start-build api-test-buildconfig --follow --wait
                     """
                 }
 

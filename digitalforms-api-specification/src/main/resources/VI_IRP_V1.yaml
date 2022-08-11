@@ -1073,7 +1073,6 @@ components:
         - mime_sub_type
         - auth_guid
         - file_object
-        - pageCount
       properties:
         type_code:
           type: string
@@ -1087,14 +1086,18 @@ components:
           type: string
           description: mime sub type, example pdf
           maxLength: 20
-        auth_guid:
-          type: string
-          description: auth guid of caller. Note that this will have to be created for DF. 
-          maxLength: 100
         file_object:
           type: string
           format: byte
           description: base64-encoded file content
+        notice_type_code:
+          type: string
+          description: notice type code. One of IRP, ADP, UL, or IMP. 
+          maxLength: 3  
+        notice_subject_code:
+          type: string
+          description: notice subject code. One of PERS or VEHI 
+          maxLength: 4   
         pageCount:
           type: integer
           format: int32

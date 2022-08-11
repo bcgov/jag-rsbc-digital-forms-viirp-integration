@@ -17,6 +17,18 @@ pipeline {
            }
         }
 
+        stage('Run Unit Tests'){
+            agent { label 'master' }
+            steps{
+                script{
+                    sh """
+                        cd digitalforms-api
+                        mvn test
+                    """
+                }
+            }
+        }
+
 
         stage('Build') {
             agent { label 'master' }

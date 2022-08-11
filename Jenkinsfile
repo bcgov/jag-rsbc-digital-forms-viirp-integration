@@ -23,7 +23,7 @@ pipeline {
                 script{
                     sh """
                         cd digitalforms-api
-                        mvn test
+                        ./mvnw --batch-mode test
                     """
                 }
             }

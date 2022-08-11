@@ -85,6 +85,54 @@ objects:
           name: ${NAME}-image:${VERSION}
       # triggers:
       #   - type: ConfigChange
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: api-test-buildconfig
+      labels:
+        app: ${APP}
+        component: api-test-buildconfig
+        name: api-test-buildconfig
+    spec:
+      source:
+        type: Git
+        git:
+          uri: ${SOURCE_REPOSITORY_URL}
+          ref: ${SOURCE_REPOSITORY_REF}
+        # sourceSecret:
+        #   name: ${GIT_REPO_DEPLOY_KEY}
+      completionDeadlineSeconds: 1440
+      resources:
+        limits:
+          cpu: 1
+          memory: 4Gi
+        requests:
+          cpu: 1
+          memory: 4Gi
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ${KIND_OF_IMAGE}
+            namespace: ${SOURCE_IMAGE_NAMESPACE}
+            name: ${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}
+          env:
+            - name: MAVEN_ARGS
+              value: test -e -Popenshift -Dcom.redhat.xpaas.repo.jbossorg -Dfabric8.skip=true
+            - name: MAVEN_ARGS_APPEND
+              value: --also-make
+            - name: ARTIFACT_DIR
+              value: target/
+            # - name: MAVEN_S2I_ARTIFACT_DIRS
+            #   value: digitalforms-api/target/
+            # - name: MAVEN_LOCAL_REPO
+            #   value: /home/jboss/.m2/repository
+      output:
+        to:
+          kind: ImageStreamTag
+          name: api-test-image:${VERSION}
+      # triggers:
+      #   - type: ConfigChange
 parameters:
   - name: APP
     displayName: App

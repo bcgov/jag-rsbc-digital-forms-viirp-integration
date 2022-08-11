@@ -17,17 +17,17 @@ pipeline {
            }
         }
 
-        stage('Run Unit Tests'){
-            agent { label 'master' }
-            steps{
-                script{
-                    sh """
-                        cd digitalforms-api
-                        mvn --batch-mode test
-                    """
-                }
-            }
-        }
+        // stage('Run Unit Tests'){
+        //     agent { label 'master' }
+        //     steps{
+        //         script{
+        //             sh """
+        //                 cd digitalforms-api
+        //                 mvn --batch-mode test
+        //             """
+        //         }
+        //     }
+        // }
 
 
         stage('Build') {

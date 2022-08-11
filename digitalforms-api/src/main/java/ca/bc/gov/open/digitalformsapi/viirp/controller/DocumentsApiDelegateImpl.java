@@ -87,17 +87,12 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 						storeVIPSDocument.getPageCount());				//optional
 			
 			// Depending on the result code from the VIPS store document call, set the response entity accordingly. 
-			if (_resp.getStatusCode().equals(String.valueOf(DigitalFormsConstants.VIPSWS_SUCCESS_CD))) {
+			if (_resp.getStatusCode().equals(DigitalFormsConstants.VIPSORDS_SUCCESS_CD)) {
 				resp.setDocumentId(_resp.getDocumentId());
-			} else if (_resp.getStatusCode().equals(String.valueOf(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD))) {
+			} else if (_resp.getStatusCode().equals(DigitalFormsConstants.VIPSORDS_GENERAL_FAILURE_CD)) {
 				logger.error("VIPS Error: " + _resp.getStatusMessage());
 				throw new DigitalFormsException("Failed to store document document to VIPS WS. Type Code : " + storeVIPSDocument.getTypeCode() + 
 						". Mime sub type : " + storeVIPSDocument.getMimeSubType() + 
-						". Mime type : " + storeVIPSDocument.getMimeType());
-			} else if (_resp.getStatusCode().equals(String.valueOf(DigitalFormsConstants.VIPSWS_JAVA_EX))) {
-				logger.error("VIPS Error: " + _resp.getStatusMessage());
-				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to store document to VIPS WS. Type Code : " + storeVIPSDocument.getTypeCode() + 
-						". Mime sub type : " + storeVIPSDocument.getMimeSubType() +
 						". Mime type : " + storeVIPSDocument.getMimeType());
 			}
 			

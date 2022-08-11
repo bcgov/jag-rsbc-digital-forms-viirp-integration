@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,8 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import ca.bc.gov.open.digitalformsapi.viirp.UnitTestUtilities;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
@@ -169,7 +167,7 @@ public class ImpoundmentsApiControllerTests {
         ResponseEntity<CreateImpoundmentServiceResponse> controllerResponse = controller.impoundmentsCorrelationIdPost(correlationId, createImpoundment);
         CreateImpoundmentServiceResponse result = controllerResponse.getBody();
         Mockito.verify(service).createImpoundment(correlationId, createImpoundment);
-        Assert.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getRespMsg());
+        Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getRespMsg());
     }
     
     
@@ -222,7 +220,7 @@ public class ImpoundmentsApiControllerTests {
 	    
 	    mvc.perform( MockMvcRequestBuilders
 	    	      .post("/impoundments/{correlationId}", correlationId)
-	    	      .content(asJsonString(createImpoundment))
+	    	      .content(UnitTestUtilities.asJsonString(createImpoundment))
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
 	    	      .andExpect(status().isInternalServerError());
@@ -250,7 +248,7 @@ public class ImpoundmentsApiControllerTests {
         // Create successful search notice number call with impoundmentId and validate response 
         ResponseEntity<GetImpoundmentServiceResponse> controllerResponse = controller.impoundmentsNoticeNoCorrelationIdGet(noticeNo, correlationId);
         GetImpoundmentServiceResponse result = controllerResponse.getBody();
-        Assert.assertEquals("BC", result.getResult().getDlJurisdictionCd());
+        Assertions.assertEquals("BC", result.getResult().getDlJurisdictionCd());
         
     }
     
@@ -429,14 +427,14 @@ public class ImpoundmentsApiControllerTests {
     
 		   mvc.perform( MockMvcRequestBuilders
 		  	      .post("/impoundments")
-		  	      .content(asJsonString(createImpoundment))
+		  	      .content(UnitTestUtilities.asJsonString(createImpoundment))
 		  	      .contentType(MediaType.APPLICATION_JSON)
 		  	      .accept(MediaType.APPLICATION_JSON))
 		  	      .andExpect(status().isNotFound());
     
 		   mvc.perform( MockMvcRequestBuilders
 			  	      .post("/impoundments/123456")
-			  	      .content(asJsonString(createImpoundment))
+			  	      .content(UnitTestUtilities.asJsonString(createImpoundment))
 			  	      .contentType(MediaType.APPLICATION_JSON)
 			  	      .accept(MediaType.APPLICATION_JSON))
 			  	      .andExpect(status().isInternalServerError());
@@ -454,16 +452,4 @@ public class ImpoundmentsApiControllerTests {
     
     }
     
-    /**
-     * Utility method to convert JSOB object to string. 
-     * @param obj
-     * @return
-     */
-    private static String asJsonString(final Object obj) {
-        try {
-            return new ObjectMapper().writeValueAsString(obj);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

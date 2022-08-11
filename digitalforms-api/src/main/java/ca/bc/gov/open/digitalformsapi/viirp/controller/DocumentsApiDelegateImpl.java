@@ -14,7 +14,9 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServi
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.StoreVIPSDocument;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
+import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.jag.ordsvipsclient.api.DocumentApi;
 import ca.bc.gov.open.jag.ordsvipsclient.api.handler.ApiException;

@@ -37,6 +37,12 @@ objects:
       name: ${NAME}-image
       labels:
         shared: "true"
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: api-test-image
+      labels:
+        shared: "true"
   - kind: BuildConfig
     apiVersion: v1
     metadata:

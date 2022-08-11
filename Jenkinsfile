@@ -18,7 +18,7 @@ pipeline {
         }
 
         stage('Run Unit Tests'){
-            agent { label 'maven35' }
+            agent { label 'master' }
             steps{
                 script{
                     sh """

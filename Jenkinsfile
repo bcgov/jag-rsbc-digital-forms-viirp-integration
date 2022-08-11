@@ -18,12 +18,12 @@ pipeline {
         }
 
         stage('Run Unit Tests'){
-            agent { label 'master' }
+            agent { label 'maven35' }
             steps{
                 script{
                     sh """
                         cd digitalforms-api
-                        sudo ./mvnw --batch-mode test
+                        ./mvnw --batch-mode test
                     """
                 }
             }

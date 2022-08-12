@@ -26,6 +26,10 @@ public final class DigitalFormsConstants {
 	public static final int VIPSWS_GENERAL_FAILURE_CD = 1;
 	public static final int VIPSWS_JAVA_EX = 99; // low level JAVA issue rather than a DB problem.
 	
+	// VIPS ORDS Response code values
+	public static final String VIPSORDS_SUCCESS_CD = "0";
+	public static final String VIPSORDS_GENERAL_FAILURE_CD = "1";
+	
 	//Digital Forms message constants
 	public static final String DIGITALFORMS_SUCCESS_MSG = "success";
 	

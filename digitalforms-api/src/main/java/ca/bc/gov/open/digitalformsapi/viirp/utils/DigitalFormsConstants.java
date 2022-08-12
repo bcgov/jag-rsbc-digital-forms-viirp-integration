@@ -42,6 +42,7 @@ public final class DigitalFormsConstants {
 	public static final String UNIT_TEST_CORRELATION_ID = "1234567";
 	public static final String UNIT_TEST_NOTICE_NUMBER = "22222222";
 	public static final Long UNIT_TEST_IMPOUNDMENT_ID = 1234L;
+	public static final Long UNIT_TEST_DOCUMENT_ID = 1234L;
 	
 	
 	

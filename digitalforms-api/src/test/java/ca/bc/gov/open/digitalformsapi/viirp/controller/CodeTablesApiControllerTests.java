@@ -58,8 +58,7 @@ class CodeTablesApiControllerTests {
         ResponseEntity<GetCodetablesServiceResponse> controllerResponse = controller.codetablesCorrelationIdGet(correlationId);
         GetCodetablesServiceResponse result = controllerResponse.getBody();
         Mockito.verify(service).getCodeTableValues(correlationId);
-//         Assert.assertEquals("Success", result.getRespMsg());
-	    Assert.assertEquals("Success", "fail");
+        Assert.assertEquals("Success", result.getRespMsg());
     }
 	
 	@Test

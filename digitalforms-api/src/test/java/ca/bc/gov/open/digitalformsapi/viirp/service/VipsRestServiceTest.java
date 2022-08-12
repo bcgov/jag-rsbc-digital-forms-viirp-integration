@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
+import java.util.Base64;
 import java.util.function.Consumer;
 
 import org.junit.After;
@@ -20,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsConfigurationObj;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import reactor.core.publisher.Mono;
 
@@ -74,5 +76,36 @@ public class VipsRestServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getRespMsg()).isEqualTo("Success");
         assertThat(result.getConfiguration()).usingRecursiveComparison().isEqualTo(configuration);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Test
+    public void getDocumentAsBase64() {
+		
+		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	Long documentId = DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID;
+		
+    	VipsGetDocumentByIdResponse vipsDocumentResponse = new VipsGetDocumentByIdResponse();
+		
+    	Base64.Encoder enc = Base64.getEncoder();
+		String testStr = "77+9x6s=";
+		// encode data using BASE64
+		String encodedBase64 = enc.encodeToString(testStr.getBytes());
+		vipsDocumentResponse.setDocument(encodedBase64);
+		
+		when(this.webClient.get()).thenReturn(this.requestHeadersUriMock);
+        when(this.requestHeadersUriMock.uri("/documents/" + documentId + "?b64=true&url=false")).thenReturn(this.requestHeadersMock);
+        when(this.requestHeadersMock.headers(any(Consumer.class))).thenReturn(this.requestHeadersMock);
+        when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
+        when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
+        when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
+        when(this.requestHeadersMock.retrieve()).thenReturn(this.responseMock);
+        when(this.responseMock.bodyToMono(String.class)).thenReturn(Mono.just(encodedBase64));
+        
+        var result = service.getDocumentAsBase64(correlationId, documentId);
+        
+        assertThat(result).isNotNull();
+        assertThat(result.getDocument()).isEqualTo(encodedBase64);
+        assertThat(result).usingRecursiveComparison().isEqualTo(vipsDocumentResponse);
 	}
 }

@@ -1,5 +1,6 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import ca.bc.gov.open.digitalformsapi.viirp.api.DocumentsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.StoreVIPSDocument;
@@ -115,6 +117,14 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		logger.info("Heard a call to the endpoint 'documentsDocumentIdCorrelationIdGet' with documentId " + documentId);
 		
 		VipsGetDocumentByIdResponse documentResponse = digitalformsApiService.getDocumentAsBase64(correlationId, documentId);
+		
+		if (documentResponse != null && documentResponse.getDocument() == null || documentResponse.getDocument().isEmpty()) {
+			logger.error("VIPS Error: Could not return a document base64 for the provided documentID: " + documentId);
+			throw new ResourceNotFoundException("Document Not Found");
+		} else if (!Base64.isBase64(documentResponse.getDocument())) {
+			logger.error("VIPS Error: Invalid base64 format returned for the provided documentID: " + documentId);
+			throw new DigitalFormsException("Invalid base64 string");
+		}
 		
 		return new ResponseEntity<>(documentResponse, HttpStatus.OK);
 	}

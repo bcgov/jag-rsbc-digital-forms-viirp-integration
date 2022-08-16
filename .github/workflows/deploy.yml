@@ -1,0 +1,30 @@
+# Deploy an artifact onto Dev, Test, or Prod
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      source_image_tag:
+        required: true
+        description: What is the tag that is going to be promoted?
+        type: string
+      environment:
+        required: true
+        description: What is the targeted environment?
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+jobs:
+  promote_image:
+    uses: SierraSystems/reusable-workflows/.github/workflows/openshift-tag-image.yml@main
+    with:
+      image_stream_name: "vips-api-image"
+      source_image_tag: "${{ github.event.inputs.source_image_tag }}"
+      image_tags: "${{ github.event.inputs.environment }}"
+    secrets:
+      openshift_namespace: "${{ secrets.OPENSHIFT_LICENSE_PLATE_SILVER }}-tools"
+      openshift_server_url: "${{ secrets.OPENSHIFT_SERVER_URL_SILVER }}"
+      openshift_token: "${{ secrets.OPENSHIFT_SA_PIPELINE_TOKEN_SILVER }}"
+      openshift_external_repository: "${{ secrets.OPENSHIFT_EXTERNAL_REPOSITORY_SILVER }}"

@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - release/*
   workflow_dispatch: {}
 
 jobs:
@@ -31,9 +32,9 @@ jobs:
           namespace: "${{ secrets.OPENSHIFT_LICENSE_PLATE_SILVER }}-tools"
 
       - name: Trigger Build Config
-        run: >-
-          oc start-build ${{ env.build_config_name }}
-            --commit ${{ needs.commit-version.outputs.github-release-version }}
+        run: |
+          oc start-build ${{ env.build_config_name }} \
+            --commit ${{ needs.commit-version.outputs.github-release-version }} \
             --wait
 
       - name: Retag images

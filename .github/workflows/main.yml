@@ -51,7 +51,7 @@ jobs:
       - build-image
     uses: SierraSystems/reusable-workflows/.github/workflows/trivy-scan-openshift-image.yml@main
     with:
-      imagestream_name: "vips-api"
+      imagestream_name: "vips-api-image"
       image_tag: "${{ needs.commit-version.outputs.github-release-version }}"
     secrets:
       openshift_namespace: "${{ secrets.OPENSHIFT_LICENSE_PLATE_SILVER }}-tools"

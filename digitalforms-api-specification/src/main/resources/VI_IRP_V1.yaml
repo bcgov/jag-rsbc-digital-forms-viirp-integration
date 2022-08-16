@@ -448,6 +448,9 @@ components:
           $ref: '#/components/schemas/VipsImpoundObj'
     VipsNoticeObj:
       type: object
+      required:
+        - noticeNo 
+        - noticeTypeCd
       properties:
         noticeNo:
           type: string

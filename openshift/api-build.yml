@@ -34,13 +34,13 @@ objects:
   - kind: ImageStream
     apiVersion: v1
     metadata:
-      name: ${NAME}-image
+      name: ${NAME}
       labels:
         shared: "true"
   - kind: BuildConfig
     apiVersion: v1
     metadata:
-      name: ${NAME}${BUILD_CONFIG_SUFFIX}
+      name: ${NAME}
       labels:
         app: ${APP}
         component: ${NAME}${BUILD_CONFIG_SUFFIX}
@@ -70,7 +70,7 @@ objects:
             name: ${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}
           env:
             - name: MAVEN_ARGS
-              value: -e -Popenshift -Dcom.redhat.xpaas.repo.jbossorg -Dfabric8.skip=true
+              value: -e -Popenshift -Dcom.redhat.xpaas.repo.jbossorg -Dfabric8.skip=true -DskipTests
             - name: MAVEN_ARGS_APPEND
               value: --also-make
             - name: ARTIFACT_DIR

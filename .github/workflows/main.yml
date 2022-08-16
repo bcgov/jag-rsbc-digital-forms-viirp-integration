@@ -1,0 +1,58 @@
+name: Main - Build Image and Push to Openshift Registry for Dev Deployment
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  commit-version:
+    uses: SierraSystems/reusable-workflows/.github/workflows/get-github-commitversion.yml@main
+    with:
+      working_directory: .
+
+  build-image:
+    runs-on: ubuntu-latest
+    needs:
+      - commit-version
+    env:
+      build_config_name: "vips-api-build"
+      image_stream_name: "vips-api-image"
+      image_tags: "dev,${{ needs.commit-version.outputs.github-release-version }}"
+
+    steps:
+      - name: Authenticate and set context
+        uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER_URL_SILVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_SA_PIPELINE_TOKEN_SILVER }}
+          namespace: "${{ secrets.OPENSHIFT_LICENSE_PLATE_SILVER }}-tools"
+
+      - name: Trigger Build Config
+        run: oc start-build ${{ env.build_config_name }} --wait
+
+      - name: Retag images
+        run: |
+          for tag in $( echo ${{ env.image_tags }} | sed 's/,/ /g' ); do
+            oc tag \
+              ${{ secrets.OPENSHIFT_EXTERNAL_REPOSITORY_SILVER }}/${{ secrets.OPENSHIFT_LICENSE_PLATE_SILVER }}-tools/${{ env.image_stream_name }}:latest \
+              ${{ env.image_stream_name }}:${tag}
+          done
+
+  trivy:
+    needs:
+      - commit-version
+      - build-image
+    uses: SierraSystems/reusable-workflows/.github/workflows/trivy-scan-openshift-image.yml@main
+    with:
+      imagestream_name: "vips-api"
+      image_tag: "${{ needs.commit-version.outputs.github-release-version }}"
+    secrets:
+      openshift_namespace: "${{ secrets.OPENSHIFT_LICENSE_PLATE_SILVER }}-tools"
+      openshift_server_url: "${{ secrets.OPENSHIFT_SERVER_URL_SILVER }}"
+      openshift_token: "${{ secrets.OPENSHIFT_SA_PIPELINE_TOKEN_SILVER }}"
+      openshift_external_repository: "${{ secrets.OPENSHIFT_EXTERNAL_REPOSITORY_SILVER }}"
+      openshift_sa_name: "${{ secrets.OPENSHIFT_SA_PIPELINE_NAME_SILVER }}"
+      openshift_sa_password: "${{ secrets.OPENSHIFT_SA_PIPELINE_TOKEN_SILVER }}"

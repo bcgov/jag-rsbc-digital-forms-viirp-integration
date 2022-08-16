@@ -167,6 +167,8 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         404:
           $ref: '#/components/responses/404NotFound'
+        500:
+          $ref: '#/components/responses/500ServerError'  
   /documents/{documentId}/{correlationId}:
     get:
       security:
@@ -269,10 +271,10 @@ paths:
                 $ref: '#/components/schemas/AssociateDocumentToNoticeServiceResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
         404:
-          $ref: '#/components/responses/404NotFound'        
+          $ref: '#/components/responses/404NotFound' 
+        500:
+          $ref: '#/components/responses/500ServerError'         
   /dfpayloads/{noticeNo}/{correlationId}:
     get:
       tags:
@@ -454,10 +456,7 @@ components:
     AssociateDocumentToNoticeServiceResponse:
       type: object
       properties:
-        respCd:
-          type: integer
-          format: int32
-        respMsg:
+        status_message:
           type: string      
     VipsAddressObj:
       type: object

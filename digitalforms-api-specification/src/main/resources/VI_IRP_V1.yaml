@@ -102,6 +102,8 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         403:
           $ref: '#/components/responses/403Forbidden'
+        500:
+          $ref: '#/components/responses/500ServerError'  
   /prohibitions/{noticeNo}/{correlationId}:
     get:
       tags:
@@ -934,14 +936,10 @@ components:
     CreateProhibition:
       type: object
       required:
-        - dfJsonPayload
         - vipsDocumentIdArray
         - vipsProhibitionCreate
         - vipsRegistrationCreate
       properties:
-        dfJsonPayload:
-          type: string
-          description: DF JSON prohibiton form payload for storage in DF Schema
         vipsDocumentIdArray:
           type: array
           items:
@@ -1043,10 +1041,8 @@ components:
     CreateProhibitionServiceResponse:
       type: object
       properties:
-        vipsProhibitionId:
-          type: integer
-          format: int64
-          description: VIPS schema Id. 
+        respMsg:
+          type: string
     vipsDocumentResponse:
       type: object
       properties:

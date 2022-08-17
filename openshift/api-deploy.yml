@@ -115,6 +115,26 @@ objects:
   status:
     loadBalancer: {}
 - apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: ${NAME}-${COMPONENT}${SUFFIX}-${SVCSUFFIX}-${API_VERSION}
+    name: ${NAME}-${COMPONENT}${SUFFIX}-${SVCSUFFIX}-${API_VERSION}
+    namespace: ${NAMESPACE}
+  spec:
+    ports:
+    - name: 80-tcp
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+  status:
+    loadBalancer: {}
+- apiVersion: v1
   kind: Route
   metadata:
     creationTimestamp: null

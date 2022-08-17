@@ -275,7 +275,7 @@ public class DocumentsApiControllerTests {
     	// Mock underlying VIPS REST get document request that returns bad data due to internal error
         Mockito.when(service.createDocumentAsociationPost(documentId, goodVipsNoticeObj)).thenReturn(failNotFoundDocumentAssociateResponse); 
         
-        // Ensure DigitalFormsException type is thrown in this case
+        // Ensure ResourceNotFoundException type is thrown in this case
     	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
     			controller.documentsAssociationNoticeDocumentIdCorrelationIdPost(correlationId, documentId, goodVipsNoticeObj);
     	});

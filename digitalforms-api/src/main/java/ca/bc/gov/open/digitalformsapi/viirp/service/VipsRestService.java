@@ -79,4 +79,14 @@ public interface VipsRestService {
 	 */
 	public AssociateDocumentToNoticeServiceResponse createDocumentAsociationPost(Long documentId, VipsNoticeObj body);
 	
+	/**
+	 * 
+	 * Returns a {@link CreateProhibitionServiceResponse} by proxying the VIPS WS call to the POST 'prohibition' endpoint
+	 * 
+	 * @param correlationId
+	 * @param prohibition
+	 * @return
+	 */
+	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse createProhibition(String correlationId, ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition impoundment);
+	
 }

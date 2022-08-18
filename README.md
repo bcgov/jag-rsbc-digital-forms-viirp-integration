@@ -1,4 +1,4 @@
-## Digital Forms VI IRP VIPS Integration [![Lifecycle:Experimental](https://img.shields.io/badge/Lifecycle-Experimental-339999)](<Redirect-URL>)  [![CI Checks for API](https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration/actions/workflows/build_check.yml/badge.svg)](https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration/actions/workflows/build_check.yml)
+## Digital Forms VI IRP VIPS Integration [![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)](<Redirect-URL>) [![CI Checks for API](https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration/actions/workflows/build_check.yml/badge.svg)](https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration/actions/workflows/build_check.yml)
 
 This is the root level of this project.
 

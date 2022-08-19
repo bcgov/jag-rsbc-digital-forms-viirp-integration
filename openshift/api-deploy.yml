@@ -64,11 +64,11 @@ objects:
           name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
           resources:
             limits:
-              cpu: 80m
-              memory: 96Mi
+              cpu: 400m
+              memory: 500Mi
             requests:
-              cpu: 60m
-              memory: 64Mi
+              cpu: 200m
+              memory: 200Mi
           envFrom:
           - secretRef:
               name: ${SECRET1_NAME}
@@ -83,7 +83,8 @@ objects:
   metadata:
     creationTimestamp: null
     namespace: ${NAMESPACE}
-    labels: null
+    labels:
+      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
     name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
   spec:
     maxReplicas: 2
@@ -99,6 +100,8 @@ objects:
     annotations:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
+    labels:
+      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
     name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
     namespace: ${NAMESPACE}
   spec:
@@ -112,9 +115,31 @@ objects:
   status:
     loadBalancer: {}
 - apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: ${NAME}-${COMPONENT}${SUFFIX}-${SVCSUFFIX}-${API_VERSION}
+    name: ${NAME}-${COMPONENT}${SUFFIX}-${SVCSUFFIX}-${API_VERSION}
+    namespace: ${NAMESPACE}
+  spec:
+    ports:
+    - name: 80-tcp
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+  status:
+    loadBalancer: {}
+- apiVersion: v1
   kind: Route
   metadata:
     creationTimestamp: null
+    labels:
+      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
     name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
     namespace: ${NAMESPACE}
   spec:

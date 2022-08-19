@@ -3,8 +3,6 @@ name: Main - Build Image and Push to Openshift Registry for Dev Deployment
 on:
   push:
     branches:
-      - master
-      - main
       - release/*
   workflow_dispatch: {}
 

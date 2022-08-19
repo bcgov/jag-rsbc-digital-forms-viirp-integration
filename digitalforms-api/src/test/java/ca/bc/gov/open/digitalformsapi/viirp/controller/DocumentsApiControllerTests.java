@@ -30,6 +30,8 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.StoreVIPSDocument;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
+import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.jag.ordsvipsclient.api.DocumentApi;
@@ -61,6 +63,18 @@ public class DocumentsApiControllerTests {
     private StoreVIPSDocument badStoreVIPSDocument;
     
     private VipsGetDocumentByIdResponse vipsDocumentResponse;
+    
+    private VipsNoticeObj goodVipsNoticeObj; 
+    
+    private VipsNoticeObj missingNoticeNoVipsNoticeObj;
+    
+    private VipsNoticeObj missingNoticeTypeCdVipsNoticeObj;
+    
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse goodDocumentAssociateResponse; 
+    
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse failNotFoundDocumentAssociateResponse; 
+    
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse vipsWSGenFailureDocumentAssociateResponse; 
     
     @Mock
     ConfigProperties properties;
@@ -96,6 +110,29 @@ public class DocumentsApiControllerTests {
 		
 		// Mock VIPS WS GET document response. 
 		vipsDocumentResponse = new VipsGetDocumentByIdResponse();
+		
+		// Mock VIPS WS POST Document Notice Number Association req and response objects. 
+		goodVipsNoticeObj = new VipsNoticeObj();
+		goodVipsNoticeObj.setNoticeNo("22909091");
+		goodVipsNoticeObj.setNoticeTypeCd("IMP");
+		
+		missingNoticeNoVipsNoticeObj = new VipsNoticeObj();
+		missingNoticeNoVipsNoticeObj.setNoticeTypeCd("IMP");
+		
+		missingNoticeTypeCdVipsNoticeObj = new VipsNoticeObj();
+		missingNoticeTypeCdVipsNoticeObj.setNoticeNo("2290102");
+		
+		goodDocumentAssociateResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse();
+		goodDocumentAssociateResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+		
+		failNotFoundDocumentAssociateResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse();
+		failNotFoundDocumentAssociateResponse.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
+		failNotFoundDocumentAssociateResponse.setRespMsg(DigitalFormsConstants.VIPS_NOTICE_NOT_FOUND);
+		
+		vipsWSGenFailureDocumentAssociateResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse();
+		vipsWSGenFailureDocumentAssociateResponse.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
+		vipsWSGenFailureDocumentAssociateResponse.setRespMsg("something bad happened");
+		
 	}
     
     @DisplayName("POST, Success - Store Document")
@@ -211,4 +248,79 @@ public class DocumentsApiControllerTests {
     			controller.documentsDocumentIdCorrelationIdGet(correlationId, documentId);
     	});
     }
+    
+    @DisplayName("POST, Create Document Id to Notice Number Association success - Documents API Delegate")  
+    @Test
+	public void documentsAssociationNoticeDocumentIdPostSuccess() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	Long documentId = 606L;
+    		
+    	// Mock underlying VIPS REST get document request that returns bad data due to internal error
+        Mockito.when(service.createDocumentAsociationPost(documentId, goodVipsNoticeObj)).thenReturn(goodDocumentAssociateResponse); 
+        
+        // Create successful call and validate response 
+        ResponseEntity<AssociateDocumentToNoticeServiceResponse> controllerResponse = controller.documentsAssociationNoticeDocumentIdCorrelationIdPost(correlationId, documentId, goodVipsNoticeObj);
+        AssociateDocumentToNoticeServiceResponse result = controllerResponse.getBody();
+        Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
+    }
+    
+    @DisplayName("POST, Create Document Id to Notice Number Association failure, Notice No not found - Documents API Delegate")  
+    @Test
+	public void documentsAssociationNoticeDocumentIdPostFailureNotFound() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	Long documentId = 606L;
+    		
+    	// Mock underlying VIPS REST get document request that returns bad data due to internal error
+        Mockito.when(service.createDocumentAsociationPost(documentId, goodVipsNoticeObj)).thenReturn(failNotFoundDocumentAssociateResponse); 
+        
+        // Ensure ResourceNotFoundException type is thrown in this case
+    	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+    			controller.documentsAssociationNoticeDocumentIdCorrelationIdPost(correlationId, documentId, goodVipsNoticeObj);
+    	});
+    }
+    
+    @DisplayName("POST, Create Document Id to Notice Number Association failure, VIPS WS general failure - Documents API Delegate")  
+    @Test
+	public void documentsAssociationNoticeDocumentIdPostVIPSWSGenFailure() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	Long documentId = 606L;
+    		
+    	// Mock underlying VIPS REST get document request that returns bad data due to internal error
+        Mockito.when(service.createDocumentAsociationPost(documentId, goodVipsNoticeObj)).thenReturn(vipsWSGenFailureDocumentAssociateResponse); 
+        
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.documentsAssociationNoticeDocumentIdCorrelationIdPost(correlationId, documentId, goodVipsNoticeObj);
+    	});
+    }
+    
+    @DisplayName("POST, Create Document Id to Notice Number Association failure, missing noticeNo - Documents API Delegate")  
+    @Test
+	public void documentsAssociationNoticeDocumentIdPostMissingNoticeNoFailure() throws Exception {
+    	
+    	 mvc.perform( MockMvcRequestBuilders
+	    	      .post("/documents/association/notice/606/{correlationId}", DigitalFormsConstants.UNIT_TEST_CORRELATION_ID)
+	    	      .content(UnitTestUtilities.asJsonString(missingNoticeNoVipsNoticeObj))
+	    	      .contentType(MediaType.APPLICATION_JSON)
+	    	      .accept(MediaType.APPLICATION_JSON))
+	    	      .andExpect(status().isInternalServerError());
+    	
+    }
+    
+    @DisplayName("POST, Create Document Id to Notice Number Association failure, missing noticeTypeCd - Documents API Delegate")  
+    @Test
+	public void documentsAssociationNoticeDocumentIdPostMissingNoticeTypeCdFailure() throws Exception {
+    	
+    	 mvc.perform( MockMvcRequestBuilders
+	    	      .post("/documents/association/notice/606/{correlationId}", DigitalFormsConstants.UNIT_TEST_CORRELATION_ID)
+	    	      .content(UnitTestUtilities.asJsonString(missingNoticeTypeCdVipsNoticeObj))
+	    	      .contentType(MediaType.APPLICATION_JSON)
+	    	      .accept(MediaType.APPLICATION_JSON))
+	    	      .andExpect(status().isInternalServerError());
+    	
+    }
+    
 }

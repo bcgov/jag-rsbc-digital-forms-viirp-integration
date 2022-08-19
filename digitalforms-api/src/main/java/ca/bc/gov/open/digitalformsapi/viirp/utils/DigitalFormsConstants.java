@@ -38,6 +38,8 @@ public final class DigitalFormsConstants {
 	public static final String ICBC_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	public static final String VIPS_DISPLAY_DATE_FORMAT = "yyyy-MM-dd";
 	
+	public static final String VIPS_NOTICE_NOT_FOUND = "Notice not found";
+	
 	//Unit test constants
 	public static final String UNIT_TEST_CORRELATION_ID = "1234567";
 	public static final String UNIT_TEST_NOTICE_NUMBER = "22222222";

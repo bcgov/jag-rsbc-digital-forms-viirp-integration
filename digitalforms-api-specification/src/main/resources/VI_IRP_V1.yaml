@@ -102,6 +102,8 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         403:
           $ref: '#/components/responses/403Forbidden'
+        500:
+          $ref: '#/components/responses/500ServerError'  
   /prohibitions/{noticeNo}/{correlationId}:
     get:
       tags:
@@ -128,10 +130,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetProhibitionServiceResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'        
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
   /documents/{correlationId}:
@@ -167,6 +169,8 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         404:
           $ref: '#/components/responses/404NotFound'
+        500:
+          $ref: '#/components/responses/500ServerError'  
   /documents/{documentId}/{correlationId}:
     get:
       security:
@@ -269,10 +273,10 @@ paths:
                 $ref: '#/components/schemas/AssociateDocumentToNoticeServiceResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
         404:
-          $ref: '#/components/responses/404NotFound'        
+          $ref: '#/components/responses/404NotFound' 
+        500:
+          $ref: '#/components/responses/500ServerError'         
   /dfpayloads/{noticeNo}/{correlationId}:
     get:
       tags:
@@ -446,6 +450,9 @@ components:
           $ref: '#/components/schemas/VipsImpoundObj'
     VipsNoticeObj:
       type: object
+      required:
+        - noticeNo 
+        - noticeTypeCd
       properties:
         noticeNo:
           type: string
@@ -454,10 +461,7 @@ components:
     AssociateDocumentToNoticeServiceResponse:
       type: object
       properties:
-        respCd:
-          type: integer
-          format: int32
-        respMsg:
+        status_message:
           type: string      
     VipsAddressObj:
       type: object
@@ -932,14 +936,10 @@ components:
     CreateProhibition:
       type: object
       required:
-        - dfJsonPayload
         - vipsDocumentIdArray
         - vipsProhibitionCreate
         - vipsRegistrationCreate
       properties:
-        dfJsonPayload:
-          type: string
-          description: DF JSON prohibiton form payload for storage in DF Schema
         vipsDocumentIdArray:
           type: array
           items:
@@ -1041,10 +1041,8 @@ components:
     CreateProhibitionServiceResponse:
       type: object
       properties:
-        vipsProhibitionId:
-          type: integer
-          format: int64
-          description: VIPS schema Id. 
+        respMsg:
+          type: string
     vipsDocumentResponse:
       type: object
       properties:

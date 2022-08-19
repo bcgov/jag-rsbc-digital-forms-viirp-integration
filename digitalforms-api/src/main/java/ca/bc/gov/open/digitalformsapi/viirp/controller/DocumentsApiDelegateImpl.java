@@ -47,6 +47,16 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
+	/**
+	 * Create Document / Notice Number Association 
+	 * 
+	 * Possible Response codes:
+	 * 	201. Created.
+	 *  404. Not Found 
+	 * 	401. Unauth (digital forms basic auth failure)
+	 * 	500. Expected from the SSG if VIPS WS is unavailable or responds with any code other than 200. 
+	 * @throws ApiException 
+	 */
 	@Override
 	public ResponseEntity<AssociateDocumentToNoticeServiceResponse> documentsAssociationNoticeDocumentIdCorrelationIdPost(
 			String correlationId,
@@ -55,7 +65,27 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		
 		logger.info("Heard a call to the endpoint 'documentsAssociationNoticeDocumentIdCorrelationIdPost' with documentId " + documentId);
 		
-		return new ResponseEntity<>(HttpStatus.OK);
+		AssociateDocumentToNoticeServiceResponse resp = new AssociateDocumentToNoticeServiceResponse();
+		
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse _resp = 
+				digitalformsApiService.createDocumentAsociationPost(
+																documentId, 
+																body);
+		
+		// Depending on the result code from the VIPS store document call, set the response entity accordingly. 
+		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+			resp.setStatusMessage(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD && 
+				_resp.getRespMsg().equalsIgnoreCase(DigitalFormsConstants.VIPS_NOTICE_NOT_FOUND)) {
+			throw new ResourceNotFoundException("Notice " + body.getNoticeNo() + " and notice type: " + 
+				body.getNoticeTypeCd() + " not found in VIPS.");
+		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
+			logger.error("VIPS Error: " + _resp.getRespMsg());
+			throw new DigitalFormsException("Failed to create document association between document id: " + documentId + 
+					" and notice number " + body.getNoticeNo() + " and notice type: " + body.getNoticeTypeCd()); 
+		}
+		
+		return new ResponseEntity<>(resp, HttpStatus.CREATED);
 	}
 	
 	/**

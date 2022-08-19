@@ -5,7 +5,9 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse;
 
 /**
  * 
@@ -57,6 +59,32 @@ public interface VipsRestService {
 	 * @return
 	 */
 	public GetImpoundmentServiceResponse getImpoundment(String correlationId, Long impoundmentId);
+
+	
+	/**
+	 * 
+	 * Returns a {@link SearchProhibitionsServiceResponse} by calling VIPS WS to search for a given Notice Number.
+	 * 
+	 * @See ProhibitionsApiDelegateImpl. 
+	 * 
+	 * @param correlationId
+	 * @param noticeNo
+	 * @return
+	 */
+	public SearchProhibitionsServiceResponse searchProhibition(String correlationId, String noticeNo);
+	
+	
+	/**
+	 * 
+	 * Returns a {@link SearchProhibitionServiceResponse} by calling VIPS WS to search for a given impoundment Id.
+	 * 
+	 * 
+	 * @param correlationId
+	 * @param ProhibitionId
+	 * @return
+	 */
+	public GetProhibitionServiceResponse getProhibition(String correlationId, Long prohibitionId);
+	
 	
 	/**
 	 * 

@@ -130,10 +130,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetProhibitionServiceResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'        
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
   /documents/{correlationId}:

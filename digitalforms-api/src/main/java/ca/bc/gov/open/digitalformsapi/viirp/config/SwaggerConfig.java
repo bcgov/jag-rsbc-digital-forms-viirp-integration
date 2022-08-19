@@ -14,7 +14,7 @@ public class SwaggerConfig {
 		return new OpenAPI().info(new Info()
 		          .title("VIPS Integration API")
 		          .description("VIPS Integration API")
-		          .version("v1.0"));
+		          .version("v1.0.1"));
 	}
 
 }

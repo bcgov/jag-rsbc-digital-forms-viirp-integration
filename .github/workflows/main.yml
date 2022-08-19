@@ -6,7 +6,6 @@ on:
       - master
       - main
       - release/*
-      - feature/github-workflows
   workflow_dispatch: {}
 
 jobs:
@@ -20,8 +19,8 @@ jobs:
     needs:
       - commit-version
     env:
-      build_config_name: "vips-api"
-      image_stream_name: "vips-api"
+      build_config_name: "digitalforms-viirp-api"
+      image_stream_name: "digitalforms-viirp-api"
       image_tags: "dev,${{ needs.commit-version.outputs.github-release-version }}"
 
     steps:
@@ -52,7 +51,7 @@ jobs:
       - build-image
     uses: SierraSystems/reusable-workflows/.github/workflows/trivy-scan-openshift-image.yml@main
     with:
-      imagestream_name: "vips-api"
+      imagestream_name: "digitalforms-viirp-api"
       image_tag: "${{ needs.commit-version.outputs.github-release-version }}"
     secrets:
       openshift_namespace: "${{ secrets.OPENSHIFT_LICENSE_PLATE_SILVER }}-tools"

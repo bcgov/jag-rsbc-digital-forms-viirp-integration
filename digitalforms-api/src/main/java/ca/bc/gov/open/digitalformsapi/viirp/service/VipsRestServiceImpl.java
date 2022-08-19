@@ -11,7 +11,9 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import reactor.core.publisher.Mono;
 
@@ -109,6 +111,50 @@ public class VipsRestServiceImpl implements VipsRestService {
                 .bodyToMono(GetImpoundmentServiceResponse.class) // body of response (VIPS WS class)
         		.block();
 	}
+	
+	
+	/**	  
+	 * searchProhibition. 
+	 * 
+	 * VIPS WS response object returned for given Notice No. 
+ 	 * 
+	 */
+	@Override
+	public SearchProhibitionsServiceResponse searchProhibition(String correlationId, String noticeNo) {
+		
+		return webClient
+                .get()
+                .uri("/cases/prohibitions/search?prohibitionNoticeNo=" + noticeNo)
+                .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
+                .retrieve()
+                .bodyToMono(SearchProhibitionsServiceResponse.class) // body of response (VIPS WS class)
+        		.block();
+	}
+
+	/**	  
+	 * getProhibition. 
+	 * 
+	 * VIPS WS response object returned given prohibition Id. 
+ 	 * 
+	 */
+	@Override
+	public GetProhibitionServiceResponse getProhibition(String correlationId, Long prohibitionId) {
+		
+		return webClient
+                .get()
+                .uri("/cases/prohibitions/" + prohibitionId)
+                .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
+                .retrieve()
+                .bodyToMono(GetProhibitionServiceResponse.class) // body of response (VIPS WS class)
+        		.block();
+	}
+	
 	
 	/**	  
 	 * getDocument. 

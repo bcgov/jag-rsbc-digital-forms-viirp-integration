@@ -233,10 +233,10 @@ paths:
                 $ref: '#/components/schemas/GetDocumentsListServiceResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
+        500:
+          $ref: '#/components/responses/500ServerError'
   /documents/association/notice/{documentId}/{correlationId}:
     post:
       tags:

@@ -4,6 +4,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
@@ -95,6 +96,17 @@ public interface VipsRestService {
 	 * @return
 	 */
 	public VipsGetDocumentByIdResponse getDocumentAsBase64(String correlationId, Long documentId);
+	
+	/**
+	 * 
+	 * Returns a {@link GetDocumentsListServiceResponse} by calling VIPS WS to retrieve documents associated with a given Impoundment or Prohibition Id.
+	 * 
+	 * @param correlationId
+	 * @param impoundmentId
+	 * @param prohibitionId
+	 * @return
+	 */
+	public GetDocumentsListServiceResponse getDocumentsMetaList(String correlationId, Long impoundmentId, Long prohibitionId);
 
 	
 	/**

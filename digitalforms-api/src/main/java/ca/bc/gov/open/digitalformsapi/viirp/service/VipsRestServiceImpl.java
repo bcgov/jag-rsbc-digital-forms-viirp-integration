@@ -10,6 +10,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
@@ -228,6 +229,36 @@ public class VipsRestServiceImpl implements VipsRestService {
                 .body(Mono.just(prohibition), ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment.class) // body of request.
                 .retrieve()
                 .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse.class) // body of response (need VIPS class)
+        		.block();
+	}
+
+	/**
+	 * 
+	 * getDocumentsMetaList.
+	 * VIPS WS response object returned given impoundment or prohibition Id. 
+	 *
+	 */
+	@Override
+	public GetDocumentsListServiceResponse getDocumentsMetaList(String correlationId, Long impoundmentId,
+			Long prohibitionId) {
+		
+		String documentsUri = "/documents?";
+		
+		if (impoundmentId != null) {
+			documentsUri = documentsUri + "impoundmentId=" + impoundmentId;
+		} else {
+			documentsUri = documentsUri + "prohibitionId=" + prohibitionId;
+		}
+		
+		return webClient
+                .get()
+                .uri(documentsUri)
+                .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
+        		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
+                .retrieve()
+                .bodyToMono(GetDocumentsListServiceResponse.class)
         		.block();
 	}
 	

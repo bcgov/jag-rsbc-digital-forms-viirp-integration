@@ -430,7 +430,7 @@ public class DocumentsApiControllerTests {
         Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Documents response returning no documents in the response list even though the
-        // search return with an impoundment Id. (Very BAD case for VIPS if this ever happened)
+        // search return with an impoundment Id.
         ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse vipsEmptyDocumentsResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
         vipsEmptyDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
         vipsEmptyDocumentsResponse.setResult(null); // no documents in the response 

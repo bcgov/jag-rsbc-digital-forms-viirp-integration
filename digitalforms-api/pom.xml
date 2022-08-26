@@ -16,6 +16,15 @@
 	<properties>
 		<java.version>11</java.version>
 	</properties>
+	
+	<repositories>		
+		<repository>
+			<id>splunk-artifactory</id>
+			<name>Splunk Releases</name>
+			<url>https://splunk.jfrog.io/artifactory/ext-releases-local/</url>
+		</repository>
+	</repositories>
+	
 	<dependencies>
 	
 		<dependency>
@@ -65,7 +74,14 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-core</artifactId>
 		</dependency>
-
+		
+		<!--  Splunk  -->
+		<dependency>
+			<groupId>com.splunk.logging</groupId>
+			<artifactId>splunk-library-javalogging</artifactId>
+			<version>1.11.5</version>
+		</dependency>
+	
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>

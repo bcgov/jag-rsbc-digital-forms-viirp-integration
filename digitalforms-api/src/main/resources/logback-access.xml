@@ -12,7 +12,7 @@
     <springProfile name="splunk">
         <appender name="http" class="com.splunk.logging.HttpEventCollectorLogbackAppender">
             <url>${SPLUNK_URL}</url>
-            <token>${SPLUNK_TOKEN}</token>
+            <token>${SPLUNK_TOKEN_VIPS}</token>
             <source>rsbc-digital-forms-vips</source>
             <sourcetype>rsbc-digital-forms-vips-logs</sourcetype>
             <middleware>HttpEventCollectorUnitTestMiddleware</middleware>

@@ -51,7 +51,3 @@ digitalforms:
     password: ${DIGITALFORMS_ORDS_PASSWORD}
     username: ${DIGITALFORMS_ORDS_USER}
    
-# configure to use splunk logback configuration
-logging:
-  config:
-    classpath:logback-splunk.xml    

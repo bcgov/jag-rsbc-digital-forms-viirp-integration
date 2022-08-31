@@ -14,17 +14,22 @@ This is the API level of this of this project.
 
 These values must be set as environmental variables if running the API locally (As run configuration in STS4 or Eclipse)
 
-| Name                            | Example Value               |
-| ------------------------------- | --------------------------- |
-| DIGITALFORMS_VIPSAPI_URL 	      | http://localhost:8080/api/  |
-| DIGITALFORMS_VIPSAPI_USERNAME   | username                    |
-| DIGITALFORMS_VIPSAPI_PASSWORD   | password                    |
-| DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |
-| DIGITALFORMS_VIPSORDS_USER      | user                        |
-| DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |
-| DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |
-| DIGITALFORMS_ORDS_USER          | user						|
-| DIGITALFORMS_ORDS_PASSWORD      | password					|
+| Name                            | Example Value               | Comments	       |
+| ------------------------------- | --------------------------- |------------------|
+| DIGITALFORMS_VIPSAPI_URL 	      | http://localhost:8080/api/  |                  |
+| DIGITALFORMS_VIPSAPI_USERNAME   | username                    |                  |
+| DIGITALFORMS_VIPSAPI_PASSWORD   | password                    |                  |
+| DIGITALFORMS_VIPSAPI_CREDS_DISPLAYNAME| display name			|				   |
+| DIGITALFORMS_VIPSAPI_CREDS_GUID |                             |                  |
+| DIGITALFORMS_VIPSAPI_CREDS_USER |                             |                  |
+| DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |                  |
+| DIGITALFORMS_VIPSORDS_USER      | user                        |                  |
+| DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |                  |
+| DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |                  |
+| DIGITALFORMS_ORDS_USER          | user						|                  |
+| DIGITALFORMS_ORDS_PASSWORD      | password					|                  |
+| SPLUNK_URL					  | url							| 'splunk' profile only|               |
+| SPLUNK_TOKEN_VIPS				  | splunk token				| 'splunk' profile only|   
 
 ### Optional Environmental Variables
 

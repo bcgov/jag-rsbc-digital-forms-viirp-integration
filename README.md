@@ -85,7 +85,7 @@ secrets when in the DEV/TEST/PROD environments.
 | `DIGITALFORMS_ORDS_PASSWORD` | ORDS password |
 | `DIGITALFORMS_ORDS_USER` | ORDS user |
 
-For a complete listing of environmental variables see the API [README] (https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration/blob/release/1.0/digitalforms-api/README.md)
+For a complete listing of environmental variables see the API, README.md (https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration/blob/release/1.0/digitalforms-api/README.md)
 
 
 

@@ -69,9 +69,8 @@ TBD
 
 ### Remote dependency 
 
-This API contains a shared dependency, jag-vips-client, used by other projects including DPS and Digital Forms, Reviews.
-Endpoint and user / password data must be set as environmental variables if running locally or set as Openshift 
-secrets when in the DEV/TEST/PROD environments.
+This API contains two shared dependencies, jag-vips-client, and jag-digitalforms-client. Both are used by other projects including DPS and Digital Forms, Reviews.
+Endpoint and user / password data must be set as environmental variables if running locally or set as Openshift secrets when in the DEV/TEST/PROD environments. 
   
 | jag-vips-client Environment Variables | Value     |
 | ---------- | --------- |

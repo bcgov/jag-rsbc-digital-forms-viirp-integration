@@ -47,6 +47,7 @@ public final class DigitalFormsConstants {
 	public static final Long UNIT_TEST_PROHIBITION_ID = 1234L;
 	public static final Long UNIT_TEST_DOCUMENT_ID = 1234L;
 	
-	
+	// rest response media type
+	public static final String JSON_CONTENT = "application/json";
 	
 }

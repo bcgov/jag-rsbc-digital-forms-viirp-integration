@@ -41,6 +41,11 @@ public class ConfigProperties {
     @Value("${vips.rest-api.credentials.displayname}")
     private String vipsRestApiCredentialsDisplayname;
     
+    @Value("${digitalforms.basic-auth.user}")
+    private String digitalFormsBasicAuthUser;
+
+	@Value("${digitalforms.basic-auth.password}")
+	private String digitalFormsBasicAuthPassword;
 
 	public String getVipsRestApiUrl() {
 		return vipsRestApiUrl;
@@ -112,6 +117,22 @@ public class ConfigProperties {
 
 	public void setVipsRestApiCredentialsDisplayname(String vipsRestApiCredentialsDisplayname) {
 		this.vipsRestApiCredentialsDisplayname = vipsRestApiCredentialsDisplayname;
+	}
+	
+    public String getDigitalFormsBasicAuthUser() {
+		return digitalFormsBasicAuthUser;
+	}
+
+	public void setDigitalFormsBasicAuthUser(String digitalFormsBasicAuthUser) {
+		this.digitalFormsBasicAuthUser = digitalFormsBasicAuthUser;
+	}
+
+	public String getDigitalFormsBasicAuthPassword() {
+		return digitalFormsBasicAuthPassword;
+	}
+
+	public void setDigitalFormsBasicAuthPassword(String digitalFormsBasicAuthPassword) {
+		this.digitalFormsBasicAuthPassword = digitalFormsBasicAuthPassword;
 	}
     
 }

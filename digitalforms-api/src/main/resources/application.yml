@@ -50,4 +50,6 @@ digitalforms:
     basePath: ${DIGITALFORMS_ORDS_BASEPATH}
     password: ${DIGITALFORMS_ORDS_PASSWORD}
     username: ${DIGITALFORMS_ORDS_USER}
-   
+  basic-auth:
+    user: ${DIGITALFORMS_BASICAUTH_USER}
+    password: ${DIGITALFORMS_BASICAUTH_PASSWORD}

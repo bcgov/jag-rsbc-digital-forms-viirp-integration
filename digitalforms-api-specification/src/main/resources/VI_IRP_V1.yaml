@@ -283,15 +283,16 @@ paths:
       - DfPayloads
       security:
         - basicAuth: []
-      summary: Retrieve a Digital Forms JSON payload (Impoundment or Prohibition). Response likely to change depending on content in DF schema. 
+      summary: Retrieve a payload from the Digital Forms staging table (Impoundment or Prohibition).  
       parameters:
       - name: noticeNo
         in: path
-        description: Digital Forms access key to Impoundment or Prohibition
+        description: Impoundment or Prohibition notice number. 
         required: true
         schema:
-          type: integer
-          format: int64
+          type: string
+          maxLength: 8
+          minLength: 8 
       - name: correlationId
         in: path
         schema:
@@ -306,10 +307,10 @@ paths:
                 $ref: '#/components/schemas/GetDFPayloadServiceResponse'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-        403:
-          $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'
+        500:
+          $ref: '#/components/responses/500ServerError'
   /codetables/{correlationId}:
     get:
       tags:
@@ -1314,14 +1315,18 @@ components:
           type: string
     GetDFPayloadServiceResponse:
       type: object
-      description: Digital Forms Schema Payload Response. Likely to change depending on requirements of RSI Processors
+      description: Digital Forms Schema Payload Response
       properties:
         noticeNo: 
           type: string
         noticeType:
           type: string
         payload:
-          type: string
+          type: object
+        active:
+          type: boolean
+        processed: 
+          type: boolean    
     VipsImpoundmentBasicsObj:
       type: object
       properties:

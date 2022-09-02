@@ -41,8 +41,9 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate{
 		resp.setPayload(json); 
 		resp.setProcessed(false);
 		
-		// TODO - Call Digital Forms ORDS client to GET a payload (once complete). 
-		// load response object dependent on the response (and possible response codes). 
+		// TODO - Call Digital Forms ORDS client to GET a payload. 
+		// Load response object dependent on the good ORDS response, or
+		// Throw appropriate exceptions. 
 		
 		return new ResponseEntity<>(resp, HttpStatus.OK);
 	}

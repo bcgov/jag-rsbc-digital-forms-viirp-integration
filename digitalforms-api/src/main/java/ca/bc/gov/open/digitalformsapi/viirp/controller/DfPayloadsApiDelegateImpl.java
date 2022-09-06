@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.DfPayloadsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
 @Service
 public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate{
@@ -36,7 +37,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate{
 		
 		// TODO - remove this when ORDS connected - for initial testing only. 
 		resp.setActive(true);
-		resp.setNoticeNo("90902601");
+		resp.setNoticeNo(DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER);
 		resp.setNoticeType("IRP");
 		resp.setPayload(json); 
 		resp.setProcessed(false);

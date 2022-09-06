@@ -31,7 +31,7 @@ public class DigitalFormsAuthenticationFailureHandler extends BasicAuthenticatio
 		
 		String errorMessage = "401 - Unauthorized entry, please authenticate";
 		JSONObject json = new JSONObject();
-		json.put("unauthorized-error", errorMessage);
+		json.put("status_message", errorMessage);
 		
 		logger.debug("API basic authentication failed");
 		response.setContentType(DigitalFormsConstants.JSON_CONTENT);

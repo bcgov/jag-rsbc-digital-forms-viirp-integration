@@ -28,6 +28,8 @@ These values must be set as environmental variables if running the API locally (
 | DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |                  |
 | DIGITALFORMS_ORDS_USER          | user						|                  |
 | DIGITALFORMS_ORDS_PASSWORD      | password					|                  |
+| DIGITALFORMS_BASICAUTH_USER          | user						|                  |
+| DIGITALFORMS_BASICAUTH_PASSWORD      | password					|                  |
 | SPLUNK_URL					  | url							| 'splunk' profile only|               |
 | SPLUNK_TOKEN_VIPS				  | splunk token				| 'splunk' profile only|   
 

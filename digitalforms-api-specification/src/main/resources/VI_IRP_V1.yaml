@@ -311,6 +311,44 @@ paths:
           $ref: '#/components/responses/404NotFound'
         500:
           $ref: '#/components/responses/500ServerError'
+    post:
+      tags:
+      - DfPayloads
+      security:
+        - basicAuth: []
+      summary: Create a new payload in the Digital Forms staging table (Impoundment or Prohibition).
+      parameters:
+        - in: path
+          name: correlationId
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: noticeNo
+          description: Impoundment or Prohibition notice number. 
+          required: true
+          schema:
+            type: string
+            maxLength: 8
+            minLength: 8   
+      requestBody:
+        description: body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostDFPayloadServiceRequest'
+        required: true
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'            
   /codetables/{correlationId}:
     get:
       tags:
@@ -1326,7 +1364,26 @@ components:
         active:
           type: boolean
         processed: 
-          type: boolean    
+          type: boolean
+    PostDFPayloadServiceRequest:
+      type: object
+      description: Digital Forms Schema Payload Request
+      properties:
+        noticeNo: 
+          type: string
+        noticeTypeCd:
+          type: string
+        payload:
+          type: object
+        activeYN:
+          type: boolean
+        processedYN: 
+          type: boolean
+    PostDFPayloadServiceResponse:
+      type: object
+      properties:
+        status_message:
+          type: string                        
     VipsImpoundmentBasicsObj:
       type: object
       properties:

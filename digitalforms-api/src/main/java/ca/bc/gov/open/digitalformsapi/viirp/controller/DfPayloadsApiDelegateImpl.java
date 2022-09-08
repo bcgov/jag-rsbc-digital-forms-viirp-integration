@@ -15,6 +15,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.api.DfPayloadsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.PutDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
 @Service
@@ -73,7 +74,31 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
 		resp.setStatusMessage("success");
 
-		return new ResponseEntity<>(resp, HttpStatus.NOT_IMPLEMENTED);
+		return new ResponseEntity<>(resp, HttpStatus.OK);
+
+	}
+	
+	@Override
+	public ResponseEntity<PostDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdPut(String correlationId,
+			String noticeNo, PutDFPayloadServiceRequest putDFPayloadServiceRequest) {
+		
+		logger.info("Heard a call to the endpoint 'dfpayloadsNoticeNoCorrelationIdPut' with noticeNo " + noticeNo);
+		
+		@SuppressWarnings("rawtypes")
+		LinkedHashMap payload = (LinkedHashMap) putDFPayloadServiceRequest.getPayload();
+		
+		JSONObject json = new JSONObject(payload);
+		
+		logger.info("Payload is " + json.toJSONString());
+		
+		// TODO - need to pass the params to the ORDS call to update notice no data. 
+		// TODO - need to determine the datatype required to update the payload as clob.
+		// TODO - need to set response type (or exception) based on ORDS response. 
+
+		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
+		resp.setStatusMessage("success");
+		
+		return new ResponseEntity<>(resp, HttpStatus.OK);
 
 	}
 }

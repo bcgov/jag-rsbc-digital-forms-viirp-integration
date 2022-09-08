@@ -1368,6 +1368,12 @@ components:
     PostDFPayloadServiceRequest:
       type: object
       description: Digital Forms Schema Payload Request
+      required:
+        - noticeNo
+        - noticeTypeCd
+        - payload
+        - activeYN
+        - processedYN
       properties:
         noticeNo: 
           type: string

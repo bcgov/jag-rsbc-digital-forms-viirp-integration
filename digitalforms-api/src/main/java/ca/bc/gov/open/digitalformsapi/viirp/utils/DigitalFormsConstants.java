@@ -32,6 +32,7 @@ public final class DigitalFormsConstants {
 	
 	//Digital Forms message constants
 	public static final String DIGITALFORMS_SUCCESS_MSG = "success";
+	public static final String DIGITALFORMS_VALIDATION_FAILURE_SUB_MSG = "Validation failed"; 
 	
 	//VIPS WS Constants
 	public static final String ICBC_DATE_FORMAT = "yyyy-MM-dd";
@@ -50,5 +51,18 @@ public final class DigitalFormsConstants {
 	
 	// rest response media type
 	public static final String JSON_CONTENT = "application/json";
+
+	public static final String UNIT_TEST_NOTICE_PAYLOAD = "{\r\n"
+			+ "  \"noticeNo\": \"21900603\",\r\n"
+			+ "  \"noticeTypeCd\": \"IRP\",\r\n"
+			+ "  \"payload\": {\r\n"
+			+ "        \"car\": \"Buick\",\r\n"
+			+ "        \"name\": \"John\",\r\n"
+			+ "        \"noticeType\": \"IRP\",\r\n"
+			+ "        \"age\": 30\r\n"
+			+ "   },\r\n"
+			+ "  \"activeYN\": true,\r\n"
+			+ "  \"processedYN\": true\r\n"
+			+ "}";
 	
 }

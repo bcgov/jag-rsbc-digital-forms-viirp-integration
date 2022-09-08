@@ -63,7 +63,7 @@ public class DFPayloadApiTests {
 		badPOSTRequest.setNoticeNo(null);
 		badPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 		
-		badPOSTRequest.setPayload(null); // this is a required field. 
+		badPOSTRequest.setPayload(null); // this is a required field. Leaving it null should result in a 500 and validation error msg. 
 
 	}
 

@@ -74,7 +74,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
 		resp.setStatusMessage("success");
 
-		return new ResponseEntity<>(resp, HttpStatus.NOT_IMPLEMENTED);
+		return new ResponseEntity<>(resp, HttpStatus.OK);
 
 	}
 	
@@ -98,7 +98,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
 		resp.setStatusMessage("success");
 		
-		return new ResponseEntity<>(resp, HttpStatus.NOT_IMPLEMENTED);
+		return new ResponseEntity<>(resp, HttpStatus.OK);
 
 	}
 }

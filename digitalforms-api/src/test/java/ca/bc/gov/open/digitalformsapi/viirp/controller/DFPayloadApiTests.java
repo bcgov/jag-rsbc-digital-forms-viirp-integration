@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.PutDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -25,16 +26,14 @@ import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 @AutoConfigureMockMvc(addFilters = false)
 public class DFPayloadApiTests {
 
-	//@Autowired
-	//private MockMvc mvc;
+	// @Autowired
+	// private MockMvc mvc;
 
 	@InjectMocks
 	private DfPayloadsApiDelegateImpl controller;
 
-	// Mock private ORDS type to fetch the payload with.
-	// mock it with good and bad response types.
-
 	private PostDFPayloadServiceRequest goodPOSTRequest;
+	private PutDFPayloadServiceRequest goodPUTRequest;
 	private PostDFPayloadServiceRequest badPOSTRequest;
 
 	@BeforeEach
@@ -54,16 +53,28 @@ public class DFPayloadApiTests {
 		gPayload.put("name", "John");
 		gPayload.put("noticeType", "IRP");
 		gPayload.put("age", "30");
-		
+
 		goodPOSTRequest.setPayload(gPayload);
+		
+		goodPUTRequest = new PutDFPayloadServiceRequest();
+		goodPUTRequest.setActiveYN(true);
+		goodPUTRequest.setProcessedYN(false);
+
+		Map<String, String> gPPayload = new LinkedHashMap<String, String>();
+		gPayload.put("car", "Toyota");
+		gPayload.put("name", "Ted");
+		gPayload.put("noticeType", "UL");
+		gPayload.put("age", "40");
+		
+		goodPUTRequest.setPayload(gPPayload);
 
 		badPOSTRequest = new PostDFPayloadServiceRequest();
 		badPOSTRequest.setActiveYN(true);
 		badPOSTRequest.setProcessedYN(false);
 		badPOSTRequest.setNoticeNo(null);
 		badPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
-		
-		badPOSTRequest.setPayload(null); // this is a required field. Leaving it null should result in a 500 and validation error msg. 
+
+		badPOSTRequest.setPayload(null); // this is a required field. Leaving it null should result in a 500 and validation error msg.
 
 	}
 
@@ -107,6 +118,24 @@ public class DFPayloadApiTests {
 	}
 
 	// TODO - need further testing for all possible POST ORDS response codes and
+	// perform some simple validation tests.
+
+	@DisplayName("PUT, Update success - DFPayload Delegate")
+	@Test
+	public void testDFPayloadApiPUTTSuccess() throws Exception {
+
+		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+
+		// Create successful GET DF Payload call and validate response
+		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
+				.dfpayloadsNoticeNoCorrelationIdPut(noticeNo, correlationId, goodPUTRequest);
+		PostDFPayloadServiceResponse result = controllerResponse.getBody();
+		Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
+
+	}
+
+	// TODO - need further testing for all possible PUT ORDS response codes and
 	// perform some simple validation tests.
 
 }

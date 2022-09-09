@@ -78,7 +78,7 @@ public class DFPayloadApiTests {
 
 	}
 
-	@DisplayName("GET, Retrieve success - DFPayload Delegate")
+	@DisplayName("GET, Retrieve Payload success - DFPayload Delegate")
 	@Test
 	public void testDFPayloadApiGETSuccess() throws Exception {
 
@@ -102,14 +102,14 @@ public class DFPayloadApiTests {
 
 	// TODO - need further testing for all possible GET ORDS response codes.
 
-	@DisplayName("POST, Create success - DFPayload Delegate")
+	@DisplayName("POST, Create Payload success - DFPayload Delegate")
 	@Test
 	public void testDFPayloadApiPOSTSuccess() throws Exception {
 
 		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
 
-		// Create successful GET DF Payload call and validate response
+		// Create successful POST DF Payload call and validate response
 		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
 				.dfpayloadsNoticeNoCorrelationIdPost(noticeNo, correlationId, goodPOSTRequest);
 		PostDFPayloadServiceResponse result = controllerResponse.getBody();
@@ -120,14 +120,14 @@ public class DFPayloadApiTests {
 	// TODO - need further testing for all possible POST ORDS response codes and
 	// perform some simple validation tests.
 
-	@DisplayName("PUT, Update success - DFPayload Delegate")
+	@DisplayName("PUT, Update Payload success - DFPayload Delegate")
 	@Test
-	public void testDFPayloadApiPUTTSuccess() throws Exception {
+	public void testDFPayloadApiPUTSuccess() throws Exception {
 
 		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
 
-		// Create successful GET DF Payload call and validate response
+		// Create successful UPDATE DF Payload call and validate response
 		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
 				.dfpayloadsNoticeNoCorrelationIdPut(noticeNo, correlationId, goodPUTRequest);
 		PostDFPayloadServiceResponse result = controllerResponse.getBody();
@@ -137,5 +137,24 @@ public class DFPayloadApiTests {
 
 	// TODO - need further testing for all possible PUT ORDS response codes and
 	// perform some simple validation tests.
+	
+	
+	@DisplayName("DEL, Remove Payload success - DFPayload Delegate")
+	@Test
+	public void testDFPayloadApiDELETESuccess() throws Exception {
 
+		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+
+		// Create successful DELETE DF Payload and validate response
+		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
+				.dfpayloadsNoticeNoCorrelationIdDelete(noticeNo, correlationId);
+		PostDFPayloadServiceResponse result = controllerResponse.getBody();
+		Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
+
+	}
+
+	// TODO - need further testing for all possible PUT ORDS response codes and
+	// perform some simple validation tests.
+	
 }

@@ -8,9 +8,11 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import ca.bc.gov.open.digitalformsapi.viirp.api.ApiUtil;
 import ca.bc.gov.open.digitalformsapi.viirp.api.DfPayloadsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceRequest;
@@ -98,6 +100,22 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
 		resp.setStatusMessage("success");
 		
+		return new ResponseEntity<>(resp, HttpStatus.OK);
+
+	}
+	
+	@Override
+	public ResponseEntity<PostDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdDelete(String correlationId,
+			String noticeNo) {
+
+		logger.info("Heard a call to the endpoint 'dfpayloadsNoticeNoCorrelationIdDelete' with noticeNo " + noticeNo);
+		
+		// TODO - need to pass the params to the ORDS call to delete notice no data. 
+		// TODO - need to set response type (or exception) based on ORDS response. 
+
+		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
+		resp.setStatusMessage("success");
+
 		return new ResponseEntity<>(resp, HttpStatus.OK);
 
 	}

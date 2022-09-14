@@ -58,4 +58,4 @@ digitalforms:
 # Spring Doc Swagger-UI enable / disable    
 springdoc:
     swagger-ui:
-      enabled: ${DIGITALFORMS_SWAGGER_ENABLED:}
+      enabled: ${DIGITALFORMS_SWAGGER_ENABLED:false}

@@ -54,3 +54,8 @@ digitalforms:
   basic-auth:
     user: ${DIGITALFORMS_BASICAUTH_USER:}
     password: ${DIGITALFORMS_BASICAUTH_PASSWORD:}
+    
+# Spring Doc Swagger-UI enable / disable    
+springdoc:
+    swagger-ui:
+      enabled: ${DIGITALFORMS_SWAGGER_ENABLED:false}

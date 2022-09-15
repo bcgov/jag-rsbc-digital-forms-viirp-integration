@@ -20,7 +20,7 @@ public class SwaggerConfig {
 		return new OpenAPI().info(new Info()
 		          .title("VIPS Integration API")
 		          .description("VIPS Integration API")
-		          .version("v1.0.2"))
+		          .version("v1.0.0"))
 				  .components(new Components()
 						  .addSecuritySchemes(SCHEME_NAME, createSecurityScheme()))
 				  .addSecurityItem(new SecurityRequirement().addList(SCHEME_NAME));

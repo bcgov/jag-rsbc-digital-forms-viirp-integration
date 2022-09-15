@@ -33,7 +33,7 @@ vips:
       guid: ${DIGITALFORMS_VIPSAPI_CREDS_GUID:}
       user: ${DIGITALFORMS_VIPSAPI_CREDS_USER:}
       displayname: ${DIGITALFORMS_VIPSAPI_CREDS_DISPLAYNAME:}
-    timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT:2000}
+    timeout: ${DIGITALFORMS_VIPSAPI_TIMEOUT:10000}
     retry:
       # The maximum number of retry attempts to allow
       count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT:3}

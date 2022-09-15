@@ -84,15 +84,9 @@ git submodule update --remote --merge
 
 ### Security
 
-TODO
+API is protected by basic auth which must be configured using environmental variables. 
 
-### Swagger2
-
-TODO
-
-### Actuator
-
-See above, API Services. 
+See *Environmental Variables*
 
 ### Files and Directories
 
@@ -104,6 +98,7 @@ digitalforms-api/
 		├── controller 	# Contains API controller files
 		├── exception 	# Contains API Exception files
 		├── interceptor 	# Contains MDC interceptor files
+		├── model 	# Contains VIPS specific POJOs
 		├── security 	# Contains API Security files
 		├── service 	# Contains API Service files
 		└── util 	# Contains API Util files

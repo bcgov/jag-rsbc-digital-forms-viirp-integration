@@ -32,9 +32,11 @@ This is the digitalforms level (root) of this project.
 
 - Create a run configuration for the parent POM:  
 
-	- clean install package
+	- clean install
 
-- Launch the **digitalforms-api** from the Boot Dashboard.
+- Launch the **digitalforms-api** from the Boot Dashboard or from a new run configuration with target of:
+
+	- spring-boot:run 
 
 **2. Using command line**
 
@@ -48,17 +50,21 @@ Then, from the **digitalforms-api** level, run:
 mvn spring-boot:run
 ```
 
+Note: This API uses submodules which should be updated before running the API: 
+
+```
+ git submodule update --init 
+```
+
 ### Security
 
-TBD
+API is protected by basic auth which must be configured using environmental variables. 
+
+See digitalforms-api README.md, *Environmental Variables*
 
 ### Actuator
 
-See digitalforms-api README.md, API Services. 
-
-### Files and Directories
-
-TBD
+See digitalforms-api README.md, *API Services*. 
 
 ## Splunk
 

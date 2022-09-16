@@ -126,19 +126,22 @@ secrets when in the DEV/TEST/PROD environments.
 
 ## DevOps Processes
 
-TODO
+All changes to the application must be made via branches off of the current release branch.
 
-### DEV builds
+Once a feature has been completed, a PR must be created and sent for review. 
 
-TODO
+On acceptance of the PR, and after the change has been merged into the current release branch, GIT actions are 
+triggered which perform application unit tests and push a new image to OpenShift, DEV.
 
-## Promotion to TEST
+** Workflows**
 
-TODO
+| Workflow            | Action                              |
+| ------------------- | ------------------------------------ |
+| CI Checks for API    | Triggers application unit tests               |
+| Deploy    | Retags DEV image to TEST, or PROD               |
+| Main    | Build Image and Push to Openshift Registry for Dev Deployment AND runs Trivy vulnerability scanner              |
 
-## Promotion to PROD
-
-TODO
+To push a DEV image in the OpenShift Registry to TEST or TEST to PROD, use the Deploy workflow. 
 
 ### License
 

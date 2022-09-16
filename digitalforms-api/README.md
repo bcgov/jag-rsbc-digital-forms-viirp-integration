@@ -133,7 +133,7 @@ Once a feature has been completed, a PR must be created and sent for review.
 On acceptance of the PR, and after the change has been merged into the current release branch, GIT actions are 
 triggered which perform application unit tests and push a new image to OpenShift, DEV.
 
-** Workflows**
+**Workflows**
 
 | Workflow            | Action                              |
 | ------------------- | ------------------------------------ |

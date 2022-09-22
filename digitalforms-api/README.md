@@ -14,17 +14,25 @@ This is the API level of this of this project.
 
 These values must be set as environmental variables if running the API locally (As run configuration in STS4 or Eclipse)
 
-| Name                            | Example Value               |
-| ------------------------------- | --------------------------- |
-| DIGITALFORMS_VIPSAPI_URL 	      | http://localhost:8080/api/  |
-| DIGITALFORMS_VIPSAPI_USERNAME   | username                    |
-| DIGITALFORMS_VIPSAPI_PASSWORD   | password                    |
-| DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |
-| DIGITALFORMS_VIPSORDS_USER      | user                        |
-| DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |
-| DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |
-| DIGITALFORMS_ORDS_USER          | user						|
-| DIGITALFORMS_ORDS_PASSWORD      | password					|
+| Name                            | Example Value               | Comments	       |
+| ------------------------------- | --------------------------- |------------------|
+| DIGITALFORMS_VIPSAPI_URL 	      | http://localhost:8080/api/  |                  |
+| DIGITALFORMS_VIPSAPI_USERNAME   | username                    |                  |
+| DIGITALFORMS_VIPSAPI_PASSWORD   | password                    |                  |
+| DIGITALFORMS_VIPSAPI_CREDS_DISPLAYNAME| display name			|				   |
+| DIGITALFORMS_VIPSAPI_CREDS_GUID |                             |                  |
+| DIGITALFORMS_VIPSAPI_CREDS_USER |                             |                  |
+| DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |                  |
+| DIGITALFORMS_VIPSORDS_USER      | user                        |                  |
+| DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |                  |
+| DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |                  |
+| DIGITALFORMS_ORDS_USER          | user						|                  |
+| DIGITALFORMS_ORDS_PASSWORD      | password					|                  |
+| DIGITALFORMS_BASICAUTH_USER          | user					|                  |
+| DIGITALFORMS_BASICAUTH_PASSWORD      | password				|                  |
+| DIGITALFORMS_SWAGGER_ENABLED      | true					|                  |
+| SPLUNK_URL					  | url							| 'splunk' profile only|               
+| SPLUNK_TOKEN_VIPS				  | splunk token				| 'splunk' profile only|   
 
 ### Optional Environmental Variables
 
@@ -76,15 +84,9 @@ git submodule update --remote --merge
 
 ### Security
 
-TODO
+API is protected by basic auth which must be configured using environmental variables. 
 
-### Swagger2
-
-TODO
-
-### Actuator
-
-See above, API Services. 
+See *Environmental Variables*
 
 ### Files and Directories
 
@@ -96,6 +98,7 @@ digitalforms-api/
 		├── controller 	# Contains API controller files
 		├── exception 	# Contains API Exception files
 		├── interceptor 	# Contains MDC interceptor files
+		├── model 	# Contains VIPS specific POJOs
 		├── security 	# Contains API Security files
 		├── service 	# Contains API Service files
 		└── util 	# Contains API Util files
@@ -123,19 +126,22 @@ secrets when in the DEV/TEST/PROD environments.
 
 ## DevOps Processes
 
-TODO
+All changes to the application must be made via branches off of the current release branch.
 
-### DEV builds
+Once a feature has been completed, a PR must be created and sent for review. 
 
-TODO
+On acceptance of the PR, and after the change has been merged into the current release branch, GIT actions are 
+triggered which perform application unit tests and push a new image to OpenShift, DEV.
 
-## Promotion to TEST
+**Workflows**
 
-TODO
+| Workflow            | Action                              |
+| ------------------- | ------------------------------------ |
+| CI Checks for API    | Triggers application unit tests               |
+| Deploy    | Retags DEV image to TEST, or PROD               |
+| Main    | Build Image and Push to Openshift Registry for Dev Deployment AND runs Trivy vulnerability scanner              |
 
-## Promotion to PROD
-
-TODO
+To push a DEV image in the OpenShift Registry to TEST or TEST to PROD, use the Deploy workflow. 
 
 ### License
 

@@ -4,7 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
@@ -20,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -27,11 +30,15 @@ import ca.bc.gov.open.digitalformsapi.viirp.UnitTestUtilities;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
+import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.StoreVIPSDocument;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.ProhibitionSearchResponseType;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.jag.ordsvipsclient.api.DocumentApi;
@@ -39,7 +46,8 @@ import ca.bc.gov.open.jag.ordsvipsclient.api.handler.ApiException;
 import ca.bc.gov.open.jag.ordsvipsclient.api.model.VipsDocumentOrdsResponse;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
+@ActiveProfiles(value = "test")
+@AutoConfigureMockMvc(addFilters = false)
 public class DocumentsApiControllerTests {
 
 	@Autowired
@@ -74,7 +82,13 @@ public class DocumentsApiControllerTests {
     
     private ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse failNotFoundDocumentAssociateResponse; 
     
-    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse vipsWSGenFailureDocumentAssociateResponse; 
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse vipsWSGenFailureDocumentAssociateResponse;
+    
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse vipsSearch;
+    
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse vipsProhibitionSearch;
+    
+    private ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse vipsDocumentsResponse; 
     
     @Mock
     ConfigProperties properties;
@@ -132,6 +146,32 @@ public class DocumentsApiControllerTests {
 		vipsWSGenFailureDocumentAssociateResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse();
 		vipsWSGenFailureDocumentAssociateResponse.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
 		vipsWSGenFailureDocumentAssociateResponse.setRespMsg("something bad happened");
+		
+		//Mock VIPS WS Notice number for Impoundment Search response
+		vipsSearch = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse();
+		List<VipsImpoundmentBasicsObj> results = new ArrayList<VipsImpoundmentBasicsObj>();
+		VipsImpoundmentBasicsObj obj = new VipsImpoundmentBasicsObj();
+		obj.setImpoundmentId(DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID);
+		results.add(obj);
+		vipsSearch.setResult(results);
+		
+		//Mock VIPS WS Notice number for Prohibition Search response
+		vipsProhibitionSearch = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse();
+		List<ProhibitionSearchResponseType> prohibitionResults = new ArrayList<ProhibitionSearchResponseType>();
+		ProhibitionSearchResponseType obj2 = new ProhibitionSearchResponseType();
+		obj2.setProhibitionId(DigitalFormsConstants.UNIT_TEST_PROHIBITION_ID);
+		prohibitionResults.add(obj2);
+		vipsProhibitionSearch.setResult(prohibitionResults);
+		
+		// Mock VIPS WS GET Documents List response. 
+		vipsDocumentsResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
+		List<VipsDocumentObj> documentsList = new ArrayList<VipsDocumentObj>();
+		VipsDocumentObj vipsDocumentObj = new VipsDocumentObj();
+		vipsDocumentObj.setDocumentId(DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID);
+		vipsDocumentObj.setAddToFileDtm("2018-10-22T00:00:00.000-07:00");
+		vipsDocumentObj.setDocumentTypeCd("MV2702A");
+		documentsList.add(vipsDocumentObj);
+		vipsDocumentsResponse.setResult(documentsList);
 		
 	}
     
@@ -321,6 +361,135 @@ public class DocumentsApiControllerTests {
 	    	      .accept(MediaType.APPLICATION_JSON))
 	    	      .andExpect(status().isInternalServerError());
     	
+    }
+    
+    @DisplayName("GET, Documents Meta List with Impoundment Id Success - Documents API Delegate")  
+    @Test
+	public void testDocumentsApiGETDocumentsWithImpoundmentIdSuccess() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Documents response in good case 
+        vipsDocumentsResponse.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+        vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsDocumentsResponse);
+        
+        // Create successful get documents call with noticeNo and validate response 
+        ResponseEntity<GetDocumentsListServiceResponse> controllerResponse = controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+        GetDocumentsListServiceResponse result = controllerResponse.getBody();
+        Assertions.assertTrue(result.getResults().size() > 0);
+        Assertions.assertEquals("MV2702A", result.getResults().get(0).getDocumentTypeCd());
+    }
+    
+    @DisplayName("GET, Documents Meta List with Prohibition Id Success - Documents API Delegate")  
+    @Test
+	public void testDocumentsApiGETDocumentsWithProhibitionIdSuccess() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long prohibitionId = DigitalFormsConstants.UNIT_TEST_PROHIBITION_ID;
+    	
+    	// Mock underlying VIPS REST Impoundment Search Failure
+		vipsSearch.setRespMsg(DigitalFormsConstants.VIPS_NOTICE_NOT_FOUND);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+		
+		// Mock underlying VIPS REST Prohibition Search
+		vipsProhibitionSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsProhibitionSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsProhibitionSearch);
+        
+        // Mock underlying VIPS REST Get Documents response in good case 
+        vipsDocumentsResponse.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+        vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.getDocumentsMetaList(correlationId, null, prohibitionId)).thenReturn(vipsDocumentsResponse);
+        
+        // Create successful get documents call with noticeNo and validate response 
+        ResponseEntity<GetDocumentsListServiceResponse> controllerResponse = controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+        GetDocumentsListServiceResponse result = controllerResponse.getBody();
+        Assertions.assertTrue(result.getResults().size() > 0);
+        Assertions.assertEquals("MV2702A", result.getResults().get(0).getDocumentTypeCd());
+    }
+    
+    @DisplayName("GET, Documents Not Found - Documents API Delegate")  
+    @Test
+	public void testDocumentsApiGETDocumentsNotFound() throws Exception {
+    	
+    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Documents response returning no documents in the response list even though the
+        // search return with an impoundment Id.
+        ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse vipsEmptyDocumentsResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
+        vipsEmptyDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        vipsEmptyDocumentsResponse.setResult(null); // no documents in the response 
+        
+        vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsEmptyDocumentsResponse);
+        
+        // Ensure ResourceNotFoundException type is thrown in this case
+    	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+    			controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});	
+    }
+    
+    @DisplayName("GET, Documents General Failure - Documents API Delegate")  
+    @Test
+	public void testDocumentsApiGETDocumentstGenFailure() throws Exception {
+    	
+      	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Documents response reporting general failure 
+        vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
+	    Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsDocumentsResponse);
+	    
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});	
+    }
+    
+    @DisplayName("GET, Documents VIPS Internal Java Failure - Documents API Delegate")  
+    @Test
+	public void testImpoundmentApiGETVIPSImpoundmentInternalFailure() throws Exception {
+    	
+       	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
+    	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+    	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
+		
+		// Mock underlying VIPS REST Search 
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        
+        // Mock underlying VIPS REST Get Documents response reporting internal Java failure 
+        vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
+	    Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsDocumentsResponse);
+	    
+        // Ensure DigitalFormsException type is thrown in this case
+    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    			controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    	});
     }
     
 }

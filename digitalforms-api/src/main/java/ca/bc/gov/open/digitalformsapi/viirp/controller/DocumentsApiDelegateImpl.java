@@ -38,13 +38,127 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	@Autowired
 	private VipsRestService digitalformsApiService;
 	
+	/**
+	 * GET Documents Meta Data (From VIPS WS) 
+	 * 
+	 * Response from this method is a cascade of two calls: 
+	 * 	1.) Call to VIPS WS to locate the impoundmentId or prohibitionId associated with the given notice number. 
+	 * 	2.) Call VIPS WS with the impoudnmentId or prohibitionId to get the list of documents meta data object (if the above provides an id).  
+	 * 
+	 * Possible Response codes:
+	 * 	200. Success. Documents meta data found and returned. 
+	 * 	401. unauth (digital forms basic auth failure)
+	 *  404. Not found (Initial search call failed to find impoundment or prohibition for given notice number)
+	 * 	500. from the SSG if VIPS WS is unavailable or responds with any code other than 200. 
+	 */
 	@Override
 	public ResponseEntity<GetDocumentsListServiceResponse> documentsListNoticeNoCorrelationIdGet(String noticeNo,
 	        String correlationId) {
 		
 		logger.info("Heard a call to the endpoint 'documentsListNoticeNoCorrelationIdGet' with noticeNo " + noticeNo);
 		
-		return new ResponseEntity<>(HttpStatus.OK);
+		GetDocumentsListServiceResponse documentsListByImpoundmentResp = new GetDocumentsListServiceResponse();
+		
+		// Start cascade by fetching impoundmentId for notice number. 
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse impoundmentSearchResp = digitalformsApiService.searchImpoundment(correlationId, noticeNo);
+		
+		if (impoundmentSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD && !(null == impoundmentSearchResp.getResult() || impoundmentSearchResp.getResult().isEmpty())) {
+			
+			// This shouldn't happen - but if it does, we're ready. 
+			if (impoundmentSearchResp.getResult().size() > 1) {
+					throw new DigitalFormsException("Unexpected impoundment search results received from VIPS WS. Results > 1 for Notice No: " + noticeNo);
+			}
+			 
+			Long impoundmentId = impoundmentSearchResp.getResult().get(0).getImpoundmentId();
+			
+			logger.debug("Attempting to retrieve the documents by impoundment id: " + impoundmentId);
+				
+			// Continue cascade to fetch List of Documents for impoundment id. 
+			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, impoundmentId, null);
+				
+			// Depending on the result code from VIPS, we set the response Entity accordingly. 
+			if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+				
+				// Make sure response has the expected documents detail. If this fails we have a bigger problem in VIPS
+				// as the prior VIPS search said that there was an impoundment for the id returned above. 
+				if (null != _resp2.getResults() && impoundmentSearchResp.getResult().size() > 0) {
+				
+					// Populate response object from VIPS response object (This removes the VIPS WS resultCd, resultMsg, etc.) 
+					documentsListByImpoundmentResp.setResults(_resp2.getResults());
+					
+				} else {
+					throw new ResourceNotFoundException("No documents returned when a prior search indicated there were documents linked to impoundment id  : " + impoundmentId);
+				}
+				
+			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
+				logger.error("VIPS " + _resp2.toString());
+				throw new DigitalFormsException("Failed to get documents for impoundmentId : " + impoundmentId);
+			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
+				logger.error("VIPS " + _resp2.toString());
+				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for impoundment Id : " + impoundmentId);
+			}
+			
+			return new ResponseEntity<>(documentsListByImpoundmentResp, HttpStatus.OK);
+			
+		} else {
+			
+			GetDocumentsListServiceResponse documentsListByProhibitionResp = new GetDocumentsListServiceResponse();
+			
+			// Start cascade by fetching prohibitionId for notice number. 
+			ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse prohibitionSearchResp = digitalformsApiService.searchProhibition(correlationId, noticeNo);
+			
+			if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+			
+				if (null == prohibitionSearchResp.getResult() || prohibitionSearchResp.getResult().isEmpty()) {
+					throw new ResourceNotFoundException("Not Found"); 
+				} 
+				
+				// This shouldn't happen - but if it does, we're ready. 
+				if (prohibitionSearchResp.getResult().size() > 1) {
+						throw new DigitalFormsException("Unexpected prohibition search results received from VIPS WS. Results > 1 for Notice No: " + noticeNo);
+				}
+				 
+				Long prohibitionId = prohibitionSearchResp.getResult().get(0).getProhibitionId();
+				
+				logger.debug("Attempting to retrieve the documents by prohibition id: " + prohibitionId);
+					
+				// Continue cascade to fetch List of Documents for prohibition id. 
+				ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, null, prohibitionId);
+				
+				// Depending on the result code from VIPS, we set the response Entity accordingly. 
+				if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+					
+					// Make sure response has the expected documents detail. If this fails we have a bigger problem in VIPS
+					// as the prior VIPS search said that there was an prohibition for the id returned above. 
+					if (null != _resp2.getResults() && prohibitionSearchResp.getResult().size() > 0) {
+					
+						// Populate response object from VIPS response object (This removes the VIPS WS resultCd, resultMsg, etc.) 
+						documentsListByProhibitionResp.setResults(_resp2.getResults());
+						
+					} else {
+						throw new ResourceNotFoundException("No documents returned when a prior search indicated there were documents linked to prohibition id  : " + prohibitionId);
+					}
+					
+				} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
+					logger.error("VIPS " + _resp2.toString());
+					throw new DigitalFormsException("Failed to get documents for prohibitionId : " + prohibitionId);
+				} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
+					logger.error("VIPS " + _resp2.toString());
+					throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for prohibition Id : " + prohibitionId);
+				}	
+				
+			} else if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
+				logger.error("VIPS " + prohibitionSearchResp.toString());
+				throw new DigitalFormsException("Failed to get documents for Notice Number : " + noticeNo);
+			} else if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
+				logger.error("VIPS " + prohibitionSearchResp.toString());
+				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for Notice Number : " + noticeNo);
+			}
+			
+			return new ResponseEntity<>(documentsListByProhibitionResp, HttpStatus.OK);
+		}
+		
+		
 	}
 	
 	/**

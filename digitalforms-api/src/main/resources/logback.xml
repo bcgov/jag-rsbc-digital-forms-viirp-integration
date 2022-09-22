@@ -5,14 +5,13 @@
     ​
     <!-- You can override this to have a custom pattern -->
     <property name="CONSOLE_LOG_PATTERN"
-    		  value ="%black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1.}) [%X{correlationId}]: %msg%n%throwable"></property>
+              value="%black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1.}) [%X{correlationId}]: %msg%n%throwable"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
-    
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>

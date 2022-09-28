@@ -46,10 +46,10 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to created impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to created impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		}
 		
@@ -112,18 +112,18 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 				}
 				
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-				logger.error("VIPS " + _resp2.toString());
+				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 				throw new DigitalFormsException("Failed to get impoundment for impoundmentId : " + impoundmentId);
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-				logger.error("VIPS " + _resp2.toString());
+				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get impoundment for impoundment Id : " + impoundmentId);
 			}	
 			
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to get impoundment for Notice Number : " + noticeNo);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get impoundment for Notice Number : " + noticeNo);
 		}
 		

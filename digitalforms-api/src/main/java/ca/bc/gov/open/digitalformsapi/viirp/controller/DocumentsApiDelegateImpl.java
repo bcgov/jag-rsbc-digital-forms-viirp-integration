@@ -71,7 +71,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			 
 			Long impoundmentId = impoundmentSearchResp.getResult().get(0).getImpoundmentId();
 			
-			logger.debug("Attempting to retrieve the documents by impoundment id: " + impoundmentId);
+			logger.info("Attempting to retrieve the documents by impoundment id: " + impoundmentId);
 				
 			// Continue cascade to fetch List of Documents for impoundment id. 
 			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, impoundmentId, null);
@@ -91,10 +91,10 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 				}
 				
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-				logger.error("VIPS " + _resp2.toString());
+				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 				throw new DigitalFormsException("Failed to get documents for impoundmentId : " + impoundmentId);
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-				logger.error("VIPS " + _resp2.toString());
+				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for impoundment Id : " + impoundmentId);
 			}
 			
@@ -120,7 +120,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 				 
 				Long prohibitionId = prohibitionSearchResp.getResult().get(0).getProhibitionId();
 				
-				logger.debug("Attempting to retrieve the documents by prohibition id: " + prohibitionId);
+				logger.info("Attempting to retrieve the documents by prohibition id: " + prohibitionId);
 					
 				// Continue cascade to fetch List of Documents for prohibition id. 
 				ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, null, prohibitionId);
@@ -140,18 +140,18 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 					}
 					
 				} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-					logger.error("VIPS " + _resp2.toString());
+					logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 					throw new DigitalFormsException("Failed to get documents for prohibitionId : " + prohibitionId);
 				} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-					logger.error("VIPS " + _resp2.toString());
+					logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 					throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for prohibition Id : " + prohibitionId);
 				}	
 				
 			} else if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-				logger.error("VIPS " + prohibitionSearchResp.toString());
+				logger.error("VIPS error response code: " + prohibitionSearchResp.getRespCd() + ", response msg:  " + prohibitionSearchResp.getRespMsg());
 				throw new DigitalFormsException("Failed to get documents for Notice Number : " + noticeNo);
 			} else if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-				logger.error("VIPS " + prohibitionSearchResp.toString());
+				logger.error("VIPS error response code: " + prohibitionSearchResp.getRespCd() + ", response msg:  " + prohibitionSearchResp.getRespMsg());
 				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for Notice Number : " + noticeNo);
 			}
 			
@@ -194,7 +194,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			throw new ResourceNotFoundException("Notice " + body.getNoticeNo() + " and notice type: " + 
 				body.getNoticeTypeCd() + " not found in VIPS.");
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-			logger.error("VIPS Error: " + _resp.getRespMsg());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to create document association between document id: " + documentId + 
 					" and notice number " + body.getNoticeNo() + " and notice type: " + body.getNoticeTypeCd()); 
 		}
@@ -236,7 +236,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			if (_resp.getStatusCode().equals(DigitalFormsConstants.VIPSORDS_SUCCESS_CD)) {
 				resp.setDocumentId(_resp.getDocumentId());
 			} else if (_resp.getStatusCode().equals(DigitalFormsConstants.VIPSORDS_GENERAL_FAILURE_CD)) {
-				logger.error("VIPS Error: " + _resp.getStatusMessage());
+				logger.error("VIPS error response code: " + _resp.getStatusCode() + ", response msg:  " + _resp.getStatusMessage());
 				throw new DigitalFormsException("Failed to store document document to VIPS WS. Type Code : " + storeVIPSDocument.getTypeCode() + 
 						". Mime sub type : " + storeVIPSDocument.getMimeSubType() + 
 						". Mime type : " + storeVIPSDocument.getMimeType());

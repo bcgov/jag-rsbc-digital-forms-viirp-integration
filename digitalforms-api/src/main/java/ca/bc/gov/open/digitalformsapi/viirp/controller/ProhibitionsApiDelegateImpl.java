@@ -38,10 +38,10 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to created prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to created prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		}
 		
@@ -91,18 +91,18 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 				}
 				
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-				logger.error("VIPS " + _resp2.toString());
+				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 				throw new DigitalFormsException("Failed to get prohibition for prohibitionId : " + prohibitionId);
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-				logger.error("VIPS " + _resp2.toString());
+				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get prohibition for prohibition Id : " + prohibitionId);
 			}	
 			
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to get prohibition for Notice Number : " + noticeNo);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-			logger.error("VIPS " + _resp.toString());
+			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get prohibition for Notice Number : " + noticeNo);
 		}
 		

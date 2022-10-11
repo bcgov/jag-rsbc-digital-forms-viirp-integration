@@ -43,6 +43,13 @@ jobs:
               ${{ env.image_stream_name }}:${tag}
           done
 
+      - name: Update Deployment
+        run: |
+          oc template \
+            -f openshift/api-build.yml \
+            --param-file openshift/de-deploy-params.yml \
+            --param IMAGE_TAG=${{ needs.commit-version.outputs.github-release-version }}
+
   trivy:
     needs:
       - commit-version

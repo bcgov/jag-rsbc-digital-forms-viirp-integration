@@ -1,43 +1,32 @@
-apiVersion: v1
+apiVersion: template.openshift.io/v1
 kind: Template
 metadata: {}
 parameters:
 - name: NAME
-  # value: vips
-- name: COMPONENT
-  # value: restapi
-- name: PHASE
-- name: SUFFIX
-  # value: -dev
-# - name: VERSION
-- name: HOST
-- name: LOG_LEVEL
-  value: 'INFO'
-- name: URL_SUFFIX
+  value: digitalforms-viirp-api
+- name: NAMESPACE
+  required: true
 - name: CPU_REQUEST
   displayName: Requested CPU
   description: Requested CPU
+  value: 200m
 - name: CPU_LIMIT
   displayName: CPU upper limit
   description: CPU upper limit
+  value: 400m
 - name: MEMORY_REQUEST
   displayName: Requested memory
   description: Requested memory
+  value: 200Mi
 - name: MEMORY_LIMIT
   displayName: Memory upper limit
   description: Memory upper limit
-- name: NAMESPACE
-  # value: 
-- name: BUILD_VERSION
-- name: BUILD_CONFIG_SUFFIX
+  value: 500Mi
 - name: IMAGE_NAMESPACE
+- name: IMAGE_TAG
+  required: true
 - name: SECRET1_NAME
 - name: SECRET2_NAME
-# - name: IMAGE_NAME
-#   value: 
-- name: IMAGE_TAG
-  # value: "1.1"
-- name: API_VERSION
 objects:
 - apiVersion: apps/v1
   kind: Deployment
@@ -45,54 +34,52 @@ objects:
     creationTimestamp: null
     namespace: ${NAMESPACE}
     labels:
-      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
-    name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+      app: ${NAME}
+    name: ${NAME}
   spec:
     replicas: 1
     selector:
       matchLabels:
-        app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
-    strategy: {}
+        app: ${NAME}
     template:
       metadata:
         creationTimestamp: null
         labels:
-          app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+          app: ${NAME}
       spec:
         containers:
-        - image: image-registry.openshift-image-registry.svc:5000/${IMAGE_NAMESPACE}/${NAME}-image:${BUILD_CONFIG_SUFFIX}-${BUILD_VERSION}
-          name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+        - image: image-registry.openshift-image-registry.svc:5000/${IMAGE_NAMESPACE}/${NAME}:${IMAGE_TAG}
+          name: ${NAME}
           resources:
             limits:
-              cpu: 400m
-              memory: 500Mi
+              cpu: ${CPU_REQUEST}
+              memory: ${MEMORY_LIMIT}
             requests:
-              cpu: 200m
-              memory: 200Mi
+              cpu: ${CPU_REQUEST}
+              memory: ${MEMORY_REQUEST}
           envFrom:
           - secretRef:
               name: ${SECRET1_NAME}
           - secretRef:
               name: ${SECRET2_NAME}
           ports:
-            - containerPort: 8080
+            - containerPort: 8082
               protocol: TCP
-          resources: {}
 - apiVersion: autoscaling/v1
   kind: HorizontalPodAutoscaler
   metadata:
     creationTimestamp: null
     namespace: ${NAMESPACE}
     labels:
-      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
-    name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+      app: ${NAME}
+    name: ${NAME}
   spec:
     maxReplicas: 2
     minReplicas: 1
     scaleTargetRef:
       apiVersion: v1
       kind: Deployment
-      name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+      name: ${NAME}
     targetCPUUtilizationPercentage: 85
 - apiVersion: v1
   kind: Service
@@ -101,56 +88,34 @@ objects:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
-    name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+      app: ${NAME}
+    name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
     ports:
-    - name: 8080-tcp
-      port: 8080
+    - name: 8082-tcp
+      port: 8082
       protocol: TCP
-      targetPort: 8080
+      targetPort: 8082
     selector:
-      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
-  status:
-    loadBalancer: {}
-- apiVersion: v1
-  kind: Service
-  metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftNewApp
-    creationTimestamp: null
-    labels:
-      app: ${NAME}-${COMPONENT}${SUFFIX}-${SVCSUFFIX}-${API_VERSION}
-    name: ${NAME}-${COMPONENT}${SUFFIX}-${SVCSUFFIX}-${API_VERSION}
-    namespace: ${NAMESPACE}
-  spec:
-    ports:
-    - name: 80-tcp
-      port: 80
-      protocol: TCP
-      targetPort: 8080
-    selector:
-      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
-  status:
-    loadBalancer: {}
+      app: ${NAME}
 - apiVersion: v1
   kind: Route
   metadata:
     creationTimestamp: null
     labels:
-      app: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
-    name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+      app: ${NAME}
+    name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    # host: ${NAME}-${COMPONENT}${SUFFIX}
-    path: ""
+    path: "/"
     port:
-      targetPort: 8080-tcp
+      targetPort: 8082-tcp
     tls:
       termination: edge
+      insecureEdgeTerminationPolicy: Redirect
     to:
       kind: Service
-      name: ${NAME}-${COMPONENT}${SUFFIX}-${API_VERSION}
+      name: ${NAME}
       weight: 100
     wildcardPolicy: None

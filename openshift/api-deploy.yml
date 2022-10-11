@@ -26,10 +26,12 @@ parameters:
 - name: IMAGE_TAG
   required: true
 - name: SECRET1_NAME
+  value: "digitalforms-api"
 - name: SECRET2_NAME
+  value: "df-vips-integration-api"
 objects:
-- apiVersion: apps/v1
-  kind: Deployment
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
   metadata:
     creationTimestamp: null
     namespace: ${NAMESPACE}
@@ -37,10 +39,20 @@ objects:
       app: ${NAME}
     name: ${NAME}
   spec:
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - ${NAME}
+        from:
+          kind: ImageStreamTag
+          namespace: ${IMAGE_NAMESPACE}
+          name: '${NAME}:${IMAGE_TAG}'
     replicas: 1
     selector:
-      matchLabels:
-        app: ${NAME}
+      app: ${NAME}
     template:
       metadata:
         creationTimestamp: null
@@ -63,24 +75,41 @@ objects:
           - secretRef:
               name: ${SECRET2_NAME}
           ports:
-            - containerPort: 8082
+            - name: web
+              containerPort: 8082
               protocol: TCP
-- apiVersion: autoscaling/v1
-  kind: HorizontalPodAutoscaler
-  metadata:
-    creationTimestamp: null
-    namespace: ${NAMESPACE}
-    labels:
-      app: ${NAME}
-    name: ${NAME}
-  spec:
-    maxReplicas: 2
-    minReplicas: 1
-    scaleTargetRef:
-      apiVersion: v1
-      kind: Deployment
-      name: ${NAME}
-    targetCPUUtilizationPercentage: 85
+          startupProbe:
+            tcpSocket:
+              port: web
+            initialDelaySeconds: 60
+            failureThreshold: 12
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /digitalforms-viirp/v1/actuator/health
+              port: web
+            initialDelaySeconds: 45
+          livenessProbe:
+            httpGet:
+              path: /digitalforms-viirp/v1/actuator/health
+              port: web
+            initialDelaySeconds: 45
+#- apiVersion: autoscaling/v1
+#  kind: HorizontalPodAutoscaler
+#  metadata:
+#    creationTimestamp: null
+#    namespace: ${NAMESPACE}
+#    labels:
+#      app: ${NAME}
+#    name: ${NAME}
+#  spec:
+#    maxReplicas: 2
+#    minReplicas: 1
+#    scaleTargetRef:
+#      apiVersion: v1
+#      kind: Deployment
+#      name: ${NAME}
+#    targetCPUUtilizationPercentage: 85
 - apiVersion: v1
   kind: Service
   metadata:

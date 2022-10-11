@@ -1,9 +1,2 @@
-NAME: vips-api
-COMPONENT: deployment
-SUFFIX: -prod
 NAMESPACE: c220ad-prod
-IMAGE_NAMESPACE: c220ad-tools
-BUILD_CONFIG_SUFFIX: build
-BUILD_VERSION: 25
-SECRET1_NAME: digitalforms-api
-SECRET2_NAME: df-vips-integration-api
+IMAGE_TAG: dev

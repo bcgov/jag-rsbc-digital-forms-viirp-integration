@@ -1,6 +1,2 @@
-NAME: digitalforms-viirp-api
 NAMESPACE: c220ad-dev
-IMAGE_NAMESPACE: c220ad-tools
-SECRET1_NAME: digitalforms-api
-SECRET2_NAME: df-vips-integration-api
 IMAGE_TAG: dev

@@ -23,6 +23,7 @@ parameters:
   description: Memory upper limit
   value: 500Mi
 - name: IMAGE_NAMESPACE
+  value: c220ad-tools
 - name: IMAGE_TAG
   required: true
 - name: SECRET1_NAME

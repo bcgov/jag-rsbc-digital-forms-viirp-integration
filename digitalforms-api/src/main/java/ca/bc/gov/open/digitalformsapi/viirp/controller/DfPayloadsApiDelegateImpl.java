@@ -7,51 +7,59 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import ca.bc.gov.open.digitalformsapi.viirp.api.ApiUtil;
 import ca.bc.gov.open.digitalformsapi.viirp.api.DfPayloadsApiDelegate;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PutDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
+import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.handler.ApiException;
+import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.payload.DfPayloadService;
 
 @Service
 public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 
 	private final Logger logger = LoggerFactory.getLogger(DfPayloadsApiDelegateImpl.class);
+	
+	@Autowired
+	private DfPayloadService dfPayloadService; 
 
 	@Override
 	public ResponseEntity<GetDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdGet(String noticeNo,
 			String correlationId) {
-
+		
 		logger.info("Heard a call to the endpoint 'dfPayloadsNoticeNoCorrelationIdGet' with noticeNo " + noticeNo);
 
-		GetDFPayloadServiceResponse resp = new GetDFPayloadServiceResponse();
-
-		String examplePayload = "{\"name\":\"John\", \"age\":30, \"car\":\"Buick\", \"noticeType\":\"IRP\"}";
-		JSONParser parser = new JSONParser();
-		JSONObject json = null;
+		GetDFPayloadServiceResponse resp = new GetDFPayloadServiceResponse(); 
+		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse src;
 		try {
-			json = (JSONObject) parser.parse(examplePayload);
-		} catch (ParseException e) {
-			e.printStackTrace();
+			 src = dfPayloadService.getDFPayload(noticeNo, correlationId);
+			
+		} catch (ApiException ex) {
+			logger.error("Failure to call DF ORDS, GET DF Payload for notice No: " + noticeNo + " corrleationId: " + correlationId + ". Message: " + ex.getMessage() + " ORDS Response Status Cd: " + ex.getCode());
+			throw new DigitalFormsException(ex.getMessage());
 		}
-
-		// TODO - remove this when ORDS connected - for initial testing only.
-		resp.setActive(true);
-		resp.setNoticeNo(DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER);
-		resp.setNoticeType("IRP");
-		resp.setPayload(json);
-		resp.setProcessed(false);
-
-		// TODO - Call Digital Forms ORDS client to GET a payload.
-		// Load response object dependent on the good ORDS response, or
-		// Throw appropriate exceptions.
+			
+		try { 
+			// Transfer from ORDS Client Library GetDFPayloadServiceResponse to DF GetDFPayloadServiceResponse type. 
+			BeanUtils.copyProperties(src, resp);
+			
+		} catch (BeansException ex) {
+			logger.error("Failure to transfer bean content after DF ORDS, GET DF Payload call for notice No: " + noticeNo + " corrleationId: " + correlationId + ". Message: " + ex.getMessage());
+			throw new DigitalFormsException(ex.getMessage(), ex);
+		}
 
 		return new ResponseEntity<>(resp, HttpStatus.OK);
 	}

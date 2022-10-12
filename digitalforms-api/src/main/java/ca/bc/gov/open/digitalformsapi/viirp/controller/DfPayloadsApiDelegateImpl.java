@@ -2,29 +2,23 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import java.util.LinkedHashMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import ca.bc.gov.open.digitalformsapi.viirp.api.ApiUtil;
 import ca.bc.gov.open.digitalformsapi.viirp.api.DfPayloadsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PutDFPayloadServiceRequest;
-import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.handler.ApiException;
 import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.payload.DfPayloadService;
 
@@ -34,7 +28,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 	private final Logger logger = LoggerFactory.getLogger(DfPayloadsApiDelegateImpl.class);
 	
 	@Autowired
-	private DfPayloadService dfPayloadService; 
+	private DfPayloadService dfPayloadService;
 
 	@Override
 	public ResponseEntity<GetDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdGet(String noticeNo,
@@ -118,13 +112,27 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 
 		logger.info("Heard a call to the endpoint 'dfpayloadsNoticeNoCorrelationIdDelete' with noticeNo " + noticeNo);
 		
-		// TODO - need to pass the params to the ORDS call to delete notice no data. 
-		// TODO - need to set response type (or exception) based on ORDS response. 
-
-		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
-		resp.setStatusMessage("success");
-
-		return new ResponseEntity<>(resp, HttpStatus.OK);
-
+		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse responseFromOrds;
+		try {
+			// ORDS call to delete DF Payload based on notice no
+			responseFromOrds = dfPayloadService.deleteDFPayload(noticeNo, correlationId);
+		} catch (ApiException e) {
+			String msg = "ERROR deleting DF Payload from ORDS with noticeNo: " + noticeNo + ". Message: " + e.getMessage() + " ORDS Response Status Code: " + e.getCode();
+			e.printStackTrace();
+			logger.error(msg, e);
+			throw new DigitalFormsException(e.getMessage(), e);
+		}
+		
+		if (responseFromOrds == null || StringUtils.isBlank(responseFromOrds.getStatusMessage())) {
+			throw new DigitalFormsException("Invalid PostDFPayloadServiceResponse object");
+		} else if (!"success".equalsIgnoreCase(responseFromOrds.getStatusMessage())) {
+			String msg = "ERROR deleting DF Payload from ORDS with noticeNo: " + noticeNo + ". Message: " + responseFromOrds.getStatusMessage();
+			logger.error(msg, responseFromOrds.getStatusMessage());
+			throw new DigitalFormsException(msg);
+		} else {
+			PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
+			resp.setStatusMessage(responseFromOrds.getStatusMessage());
+			return new ResponseEntity<>(resp, HttpStatus.OK);
+		}
 	}
 }

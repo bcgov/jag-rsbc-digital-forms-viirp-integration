@@ -38,14 +38,15 @@ public class DFPayloadApiTests {
 
 	@InjectMocks
 	private DfPayloadsApiDelegateImpl controller;
-	
+
 	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse goodDFORDSPayloadResponse; 
 
 	private PostDFPayloadServiceRequest goodPOSTRequest;
 	private PutDFPayloadServiceRequest goodPUTRequest;
 	private PostDFPayloadServiceRequest badPOSTRequest;
-	
+
 	Map<String, String> gPayload;
+	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse responseFromOrds;
 
 	@BeforeEach
 	public void init() {
@@ -84,7 +85,8 @@ public class DFPayloadApiTests {
 		badPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 
 		badPOSTRequest.setPayload(null); // this is a required field. Leaving it null should result in a 500 and validation error msg.
-
+		
+		responseFromOrds = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse();
 	}
 
 	@DisplayName("GET, Retrieve Payload success - DFPayload Delegate")
@@ -152,13 +154,16 @@ public class DFPayloadApiTests {
 
 		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+		
+		// Mock underlying DELETE DF Payload response in good case 
+		responseFromOrds.setStatusMessage(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+        when(dfPayloadService.deleteDFPayload(any(), any())).thenReturn(responseFromOrds);
 
 		// Create successful DELETE DF Payload and validate response
 		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
 				.dfpayloadsNoticeNoCorrelationIdDelete(noticeNo, correlationId);
 		PostDFPayloadServiceResponse result = controllerResponse.getBody();
 		Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
-
 	}
 
 	// TODO - need further testing for all possible PUT ORDS response codes and

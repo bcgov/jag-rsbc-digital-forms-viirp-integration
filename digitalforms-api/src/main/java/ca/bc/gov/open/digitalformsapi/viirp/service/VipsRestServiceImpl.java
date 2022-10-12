@@ -45,7 +45,7 @@ public class VipsRestServiceImpl implements VipsRestService {
                 .headers(headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()))
                 .retrieve()
                 .bodyToMono(GetCodetablesServiceResponse.class)
-                .doOnSuccess(System.out::println)
+                //.doOnSuccess(System.out::println)
                 .block();
 	}
 

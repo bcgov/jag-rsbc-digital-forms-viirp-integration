@@ -116,23 +116,16 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		try {
 			// ORDS call to delete DF Payload based on notice no
 			responseFromOrds = dfPayloadService.deleteDFPayload(noticeNo, correlationId);
+			
+			PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
+			resp.setStatusMessage(responseFromOrds.getStatusMessage());
+			return new ResponseEntity<>(resp, HttpStatus.OK);
+			
 		} catch (ApiException e) {
 			String msg = "ERROR deleting DF Payload from ORDS with noticeNo: " + noticeNo + ". Message: " + e.getMessage() + " ORDS Response Status Code: " + e.getCode();
 			e.printStackTrace();
 			logger.error(msg, e);
 			throw new DigitalFormsException(e.getMessage(), e);
-		}
-		
-		if (responseFromOrds == null || StringUtils.isBlank(responseFromOrds.getStatusMessage())) {
-			throw new DigitalFormsException("Invalid PostDFPayloadServiceResponse object");
-		} else if (!"success".equalsIgnoreCase(responseFromOrds.getStatusMessage())) {
-			String msg = "ERROR deleting DF Payload from ORDS with noticeNo: " + noticeNo + ". Message: " + responseFromOrds.getStatusMessage();
-			logger.error(msg, responseFromOrds.getStatusMessage());
-			throw new DigitalFormsException(msg);
-		} else {
-			PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
-			resp.setStatusMessage(responseFromOrds.getStatusMessage());
-			return new ResponseEntity<>(resp, HttpStatus.OK);
 		}
 	}
 }

@@ -2,6 +2,7 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import java.util.LinkedHashMap;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -48,9 +49,12 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 			
 		try { 
 			// Transfer from ORDS Client Library GetDFPayloadServiceResponse to DF GetDFPayloadServiceResponse type. 
-			BeanUtils.copyProperties(src, resp);
+			resp.setActive(BooleanUtils.toBoolean(src.getActiveYN()));
+			resp.setProcessed(BooleanUtils.toBoolean(src.getProcessedYN()));
+			resp.setNoticeType(src.getNoticeType());
+			resp.setPayload(src.getPayload());
 			
-		} catch (BeansException ex) {
+		} catch (Exception ex) {
 			logger.error("Failure to transfer bean content after DF ORDS, GET DF Payload call for notice No: " + noticeNo + " corrleationId: " + correlationId + ". Message: " + ex.getMessage());
 			throw new DigitalFormsException(ex.getMessage(), ex);
 		}

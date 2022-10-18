@@ -3,12 +3,9 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 import java.util.LinkedHashMap;
 
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +13,14 @@ import org.springframework.stereotype.Service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.DfPayloadsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.UnauthorizedException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PutDFPayloadServiceRequest;
 import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.handler.ApiException;
-import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.payload.DfPayloadService;
+import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.payload.DfPayloadService; 
 
 @Service
 public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
@@ -41,14 +40,20 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse src;
 		try {
 			 src = dfPayloadService.getDFPayload(noticeNo, correlationId);
-			
+		
 		} catch (ApiException ex) {
 			logger.error("Failure to call DF ORDS, GET DF Payload for notice No: " + noticeNo + " corrleationId: " + correlationId + ". Message: " + ex.getMessage() + " ORDS Response Status Cd: " + ex.getCode());
-			throw new DigitalFormsException(ex.getMessage());
+			if (ex.getCode() == HttpStatus.UNAUTHORIZED.value())
+				throw new UnauthorizedException(ex.getMessage());
+			if (ex.getCode() == HttpStatus.NOT_FOUND.value())
+				throw new ResourceNotFoundException(ex.getMessage());
+			else 	
+				throw new DigitalFormsException(ex.getMessage());
 		}
 			
 		try { 
-			// Transfer from ORDS Client Library GetDFPayloadServiceResponse to DF GetDFPayloadServiceResponse type. 
+			// Transfer from ORDS Client Library GetDFPayloadServiceResponse to DF GetDFPayloadServiceResponse type.
+			resp.setNoticeNo(src.getNoticeNo());
 			resp.setActive(BooleanUtils.toBoolean(src.getActiveYN()));
 			resp.setProcessed(BooleanUtils.toBoolean(src.getProcessedYN()));
 			resp.setNoticeType(src.getNoticeType());

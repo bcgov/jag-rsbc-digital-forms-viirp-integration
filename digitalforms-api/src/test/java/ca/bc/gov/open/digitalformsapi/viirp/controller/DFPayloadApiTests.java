@@ -60,10 +60,10 @@ public class DFPayloadApiTests {
 		gPayload.put("age", "30");
 		
 		goodDFORDSPayloadResponse = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse();
-		goodDFORDSPayloadResponse.setActive(true);
+		goodDFORDSPayloadResponse.setActiveYN("Y");
 		goodDFORDSPayloadResponse.setNoticeType(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 		goodDFORDSPayloadResponse.setPayload(gPayload);
-		goodDFORDSPayloadResponse.setProcessed(true);
+		goodDFORDSPayloadResponse.setProcessedYN("Y");
 		
 		// TODO - mock payload response for ORDS api type.
 		goodPOSTRequest = new PostDFPayloadServiceRequest();
@@ -104,7 +104,7 @@ public class DFPayloadApiTests {
 		
 		Assertions.assertEquals(gPayload, result.getPayload());
 		Assertions.assertEquals(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE, result.getNoticeType());
-		Assertions.assertEquals(true, result.getProcessed());
+		Assertions.assertEquals(true, result.getProcessed()); //
 		Assertions.assertEquals(true, result.getActive());
 		
 	}

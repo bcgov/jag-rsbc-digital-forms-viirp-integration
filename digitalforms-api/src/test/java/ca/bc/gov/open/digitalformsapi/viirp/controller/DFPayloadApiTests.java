@@ -39,7 +39,8 @@ public class DFPayloadApiTests {
 	@InjectMocks
 	private DfPayloadsApiDelegateImpl controller;
 
-	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse goodDFORDSPayloadResponse; 
+	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse goodDFORDSGETPayloadResponse; 
+	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse goodDFORDSPOSTPayloadResponse; 
 
 	private PostDFPayloadServiceRequest goodPOSTRequest;
 	private PutDFPayloadServiceRequest goodPUTRequest;
@@ -59,17 +60,18 @@ public class DFPayloadApiTests {
 		gPayload.put("noticeType", "IRP");
 		gPayload.put("age", "30");
 		
-		goodDFORDSPayloadResponse = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse();
-		goodDFORDSPayloadResponse.setActiveYN("Y");
-		goodDFORDSPayloadResponse.setNoticeType(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
-		goodDFORDSPayloadResponse.setPayload(gPayload);
-		goodDFORDSPayloadResponse.setProcessedYN("Y");
+		goodDFORDSGETPayloadResponse = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse();
+		goodDFORDSGETPayloadResponse.setActiveYN("Y");
+		goodDFORDSGETPayloadResponse.setNoticeType(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
+		goodDFORDSGETPayloadResponse.setPayload(gPayload);
+		goodDFORDSGETPayloadResponse.setProcessedYN("Y");
 		
-		// TODO - mock payload response for ORDS api type.
+		goodDFORDSPOSTPayloadResponse = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse();
+		goodDFORDSPOSTPayloadResponse.setStatusMessage("Success");
+		
 		goodPOSTRequest = new PostDFPayloadServiceRequest();
 		goodPOSTRequest.setActiveYN(true);
 		goodPOSTRequest.setProcessedYN(false);
-		goodPOSTRequest.setNoticeNo(DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER);
 		goodPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 		goodPOSTRequest.setPayload(gPayload);
 		
@@ -81,7 +83,6 @@ public class DFPayloadApiTests {
 		badPOSTRequest = new PostDFPayloadServiceRequest();
 		badPOSTRequest.setActiveYN(true);
 		badPOSTRequest.setProcessedYN(false);
-		badPOSTRequest.setNoticeNo(null);
 		badPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 
 		badPOSTRequest.setPayload(null); // this is a required field. Leaving it null should result in a 500 and validation error msg.
@@ -96,7 +97,7 @@ public class DFPayloadApiTests {
 		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
 		
-		when(dfPayloadService.getDFPayload(any(), any())).thenReturn(goodDFORDSPayloadResponse);
+		when(dfPayloadService.getDFPayload(any(), any())).thenReturn(goodDFORDSGETPayloadResponse);
 
 		// Create successful GET DF Payload call and validate response
 		ResponseEntity<GetDFPayloadServiceResponse> controllerResponse = controller.dfpayloadsNoticeNoCorrelationIdGet(noticeNo, correlationId);
@@ -109,25 +110,27 @@ public class DFPayloadApiTests {
 		
 	}
 
-	// TODO - need further testing for all possible GET ORDS response codes once we have them. 
+	// TODO - need further testing for all possible GET ORDS error response codes (401, 404, and 500) 
 
+	
 	@DisplayName("POST, Create Payload success - DFPayload Delegate")
 	@Test
 	public void testDFPayloadApiPOSTSuccess() throws Exception {
 
 		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
-
+		
+		when(dfPayloadService.postDFPayload(any(), any())).thenReturn(goodDFORDSPOSTPayloadResponse);
+		
 		// Create successful POST DF Payload call and validate response
-		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
-				.dfpayloadsNoticeNoCorrelationIdPost(noticeNo, correlationId, goodPOSTRequest);
+		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller.dfpayloadsNoticeNoCorrelationIdPost(noticeNo, correlationId, goodPOSTRequest);
 		PostDFPayloadServiceResponse result = controllerResponse.getBody();
-		Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
+
+		Assertions.assertEquals("Success", result.getStatusMessage());
 
 	}
 
-	// TODO - need further testing for all possible POST ORDS response codes and
-	// perform some simple validation tests.
+	// TODO - need further testing for all possible POST ORDS error response codes (401, and 500) 
 
 	@DisplayName("PUT, Update Payload success - DFPayload Delegate")
 	@Test
@@ -144,8 +147,7 @@ public class DFPayloadApiTests {
 
 	}
 
-	// TODO - need further testing for all possible PUT ORDS response codes and
-	// perform some simple validation tests.
+	// TODO - need further testing for all possible PUT ORDS error response codes (401, 404, and 500) 
 	
 	
 	@DisplayName("DEL, Remove Payload success - DFPayload Delegate")
@@ -166,7 +168,6 @@ public class DFPayloadApiTests {
 		Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
 	}
 
-	// TODO - need further testing for all possible PUT ORDS response codes and
-	// perform some simple validation tests.
+	// TODO - need further testing for all possible DELETE ORDS error response codes (401, 404, and 500)
 	
 }

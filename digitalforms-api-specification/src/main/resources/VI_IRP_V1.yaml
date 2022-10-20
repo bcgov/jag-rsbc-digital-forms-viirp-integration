@@ -1428,9 +1428,7 @@ components:
       type: object
       description: Digital Forms Schema GET Response
       properties:
-        noticeNo: 
-          type: string
-        noticeType:
+        noticeTypeCd:
           type: string
         payload:
           type: object
@@ -1444,16 +1442,16 @@ components:
       required:
         - noticeTypeCd
         - payload
-        - activeYN
-        - processedYN
+        - active
+        - processed
       properties:
         noticeTypeCd:
           type: string
         payload:
           type: string
-        activeYN:
+        active:
           type: boolean
-        processedYN: 
+        processed: 
           type: boolean
     PostDFPayloadServiceResponse:
       type: object
@@ -1494,9 +1492,9 @@ components:
           type: string
         payload:
           type: string
-        activeYN:
+        active:
           type: boolean
-        processedYN: 
+        processed: 
           type: boolean            
     VipsImpoundmentRegistrationObj:
       type: object

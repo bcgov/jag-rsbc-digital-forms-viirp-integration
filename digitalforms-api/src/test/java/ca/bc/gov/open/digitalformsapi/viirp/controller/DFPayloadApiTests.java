@@ -61,20 +61,20 @@ public class DFPayloadApiTests {
 		goodDFORDSPOSTPayloadResponse.setStatusMessage("Success");
 		
 		goodPOSTRequest = new PostDFPayloadServiceRequest();
-		goodPOSTRequest.setActiveYN(true);
-		goodPOSTRequest.setProcessedYN(false);
+		goodPOSTRequest.setActive(true);
+		goodPOSTRequest.setProcessed(false);
 		goodPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 		goodPOSTRequest.setPayload(sPayload);
 		
 		goodPUTRequest = new PutDFPayloadServiceRequest();
 		goodPUTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
-		goodPUTRequest.setActiveYN(true);
-		goodPUTRequest.setProcessedYN(false);
+		goodPUTRequest.setActive(true);
+		goodPUTRequest.setProcessed(false);
 		goodPUTRequest.setPayload(sPayload);
 
 		badPOSTRequest = new PostDFPayloadServiceRequest();
-		badPOSTRequest.setActiveYN(true);
-		badPOSTRequest.setProcessedYN(false);
+		badPOSTRequest.setActive(true);
+		badPOSTRequest.setProcessed(false);
 		badPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 
 		badPOSTRequest.setPayload(null); // this is a required field. Leaving it null should result in a 500 and validation error msg.
@@ -96,7 +96,7 @@ public class DFPayloadApiTests {
 		GetDFPayloadServiceResponse result = controllerResponse.getBody();
 		
 		Assertions.assertEquals(sPayload, result.getPayload());
-		Assertions.assertEquals(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE, result.getNoticeType());
+		Assertions.assertEquals(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE, result.getNoticeTypeCd());
 		Assertions.assertEquals(true, result.getProcessed()); //
 		Assertions.assertEquals(true, result.getActive());
 		

@@ -17,7 +17,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PostDFPayloadServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PutDFPayloadServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DFBooleanUtils;
-import ca.bc.gov.open.digitalformsapi.viirp.utils.PayloadUtils;
 import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.handler.ApiException;
 import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.payload.DfPayloadService; 
 
@@ -54,10 +53,9 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		try { 
 
 			// Transfer from ORDS Client Library GetDFPayloadServiceResponse to DF GetDFPayloadServiceResponse type.
-			resp.setNoticeNo(src.getNoticeNo());
 			resp.setActive(BooleanUtils.toBoolean(src.getActiveYN()));
 			resp.setProcessed(BooleanUtils.toBoolean(src.getProcessedYN()));
-			resp.setNoticeType(src.getNoticeType());
+			resp.setNoticeTypeCd(src.getNoticeType());
 			resp.setPayload((src.getPayload()));
 			
 		} catch (Exception ex) {
@@ -77,8 +75,8 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceRequest request = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceRequest();
 		
 		// Transfer the contents of the VI IRP Request into ORDS request model. All required.  
-		request.setActiveYN(DFBooleanUtils.getYNFromBoolean(postDFPayloadServiceRequest.getActiveYN()));
-		request.setProcessedYN(DFBooleanUtils.getYNFromBoolean(postDFPayloadServiceRequest.getProcessedYN()));
+		request.setActiveYN(DFBooleanUtils.getYNFromBoolean(postDFPayloadServiceRequest.getActive()));
+		request.setProcessedYN(DFBooleanUtils.getYNFromBoolean(postDFPayloadServiceRequest.getProcessed()));
 		request.setNoticeNo(noticeNo);
 		request.setNoticeTypeCd(postDFPayloadServiceRequest.getNoticeTypeCd());
 		request.setPayload(postDFPayloadServiceRequest.getPayload());
@@ -113,8 +111,8 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PutDFPayloadServiceRequest request = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PutDFPayloadServiceRequest();
 		
 		// Transfer the contents of the VI IRP Request into ORDS request model. All required.  
-		request.setActiveYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getActiveYN()));
-		request.setProcessedYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getProcessedYN()));
+		request.setActiveYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getActive()));
+		request.setProcessedYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getProcessed()));
 		request.setNoticeTypeCd(putDFPayloadServiceRequest.getNoticeTypeCd());
 		request.setPayload(putDFPayloadServiceRequest.getPayload());
 				

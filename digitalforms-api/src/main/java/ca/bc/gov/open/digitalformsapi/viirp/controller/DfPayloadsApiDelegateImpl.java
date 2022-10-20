@@ -58,7 +58,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 			resp.setActive(BooleanUtils.toBoolean(src.getActiveYN()));
 			resp.setProcessed(BooleanUtils.toBoolean(src.getProcessedYN()));
 			resp.setNoticeType(src.getNoticeType());
-			resp.setPayload(src.getPayload());
+			resp.setPayload((src.getPayload()));
 			
 		} catch (Exception ex) {
 			logger.error("Failure to transfer bean content after DF ORDS, GET DF Payload call for notice No: " + noticeNo + " correlationId: " + correlationId + ". Message: " + ex.getMessage());
@@ -81,7 +81,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		request.setProcessedYN(DFBooleanUtils.getYNFromBoolean(postDFPayloadServiceRequest.getProcessedYN()));
 		request.setNoticeNo(noticeNo);
 		request.setNoticeTypeCd(postDFPayloadServiceRequest.getNoticeTypeCd());
-		request.setPayload(PayloadUtils.getStringPayloadForMap(postDFPayloadServiceRequest.getPayload()));
+		request.setPayload(postDFPayloadServiceRequest.getPayload());
 		
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse _resp = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse(); 
 		
@@ -116,7 +116,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		request.setActiveYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getActiveYN()));
 		request.setProcessedYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getProcessedYN()));
 		request.setNoticeTypeCd(putDFPayloadServiceRequest.getNoticeTypeCd());
-		request.setPayload(PayloadUtils.getStringPayloadForMap(putDFPayloadServiceRequest.getPayload()));
+		request.setPayload(putDFPayloadServiceRequest.getPayload());
 				
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse _resp = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse(); 
 		

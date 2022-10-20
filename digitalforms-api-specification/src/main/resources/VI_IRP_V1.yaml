@@ -1450,7 +1450,7 @@ components:
         noticeTypeCd:
           type: string
         payload:
-          type: object
+          type: string
         activeYN:
           type: boolean
         processedYN: 
@@ -1493,7 +1493,7 @@ components:
         noticeTypeCd:
           type: string
         payload:
-          type: object
+          type: string
         activeYN:
           type: boolean
         processedYN: 

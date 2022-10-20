@@ -3,9 +3,6 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,9 +26,6 @@ import ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.payload.DfPayloadService
 @ActiveProfiles(value = "test")
 @AutoConfigureMockMvc(addFilters = false)
 public class DFPayloadApiTests {
-
-	// @Autowired
-	// private MockMvc mvc;
 	
 	@Mock 
 	private DfPayloadService dfPayloadService;  
@@ -40,13 +34,14 @@ public class DFPayloadApiTests {
 	private DfPayloadsApiDelegateImpl controller;
 
 	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse goodDFORDSGETPayloadResponse; 
-	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse goodDFORDSPOSTPayloadResponse; 
+	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse goodDFORDSPOSTPayloadResponse;
 
 	private PostDFPayloadServiceRequest goodPOSTRequest;
 	private PutDFPayloadServiceRequest goodPUTRequest;
 	private PostDFPayloadServiceRequest badPOSTRequest;
 
-	Map<String, String> gPayload;
+	private String sPayload; 
+	
 	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse responseFromOrds;
 
 	@BeforeEach
@@ -54,35 +49,32 @@ public class DFPayloadApiTests {
 
 		MockitoAnnotations.openMocks(this);
 		
-		gPayload = new LinkedHashMap<String, String>();
-		gPayload.put("car", "Buick");
-		gPayload.put("name", "John");
-		gPayload.put("noticeType", "IRP");
-		gPayload.put("age", "30");
+		sPayload = "{\"name\":\"John\",\"noticeType\":\"IRP\",\"car\":\"Buick\",\"age\":35}";
 		
 		goodDFORDSGETPayloadResponse = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse();
 		goodDFORDSGETPayloadResponse.setActiveYN("Y");
 		goodDFORDSGETPayloadResponse.setNoticeType(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
-		goodDFORDSGETPayloadResponse.setPayload(gPayload);
+		goodDFORDSGETPayloadResponse.setPayload(sPayload);
 		goodDFORDSGETPayloadResponse.setProcessedYN("Y");
 		
 		goodDFORDSPOSTPayloadResponse = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse();
 		goodDFORDSPOSTPayloadResponse.setStatusMessage("Success");
 		
 		goodPOSTRequest = new PostDFPayloadServiceRequest();
-		goodPOSTRequest.setActiveYN(true);
-		goodPOSTRequest.setProcessedYN(false);
+		goodPOSTRequest.setActive(true);
+		goodPOSTRequest.setProcessed(false);
 		goodPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
-		goodPOSTRequest.setPayload(gPayload);
+		goodPOSTRequest.setPayload(sPayload);
 		
 		goodPUTRequest = new PutDFPayloadServiceRequest();
-		goodPUTRequest.setActiveYN(true);
-		goodPUTRequest.setProcessedYN(false);
-		goodPUTRequest.setPayload(gPayload);
+		goodPUTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
+		goodPUTRequest.setActive(true);
+		goodPUTRequest.setProcessed(false);
+		goodPUTRequest.setPayload(sPayload);
 
 		badPOSTRequest = new PostDFPayloadServiceRequest();
-		badPOSTRequest.setActiveYN(true);
-		badPOSTRequest.setProcessedYN(false);
+		badPOSTRequest.setActive(true);
+		badPOSTRequest.setProcessed(false);
 		badPOSTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 
 		badPOSTRequest.setPayload(null); // this is a required field. Leaving it null should result in a 500 and validation error msg.
@@ -103,8 +95,8 @@ public class DFPayloadApiTests {
 		ResponseEntity<GetDFPayloadServiceResponse> controllerResponse = controller.dfpayloadsNoticeNoCorrelationIdGet(noticeNo, correlationId);
 		GetDFPayloadServiceResponse result = controllerResponse.getBody();
 		
-		Assertions.assertEquals(gPayload, result.getPayload());
-		Assertions.assertEquals(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE, result.getNoticeType());
+		Assertions.assertEquals(sPayload, result.getPayload());
+		Assertions.assertEquals(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE, result.getNoticeTypeCd());
 		Assertions.assertEquals(true, result.getProcessed()); //
 		Assertions.assertEquals(true, result.getActive());
 		
@@ -138,12 +130,14 @@ public class DFPayloadApiTests {
 
 		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+		
+		when(dfPayloadService.putDFPayload(any(), any(), any())).thenReturn(goodDFORDSPOSTPayloadResponse);
 
-		// Create successful UPDATE DF Payload call and validate response
-		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
-				.dfpayloadsNoticeNoCorrelationIdPut(noticeNo, correlationId, goodPUTRequest);
+		// Create successful POST DF Payload call and validate response
+		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller.dfpayloadsNoticeNoCorrelationIdPut(noticeNo, correlationId, goodPUTRequest);
 		PostDFPayloadServiceResponse result = controllerResponse.getBody();
-		Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
+
+		Assertions.assertEquals("Success", result.getStatusMessage());
 
 	}
 

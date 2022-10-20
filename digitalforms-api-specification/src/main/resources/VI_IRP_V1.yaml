@@ -1490,6 +1490,8 @@ components:
       type: object
       description: Digital Forms Schema PUT Request
       properties:
+        noticeTypeCd:
+          type: string
         payload:
           type: object
         activeYN:

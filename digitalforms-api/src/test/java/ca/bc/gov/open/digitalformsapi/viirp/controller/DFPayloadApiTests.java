@@ -40,19 +40,22 @@ public class DFPayloadApiTests {
 	private DfPayloadsApiDelegateImpl controller;
 
 	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse goodDFORDSGETPayloadResponse; 
-	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse goodDFORDSPOSTPayloadResponse; 
+	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse goodDFORDSPOSTPayloadResponse;
 
 	private PostDFPayloadServiceRequest goodPOSTRequest;
 	private PutDFPayloadServiceRequest goodPUTRequest;
 	private PostDFPayloadServiceRequest badPOSTRequest;
 
 	Map<String, String> gPayload;
+	String sPayload; 
 	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse responseFromOrds;
 
 	@BeforeEach
 	public void init() {
 
 		MockitoAnnotations.openMocks(this);
+		
+		sPayload = "{\"name\":\"John\",\"noticeType\":\"IRP\",\"car\":\"Buick\",\"age\":35}";
 		
 		gPayload = new LinkedHashMap<String, String>();
 		gPayload.put("car", "Buick");
@@ -76,9 +79,11 @@ public class DFPayloadApiTests {
 		goodPOSTRequest.setPayload(gPayload);
 		
 		goodPUTRequest = new PutDFPayloadServiceRequest();
+		goodPUTRequest.setNoticeTypeCd(DigitalFormsConstants.UNIT_TEST_NOTICE_TYPE);
 		goodPUTRequest.setActiveYN(true);
 		goodPUTRequest.setProcessedYN(false);
 		goodPUTRequest.setPayload(gPayload);
+		//goodPUTRequest.setPayload(sPayload);
 
 		badPOSTRequest = new PostDFPayloadServiceRequest();
 		badPOSTRequest.setActiveYN(true);
@@ -138,12 +143,14 @@ public class DFPayloadApiTests {
 
 		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
+		
+		when(dfPayloadService.putDFPayload(any(), any(), any())).thenReturn(goodDFORDSPOSTPayloadResponse);
 
-		// Create successful UPDATE DF Payload call and validate response
-		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller
-				.dfpayloadsNoticeNoCorrelationIdPut(noticeNo, correlationId, goodPUTRequest);
+		// Create successful POST DF Payload call and validate response
+		ResponseEntity<PostDFPayloadServiceResponse> controllerResponse = controller.dfpayloadsNoticeNoCorrelationIdPut(noticeNo, correlationId, goodPUTRequest);
 		PostDFPayloadServiceResponse result = controllerResponse.getBody();
-		Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
+
+		Assertions.assertEquals("Success", result.getStatusMessage());
 
 	}
 

@@ -1,9 +1,6 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
-import java.util.LinkedHashMap;
-
 import org.apache.commons.lang3.BooleanUtils;
-import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +33,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 	public ResponseEntity<GetDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdGet(String noticeNo,
 			String correlationId) {
 		
-		logger.info("Heard a call to the endpoint 'dfPayloadsNoticeNoCorrelationIdGet' with noticeNo " + noticeNo);
+		logger.info("Heard a call to the endpoint 'dfPayloadsNoticeNoCorrelationIdGet' with noticeNo " + noticeNo + " correlationId: " + correlationId + ".");
 
 		GetDFPayloadServiceResponse resp = new GetDFPayloadServiceResponse(); 
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.GetDFPayloadServiceResponse src;
@@ -44,7 +41,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 			 src = dfPayloadService.getDFPayload(noticeNo, correlationId);
 		
 		} catch (ApiException ex) {
-			logger.error("Failure to call DF ORDS, GET DF Payload for notice No: " + noticeNo + " corrleationId: " + correlationId + ". Message: " + ex.getMessage() + " ORDS Response Status Cd: " + ex.getCode());
+			logger.error("Failure to call DF ORDS, GET DF Payload for notice No: " + noticeNo + " correlationId: " + correlationId + ". Message: " + ex.getMessage() + " ORDS Response Status Cd: " + ex.getCode());
 
 			if (ex.getCode() == HttpStatus.UNAUTHORIZED.value())
 				throw new UnauthorizedException(ex.getMessage());
@@ -64,7 +61,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 			resp.setPayload(src.getPayload());
 			
 		} catch (Exception ex) {
-			logger.error("Failure to transfer bean content after DF ORDS, GET DF Payload call for notice No: " + noticeNo + " corrleationId: " + correlationId + ". Message: " + ex.getMessage());
+			logger.error("Failure to transfer bean content after DF ORDS, GET DF Payload call for notice No: " + noticeNo + " correlationId: " + correlationId + ". Message: " + ex.getMessage());
 			throw new DigitalFormsException(ex.getMessage(), ex);
 		}
 
@@ -75,7 +72,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 	public ResponseEntity<PostDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdPost(String correlationId,
 			String noticeNo, PostDFPayloadServiceRequest postDFPayloadServiceRequest) {
 
-		logger.info("Heard a call to the endpoint 'dfpayloadsNoticeNoCorrelationIdPost' with noticeNo " + noticeNo);
+		logger.info("Heard a call to the endpoint 'dfpayloadsNoticeNoCorrelationIdPost' with noticeNo " + noticeNo + " correlationId: " + correlationId + ".");
 		
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceRequest request = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceRequest();
 		
@@ -92,7 +89,7 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 			 _resp = dfPayloadService.postDFPayload(noticeNo, request);
 			
 		} catch (ApiException ex) {
-			logger.error("Failure to call DF ORDS, POST DF Payload for notice No: " + noticeNo + " corrleationId: " + correlationId + ". Message: " + ex.getMessage() + " ORDS Response Status Cd: " + ex.getCode());
+			logger.error("Failure to call DF ORDS, POST DF Payload for notice No: " + noticeNo + " correlationId: " + correlationId + ". Message: " + ex.getMessage() + " ORDS Response Status Cd: " + ex.getCode());
 			
 			if (ex.getCode() == HttpStatus.UNAUTHORIZED.value())
 				throw new UnauthorizedException(ex.getMessage());
@@ -111,21 +108,34 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 	public ResponseEntity<PostDFPayloadServiceResponse> dfpayloadsNoticeNoCorrelationIdPut(String correlationId,
 			String noticeNo, PutDFPayloadServiceRequest putDFPayloadServiceRequest) {
 		
-		logger.info("Heard a call to the endpoint 'dfpayloadsNoticeNoCorrelationIdPut' with noticeNo " + noticeNo);
+		logger.info("Heard a call to the endpoint 'dfpayloadsNoticeNoCorrelationIdPut' with noticeNo " + noticeNo + " correlationId: " + correlationId + ".");
 		
-		@SuppressWarnings("rawtypes")
-		LinkedHashMap payload = (LinkedHashMap) putDFPayloadServiceRequest.getPayload();
+		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PutDFPayloadServiceRequest request = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PutDFPayloadServiceRequest();
 		
-		JSONObject json = new JSONObject(payload);
+		// Transfer the contents of the VI IRP Request into ORDS request model. All required.  
+		request.setActiveYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getActiveYN()));
+		request.setProcessedYN(DFBooleanUtils.getYNFromBoolean(putDFPayloadServiceRequest.getProcessedYN()));
+		request.setNoticeTypeCd(putDFPayloadServiceRequest.getNoticeTypeCd());
+		request.setPayload(PayloadUtils.getStringPayloadForMap(putDFPayloadServiceRequest.getPayload()));
+				
+		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse _resp = new ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse(); 
 		
-		logger.info("Payload is " + json.toJSONString());
-		
-		// TODO - need to pass the params to the ORDS call to update notice no data. 
-		// TODO - need to determine the datatype required to update the payload as clob.
-		// TODO - need to set response type (or exception) based on ORDS response. 
+		try {
+			 _resp = dfPayloadService.putDFPayload(noticeNo, correlationId, request);
+			
+		} catch (ApiException ex) {
+			logger.error("Failure to call DF ORDS, PUT DF Payload for notice No: " + noticeNo + " correlationId: " + correlationId + ". Message: " + ex.getMessage() + " ORDS Response Status Cd: " + ex.getCode());
+			
+			if (ex.getCode() == HttpStatus.UNAUTHORIZED.value())
+				throw new UnauthorizedException(ex.getMessage());
+			if (ex.getCode() == HttpStatus.NOT_FOUND.value())
+				throw new ResourceNotFoundException(ex.getMessage());
+			else
+				throw new DigitalFormsException(ex.getMessage());
+		}
 
 		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
-		resp.setStatusMessage("success");
+		resp.setStatusMessage(_resp.getStatusMessage());
 		
 		return new ResponseEntity<>(resp, HttpStatus.OK);
 

@@ -148,17 +148,23 @@ public class DfPayloadsApiDelegateImpl implements DfPayloadsApiDelegate {
 		ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.model.PostDFPayloadServiceResponse responseFromOrds;
 		try {
 			// ORDS call to delete DF Payload based on notice no
-			responseFromOrds = dfPayloadService.deleteDFPayload(noticeNo, correlationId);
+			responseFromOrds = dfPayloadService.deleteDFPayload(noticeNo, correlationId);	
 			
-			PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
-			resp.setStatusMessage(responseFromOrds.getStatusMessage());
-			return new ResponseEntity<>(resp, HttpStatus.OK);
+		} catch (ApiException ex) {
+			String msg = "ERROR deleting DF Payload from ORDS with noticeNo: " + noticeNo + ". Message: " + ex.getMessage() + " ORDS Response Status Code: " + ex.getCode();
+			logger.error(msg, ex);
 			
-		} catch (ApiException e) {
-			String msg = "ERROR deleting DF Payload from ORDS with noticeNo: " + noticeNo + ". Message: " + e.getMessage() + " ORDS Response Status Code: " + e.getCode();
-			e.printStackTrace();
-			logger.error(msg, e);
-			throw new DigitalFormsException(e.getMessage(), e);
+			if (ex.getCode() == HttpStatus.UNAUTHORIZED.value())
+				throw new UnauthorizedException(ex.getMessage());
+			if (ex.getCode() == HttpStatus.NOT_FOUND.value())
+				throw new ResourceNotFoundException(ex.getMessage());
+			else
+				throw new DigitalFormsException(ex.getMessage());
 		}
+		
+		PostDFPayloadServiceResponse resp = new PostDFPayloadServiceResponse();
+		resp.setStatusMessage(responseFromOrds.getStatusMessage());
+		
+		return new ResponseEntity<>(resp, HttpStatus.OK);
 	}
 }

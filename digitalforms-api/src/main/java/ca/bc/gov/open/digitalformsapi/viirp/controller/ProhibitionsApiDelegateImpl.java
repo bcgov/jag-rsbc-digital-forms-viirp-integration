@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.ProhibitionsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
@@ -13,6 +14,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetProhibitionServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
@@ -32,7 +34,13 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 		
 		CreateProhibitionServiceResponse resp = new CreateProhibitionServiceResponse();
 		
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse _resp = digitalformsApiService.createProhibition(correlationId, createProhibition);
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse _resp = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse();
+		try {
+			_resp = digitalformsApiService.createProhibition(correlationId, createProhibition);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to create prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
+		}
 		
 		// Depending on the result code from VIPS, we set the response Entity accordingly. 
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
@@ -58,7 +66,13 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 		GetProhibitionServiceResponse resp = new GetProhibitionServiceResponse();
 		
 		// Start cascade by fetching prohibitionId for notice number. 
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse _resp = digitalformsApiService.searchProhibition(correlationId, noticeNo);
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse _resp = new SearchProhibitionsServiceResponse();
+		try {
+			_resp = digitalformsApiService.searchProhibition(correlationId, noticeNo);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search prohibition for Notice Number : " + noticeNo);
+		}
 		
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 		
@@ -74,7 +88,13 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 			Long prohibitionId = _resp.getResult().get(0).getProhibitionId();
 				
 			// Continue cascade to fetch prohibition object for prohibition id. 
-			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse _resp2 = digitalformsApiService.getProhibition(correlationId, prohibitionId);
+			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse _resp2;
+			try {
+				_resp2 = digitalformsApiService.getProhibition(correlationId, prohibitionId);
+			} catch (WebClientException e) {
+				logger.error("VIPS Internal Server Error: " + e.getMessage());
+				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get prohibition for prohibitionId : " + prohibitionId);
+			}
 			
 			// Depending on the result code from VIPS, we set the response Entity accordingly. 
 			if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {

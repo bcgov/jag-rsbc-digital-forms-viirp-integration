@@ -6,8 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.CodetablesApiDelegate;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 
@@ -24,6 +26,15 @@ public class CodeTablesApiDelegateImpl implements CodetablesApiDelegate{
 		
 		logger.info("Heard a call to the endpoint 'codetablesCorrelationIdGet'");
 		
-		return new ResponseEntity<GetCodetablesServiceResponse>(digitalformsApiService.getCodeTableValues(correlationId), HttpStatus.OK);
+		GetCodetablesServiceResponse _resp = new GetCodetablesServiceResponse();
+		
+		try {
+			_resp = digitalformsApiService.getCodeTableValues(correlationId);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get codetables with correlationId : " + correlationId);
+		}
+		
+		return new ResponseEntity<GetCodetablesServiceResponse>(_resp, HttpStatus.OK);
 	}
 }

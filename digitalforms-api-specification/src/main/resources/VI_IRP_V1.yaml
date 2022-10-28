@@ -177,7 +177,7 @@ paths:
         - basicAuth: []
       tags:
       - Documents
-      summary: Retrieve VIPS document (Base64 or PDF)
+      summary: Retrieve VIPS document (Base64)
       parameters:
       - name: correlationId
         in: path

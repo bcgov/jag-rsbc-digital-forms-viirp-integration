@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.DocumentsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
@@ -18,6 +19,8 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.StoreVIPSDocument;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.jag.ordsvipsclient.api.DocumentApi;
@@ -60,7 +63,13 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		GetDocumentsListServiceResponse documentsListByImpoundmentResp = new GetDocumentsListServiceResponse();
 		
 		// Start cascade by fetching impoundmentId for notice number. 
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse impoundmentSearchResp = digitalformsApiService.searchImpoundment(correlationId, noticeNo);
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse impoundmentSearchResp = new SearchImpoundmentsServiceResponse();
+		try {
+			impoundmentSearchResp = digitalformsApiService.searchImpoundment(correlationId, noticeNo);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search impoundment with noticeNo : " + noticeNo);
+		}
 		
 		if (impoundmentSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD && !(null == impoundmentSearchResp.getResult() || impoundmentSearchResp.getResult().isEmpty())) {
 			
@@ -74,7 +83,13 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			logger.info("Attempting to retrieve the documents by impoundment id: " + impoundmentId);
 				
 			// Continue cascade to fetch List of Documents for impoundment id. 
-			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, impoundmentId, null);
+			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
+			try {
+				_resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, impoundmentId, null);
+			} catch (WebClientException e) {
+				logger.error("VIPS Internal Server Error: " + e.getMessage());
+				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get documents list with impoundmentId : " + impoundmentId);
+			}
 				
 			// Depending on the result code from VIPS, we set the response Entity accordingly. 
 			if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
@@ -105,7 +120,13 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			GetDocumentsListServiceResponse documentsListByProhibitionResp = new GetDocumentsListServiceResponse();
 			
 			// Start cascade by fetching prohibitionId for notice number. 
-			ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse prohibitionSearchResp = digitalformsApiService.searchProhibition(correlationId, noticeNo);
+			ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse prohibitionSearchResp = new SearchProhibitionsServiceResponse();
+			try {
+				prohibitionSearchResp = digitalformsApiService.searchProhibition(correlationId, noticeNo);
+			} catch (WebClientException e) {
+				logger.error("VIPS Internal Server Error: " + e.getMessage());
+				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search prohibition with noticeNo : " + noticeNo);
+			}
 			
 			if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 			
@@ -123,7 +144,13 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 				logger.info("Attempting to retrieve the documents by prohibition id: " + prohibitionId);
 					
 				// Continue cascade to fetch List of Documents for prohibition id. 
-				ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, null, prohibitionId);
+				ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
+				try {
+					_resp2 = digitalformsApiService.getDocumentsMetaList(correlationId, null, prohibitionId);
+				} catch (WebClientException e) {
+					logger.error("VIPS Internal Server Error: " + e.getMessage());
+					throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get documents list with prohibitionId : " + prohibitionId);
+				}
 				
 				// Depending on the result code from VIPS, we set the response Entity accordingly. 
 				if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
@@ -181,10 +208,15 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		
 		AssociateDocumentToNoticeServiceResponse resp = new AssociateDocumentToNoticeServiceResponse();
 		
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse _resp = 
-				digitalformsApiService.createDocumentAsociationPost(
-																documentId, 
-																body);
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse _resp = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse();
+		try {
+			_resp = digitalformsApiService.createDocumentAsociationPost(
+															documentId, 
+															body);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to create document association with documentId : " + documentId);
+		}
 		
 		// Depending on the result code from the VIPS store document call, set the response entity accordingly. 
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
@@ -260,7 +292,13 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		
 		logger.info("Heard a call to the endpoint 'documentsDocumentIdCorrelationIdGet' with documentId " + documentId);
 		
-		VipsGetDocumentByIdResponse documentResponse = digitalformsApiService.getDocumentAsBase64(correlationId, documentId);
+		VipsGetDocumentByIdResponse documentResponse;
+		try {
+			documentResponse = digitalformsApiService.getDocumentAsBase64(correlationId, documentId);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get base64 format document with documentId : " + documentId);
+		}
 		
 		if (documentResponse != null && documentResponse.getDocument() == null || documentResponse.getDocument().isEmpty()) {
 			logger.error("VIPS Error: Could not return a document base64 for the provided documentID: " + documentId);

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.ImpoundmentsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
@@ -13,6 +14,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
@@ -40,7 +42,13 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		
 		CreateImpoundmentServiceResponse resp = new CreateImpoundmentServiceResponse();
 		
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse _resp = digitalformsApiService.createImpoundment(correlationId, createImpoundment);
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse _resp = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse();
+		try {
+			_resp = digitalformsApiService.createImpoundment(correlationId, createImpoundment);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to create impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
+		}
 		
 		// Depending on the result code from VIPS, we set the response Entity accordingly. 
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
@@ -79,7 +87,13 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		GetImpoundmentServiceResponse resp = new GetImpoundmentServiceResponse();
 		
 		// Start cascade by fetching impoundmentId for notice number. 
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse _resp = digitalformsApiService.searchImpoundment(correlationId, noticeNo);
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse _resp = new SearchImpoundmentsServiceResponse();
+		try {
+			_resp = digitalformsApiService.searchImpoundment(correlationId, noticeNo);
+		} catch (WebClientException e) {
+			logger.error("VIPS Internal Server Error: " + e.getMessage());
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search impoundment for Notice Number : " + noticeNo);
+		}
 		
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 		
@@ -95,7 +109,13 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			Long impoundmentId = _resp.getResult().get(0).getImpoundmentId();
 				
 			// Continue cascade to fetch impoundment object for impoundment id. 
-			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse _resp2 = digitalformsApiService.getImpoundment(correlationId, impoundmentId);
+			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse _resp2 = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse();
+			try {
+				_resp2 = digitalformsApiService.getImpoundment(correlationId, impoundmentId);
+			} catch (WebClientException e) {
+				logger.error("VIPS Internal Server Error: " + e.getMessage());
+				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get impoundment for impoundmentId : " + impoundmentId);
+			}
 				
 			// Depending on the result code from VIPS, we set the response Entity accordingly. 
 			if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {

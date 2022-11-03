@@ -17,6 +17,7 @@
 	<properties>
 		<java.version>11</java.version>
 		<jackson-version>[2.13.4.1,)</jackson-version>
+		<spring-security-core-version>5.7.5</spring-security-core-version>
 	</properties>
 
 	<repositories>
@@ -121,6 +122,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
+		</dependency>
+		
+		<!-- spring-security-core -->
+		<dependency>
+		    <groupId>org.springframework.security</groupId>
+		    <artifactId>spring-security-core</artifactId>
+		    <version>${spring-security-core-version}</version>
 		</dependency>
 	
 		<!--  Jackson  -->

@@ -13,6 +13,7 @@
 
         <swagger-annotations-version>1.6.6</swagger-annotations-version>
         <springdoc-openapi-ui-version>1.6.9</springdoc-openapi-ui-version>
+        <springfox-swagger-version>2.10.0</springfox-swagger-version>
         <jersey-version>3.1.0-M8</jersey-version>
         <jackson-version>[2.13.4.1,)</jackson-version>
         <jodatime-version>2.11.1</jodatime-version>
@@ -31,6 +32,11 @@
             <artifactId>swagger-annotations</artifactId>
             <version>${swagger-annotations-version}</version>
         </dependency>
+		<dependency>
+		    <groupId>io.springfox</groupId>
+		    <artifactId>springfox-swagger-ui</artifactId>
+		    <version>${springfox-swagger-version}</version>
+		</dependency>
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>

@@ -16,6 +16,7 @@
         <springfox-swagger-version>2.10.0</springfox-swagger-version>
         <jersey-version>3.1.0-M8</jersey-version>
         <jackson-version>[2.13.4.1,)</jackson-version>
+        <woodstox-core-version>6.4.0</woodstox-core-version>
         <jodatime-version>2.11.1</jodatime-version>
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <datatype-threetenbp-version>2.12.5</datatype-threetenbp-version>
@@ -82,6 +83,11 @@
             <artifactId>jackson-datatype-joda</artifactId>
             <version>${jackson-version}</version>
         </dependency>
+		<dependency>
+		    <groupId>com.fasterxml.woodstox</groupId>
+		    <artifactId>woodstox-core</artifactId>
+		    <version>${woodstox-core-version}</version>
+		</dependency>
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>

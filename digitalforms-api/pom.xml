@@ -18,6 +18,7 @@
 		<java.version>11</java.version>
 		<jackson-version>[2.13.4.1,)</jackson-version>
 		<spring-security-core-version>5.7.5</spring-security-core-version>
+		<snakeyaml.version>1.31</snakeyaml.version>
 	</properties>
 
 	<repositories>

@@ -25,7 +25,7 @@ COPY digitalforms-api-specification/pom.xml digitalforms-api-specification/pom.x
 COPY --from=libraries /libs/jag-digitalforms-client/pom.xml jag-digitalforms-client/pom.xml
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/pom.xml jag-vips-client/src/jag-vips-client/pom.xml
 
-RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline \
+RUN  mvn dependency:go-offline \
     -DskipTests \
     --no-transfer-progress \
     --batch-mode \
@@ -46,7 +46,7 @@ COPY --from=libraries /libs/jag-digitalforms-client/digitalformsords.yaml jag-di
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/src jag-vips-client/src/jag-vips-client/src
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/vipsords.yaml jag-vips-client/src/jag-vips-client/vipsords.yaml
 
-RUN --mount=type=cache,target=/root/.m2 mvn clean package \
+RUN  mvn clean package \
     -DskipTests \
     --no-transfer-progress \
     --batch-mode

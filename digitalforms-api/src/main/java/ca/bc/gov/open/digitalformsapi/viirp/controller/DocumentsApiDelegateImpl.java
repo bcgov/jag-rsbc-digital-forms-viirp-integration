@@ -299,9 +299,8 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			logger.error("VIPS Internal Server Error: " + e.getMessage());
 			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get base64 format document with documentId : " + documentId);
 		}
-		
-		if (documentResponse != null && documentResponse.getDocument() == null || documentResponse.getDocument().isEmpty()) {
-			logger.error("VIPS Error: Could not return a document base64 for the provided documentID: " + documentId);
+		if (documentResponse == null || documentResponse.getDocument() == null || documentResponse.getDocument().isEmpty()) {
+			logger.error("VIPS Error: No document found for the given documentID: " + documentId);
 			throw new ResourceNotFoundException("Document Not Found");
 		} else if (!Base64.isBase64(documentResponse.getDocument())) {
 			logger.error("VIPS Error: Invalid base64 format returned for the provided documentID: " + documentId);

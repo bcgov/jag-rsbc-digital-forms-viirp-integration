@@ -1,6 +1,9 @@
 # Digital Forms API Application properties. 
 # Note: Values prefixed with $ are externalized values and must be set via OS Secrets or if running locally 
-# using environmental variables with same name.      
+# using environmental variables with same name. 
+
+app:
+  version: 0.0.2     
     
 management:
   endpoint:

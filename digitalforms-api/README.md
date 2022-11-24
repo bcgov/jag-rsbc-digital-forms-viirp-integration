@@ -77,7 +77,8 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-5.) To pull in changes to a submodule, from the digitalforms (parent) level, run 
+5.) To pull in changes to a submodule, from the digitalforms (parent) level, run  
+
 ```
 git submodule update --remote --merge
 ```

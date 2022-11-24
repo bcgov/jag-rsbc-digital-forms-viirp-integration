@@ -30,6 +30,8 @@ parameters:
   value: "digitalforms-api"
 - name: SECRET2_NAME
   value: "df-vips-integration-api"
+- name: SECRET3_NAME
+  value: "splunk-config"
 objects:
 - apiVersion: apps.openshift.io/v1
   kind: DeploymentConfig
@@ -75,6 +77,8 @@ objects:
               name: ${SECRET1_NAME}
           - secretRef:
               name: ${SECRET2_NAME}
+          - secretRef:
+              name: ${SECRET3_NAME}
           ports:
             - name: web
               containerPort: 8082

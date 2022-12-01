@@ -12,7 +12,7 @@ This is the API level of this of this project.
 
 ### Environmental Variables
 
-These values must be set as environmental variables if running the API locally (As run configuration in STS4 or Eclipse)
+These values must be set as environmental variables if running the API locally (As run configuration in STS4 / Eclipse)
 
 | Name                            | Example Value               | Comments	       |
 | ------------------------------- | --------------------------- |------------------|

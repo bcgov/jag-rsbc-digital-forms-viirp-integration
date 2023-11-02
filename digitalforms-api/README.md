@@ -8,7 +8,7 @@ This is the API level of this of this project.
 | ------------------ | --------------------- |
 | Service            | Java, SpringFramework |
 | Application Server | Spring Boot / Tomcat  |
-| Runtime            | BC DevOps OpenShift  |
+| Runtime            | BC DevOps OpenShift   |
 
 ### Environmental Variables
 

@@ -11,11 +11,11 @@
 	</parent>
 	<groupId>ca.bc.gov.open</groupId>
 	<artifactId>digitalforms-api</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<name>digitalforms-api</name>
 	<description>RoadSafetyBC DigitalForms API (VI/IRP)</description>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<jackson-version>[2.13.4.1,)</jackson-version>
 		<spring-security-core-version>5.7.5</spring-security-core-version>
 		<snakeyaml.version>1.31</snakeyaml.version>

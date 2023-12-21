@@ -85,4 +85,15 @@ public class ControllerExceptionHandler {
     
     return new ResponseEntity<ErrorMessage>(message, headers, HttpStatus.INTERNAL_SERVER_ERROR);
   }
+  
+  @ExceptionHandler(BadRequestException.class)
+  public ResponseEntity<ErrorMessage> badRequestExceptionHandler(Exception ex, WebRequest request) {
+	    ErrorMessage message = new ErrorMessage();
+	    message.setStatusMessage(ex.getMessage());
+	    
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_JSON);
+    
+    return new ResponseEntity<ErrorMessage>(message, headers, HttpStatus.BAD_REQUEST);
+  }
 }

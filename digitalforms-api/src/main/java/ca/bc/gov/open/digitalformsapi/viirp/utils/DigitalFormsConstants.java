@@ -33,6 +33,7 @@ public final class DigitalFormsConstants {
 	//Digital Forms message constants
 	public static final String DIGITALFORMS_SUCCESS_MSG = "success";
 	public static final String DIGITALFORMS_VALIDATION_FAILURE_SUB_MSG = "Validation failed"; 
+	public static final String DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL = "Invalid license object - DL is a required field.";
 	
 	//VIPS WS Constants
 	public static final String ICBC_DATE_FORMAT = "yyyy-MM-dd";

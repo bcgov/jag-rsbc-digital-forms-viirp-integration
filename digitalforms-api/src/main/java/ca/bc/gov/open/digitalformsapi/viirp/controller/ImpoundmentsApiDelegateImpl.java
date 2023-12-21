@@ -6,14 +6,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.ImpoundmentsApiDelegate;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.BadRequestException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsRegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
@@ -39,6 +42,15 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	        CreateImpoundment createImpoundment) {
 		
 		logger.info("Heard a call to the endpoint 'impoundmentsCorrelationIdPost'");
+		
+		// DF-2933: If the "vipsLicenceCreateObj" node present, ensure DL is minimally supplied.
+		for (VipsRegistrationCreate reg : createImpoundment.getVipsRegistrationCreateArray()) {
+			if (null != reg.getVipsLicenceCreateObj()) {
+				if (!StringUtils.hasText(reg.getVipsLicenceCreateObj().getDriverLicenceNo())) {
+					throw new BadRequestException(DigitalFormsConstants.DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL);
+				}
+			}
+		}
 		
 		CreateImpoundmentServiceResponse resp = new CreateImpoundmentServiceResponse();
 		

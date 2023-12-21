@@ -516,7 +516,6 @@ components:
         - dataSourceCd
         - registrationRoleCd
         - vipAddressArray
-        - vipsLicenceCreateObj
       properties:
         dataSourceCd:
           type: string
@@ -963,10 +962,6 @@ components:
           type: string
     VipsLicenceCreate:
       type: object
-      required: 
-        - birthDt
-        - dlJurisdictionCd
-        - driverLicenceNo
       properties:
         birthDt:
           type: string

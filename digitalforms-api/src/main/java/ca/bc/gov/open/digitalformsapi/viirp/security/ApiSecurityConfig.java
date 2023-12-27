@@ -12,9 +12,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsAuthenticationFailureHandler;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * 
@@ -31,17 +34,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsAuthentication
 @EnableWebSecurity
 public class ApiSecurityConfig {
 	
-	private static final String[] AUTH_WHITELIST = {
-
-            // Non protected Swagger UI and Actuator endpoints.
-			"/swagger-ui/**",
-            "/swagger-resources/**",
-            "/swagger-ui/index.html",
-            "/swagger-ui.html",
-            "/v3/api-docs/**",
-            "/actuator/**"
-    };
-	
 	@Autowired
 	private ConfigProperties properties;
 	
@@ -49,22 +41,31 @@ public class ApiSecurityConfig {
 	private DigitalFormsAuthenticationFailureHandler authenticationFailureHandler;
 	
 	@Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception { 
 		
-		// Stateless session validates basic auth credentials for each request
-		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+		http.sessionManagement( httpSecuritySessionManagementConfigurer -> { 
+			httpSecuritySessionManagementConfigurer.sessionCreationPolicy( SessionCreationPolicy.STATELESS); 
+		});
+	
+		http.authorizeHttpRequests(requests -> requests
+				.requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
+				.requestMatchers(new AntPathRequestMatcher("/swagger-resources/**")).permitAll()
+				.requestMatchers(new AntPathRequestMatcher("/swagger-ui/index.html")).permitAll()
+				.requestMatchers(new AntPathRequestMatcher("/swagger-ui.html")).permitAll()
+				.requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
+				.requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
+				.anyRequest().authenticated()).httpBasic(withDefaults());
 
-		http.csrf().disable().authorizeRequests()
-			.antMatchers(AUTH_WHITELIST).permitAll()
-			.anyRequest().authenticated()
-			.and()
-			.httpBasic();
-		
-		// Authentication failure error response handler
-		http.exceptionHandling().authenticationEntryPoint(authenticationFailureHandler);
-		
+				// Authentication failure error response handler
+				http.httpBasic(
+					httpSecurityHttpBasicConfigurer -> { 
+						httpSecurityHttpBasicConfigurer.authenticationEntryPoint( authenticationFailureHandler ); 
+					}
+				);
+
 		return http.build();
 	}
+
 	
 	@Bean
     public InMemoryUserDetailsManager userDetailsService() {

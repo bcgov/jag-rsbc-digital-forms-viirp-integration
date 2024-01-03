@@ -28,7 +28,7 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 	
 	@Override
 	public ResponseEntity<CreateProhibitionServiceResponse> prohibitionsCorrelationIdPost(String correlationId,
-	        CreateProhibition createProhibition) {
+	        CreateProhibition createProhibition) throws DigitalFormsException {
 		
 		logger.info("Heard a call to the endpoint 'prohibitionsCorrelationIdPost'");
 		

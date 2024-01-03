@@ -1,4 +1,4 @@
-package ca.bc.gov.open.digitalformsapi.viirp;
+package ca.bc.gov.open.digitalformsapi.viirp.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

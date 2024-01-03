@@ -11,7 +11,7 @@
     <properties>
         <java.version>17</java.version>
 
-        <swagger-annotations-version>1.6.6</swagger-annotations-version>
+        <swagger-annotations-version>2.2.19</swagger-annotations-version>
         <springdoc-openapi-ui-version>1.6.9</springdoc-openapi-ui-version>
         <springfox-swagger-version>2.10.0</springfox-swagger-version>
         <jersey-version>3.1.0-M8</jersey-version>
@@ -20,7 +20,7 @@
         <jodatime-version>2.11.1</jodatime-version>
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <datatype-threetenbp-version>2.12.5</datatype-threetenbp-version>
-        <spring-boot-version>2.7.3</spring-boot-version>
+        <spring-boot-version>3.1.3</spring-boot-version>
         <junit-version>4.13.2</junit-version>
         <migbase64-version>2.2</migbase64-version>
         <jackson-databind-nullable>0.2.3</jackson-databind-nullable>
@@ -28,11 +28,20 @@
     </properties>
 
     <dependencies>
+		<!--
         <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>
             <version>${swagger-annotations-version}</version>
         </dependency>
+        -->
+        <!-- https://mvnrepository.com/artifact/io.swagger.core.v3/swagger-annotations -->
+		<dependency>
+		    <groupId>io.swagger.core.v3</groupId>
+		    <artifactId>swagger-annotations</artifactId>
+		    <version>${swagger-annotations-version}</version>
+		</dependency>
+        
 		<dependency>
 		    <groupId>io.springfox</groupId>
 		    <artifactId>springfox-swagger-ui</artifactId>
@@ -140,14 +149,14 @@
 		  	<artifactId>javax.annotation-api</artifactId>
 		  	<version>${javax-annotation-version}</version>
 		</dependency>
-    </dependencies>
+	</dependencies>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>6.1.0</version>
+                <version>6.6.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -162,6 +171,7 @@
                             <configOptions>
                             	<useTags>true</useTags>
                                 <delegatePattern>true</delegatePattern>
+                                <useJakartaEe>true</useJakartaEe>
                             </configOptions>
                         </configuration>
                     </execution>

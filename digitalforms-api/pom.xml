@@ -3,22 +3,22 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.7.5</version>
-		<relativePath /> <!-- lookup parent from repository -->
+		<version>3.1.3</version>
+		<relativePath />
 	</parent>
+	
 	<groupId>ca.bc.gov.open</groupId>
-	<artifactId>digitalforms-api</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>digitalforms-api</name>
+	<artifactId>digitalforms-viirp-api</artifactId>
+	<version>1.0.2</version>
+	<name>digitalforms-viirp-api</name>
 	<description>RoadSafetyBC DigitalForms API (VI/IRP)</description>
+	
 	<properties>
-		<java.version>11</java.version>
-		<jackson-version>[2.13.4.1,)</jackson-version>
-		<spring-security-core-version>5.7.5</spring-security-core-version>
-		<snakeyaml.version>1.31</snakeyaml.version>
+		<java.version>17</java.version>
 	</properties>
 
 	<repositories>
@@ -41,12 +41,17 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
-
+		
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
@@ -57,36 +62,32 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-
+		
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webflux</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
 		</dependency>
 		
-		
-
-		<!-- VIPS ORDS library dependency linked submodule (Shared with DPS and 
-			Digital Forms Reviews) -->
+		<!-- VIPS ORDS library dependency linked submodule -->
 		<dependency>
 			<groupId>ca.bc.gov.open</groupId>
 			<artifactId>jag-vips-client</artifactId>
-			<version>0.1.1</version>
+			<version>0.1.2</version>
 			<scope>compile</scope>
 		</dependency>
 
-		<!-- DIGITALFORMS ORDS library dependency (Shared with DF Reviews) -->
+		<!-- DIGITALFORMS ORDS library linked submodule -->
 		<dependency>
 			<groupId>ca.bc.gov.open</groupId>
 			<artifactId>digitalforms-ords-client</artifactId>
-			<version>0.1.1</version>
+			<version>0.1.2</version>
 			<scope>compile</scope>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.springframework/org.springframework.beans -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
-			<version>5.3.23</version>
 			<scope>compile</scope>
 		</dependency>
 
@@ -114,56 +115,66 @@
 			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
 		
-		<!-- spring-security-core -->
 		<dependency>
-		    <groupId>org.springframework.security</groupId>
-		    <artifactId>spring-security-core</artifactId>
-		    <version>${spring-security-core-version}</version>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
 		</dependency>
 	
 		<!--  Jackson  -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>${jackson-version}</version>
 		</dependency>
-		   <dependency>
+		
+		<dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-base</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
+        
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
+        
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson-version}</version>
+           
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-json-provider</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
+        
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
-		
+        
+		<dependency>
+		    <groupId>com.googlecode.json-simple</groupId>
+		    <artifactId>json-simple</artifactId>
+		    <version>1.1.1</version>
+		</dependency>
+	
+		<dependency>
+		    <groupId>commons-codec</groupId>
+		    <artifactId>commons-codec</artifactId>
+		</dependency>
+	
 	</dependencies>
 
 	<build>

@@ -12,7 +12,7 @@
 	<url>https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration</url>
 	
 	<properties>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
     </properties>
 
     <modules>

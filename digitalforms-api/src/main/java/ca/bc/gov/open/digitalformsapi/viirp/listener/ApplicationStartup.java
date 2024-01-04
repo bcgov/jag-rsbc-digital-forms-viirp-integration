@@ -12,7 +12,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 	
 	static final Logger log = LoggerFactory.getLogger(ApplicationStartup.class);
 
-	@Value("${app.version}")
+	@Value("${digitalforms.app.version}")
 	private String version;
 
 	/**

@@ -1,5 +1,6 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
@@ -23,7 +24,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import ca.bc.gov.open.digitalformsapi.viirp.UnitTestUtilities;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
@@ -39,6 +39,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsVehicleCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(value = "test")
@@ -185,7 +186,7 @@ public class ImpoundmentsApiControllerTests {
 		Mockito.when(service.createImpoundment(correlationId, createImpoundment)).thenReturn(response);
         
 		// Ensure Digital Form Exception type is thrown in this case
-		Assertions.assertThrows(DigitalFormsException.class, () -> {
+		assertThrows(DigitalFormsException.class, () -> {
 			controller.impoundmentsCorrelationIdPost(correlationId, createImpoundment);
 		});
     }

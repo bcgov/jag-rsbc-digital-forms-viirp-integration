@@ -1,5 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -8,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +27,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import ca.bc.gov.open.digitalformsapi.viirp.UnitTestUtilities;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
@@ -41,6 +41,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.vips.ProhibitionSearchResponse
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
 import ca.bc.gov.open.jag.ordsvipsclient.api.DocumentApi;
 import ca.bc.gov.open.jag.ordsvipsclient.api.handler.ApiException;
 import ca.bc.gov.open.jag.ordsvipsclient.api.model.VipsDocumentOrdsResponse;
@@ -207,9 +208,9 @@ public class DocumentsApiControllerTests {
 		.thenReturn("guid");
 		
 		// Ensure Digital Form Exception type is thrown in this case
-		Assertions.assertThrows(DigitalFormsException.class, () -> {
-					controller.documentsCorrelationIdPost(correlationId, goodStoreVIPSDocument);
-				});
+		assertThrows(DigitalFormsException.class, () -> {
+			controller.documentsCorrelationIdPost(correlationId, goodStoreVIPSDocument);
+		});
 	    
     }
     
@@ -248,7 +249,7 @@ public class DocumentsApiControllerTests {
         ResponseEntity<VipsGetDocumentByIdResponse> controllerResponse = controller.documentsDocumentIdCorrelationIdGet(correlationId, documentId);
         VipsGetDocumentByIdResponse result = controllerResponse.getBody();
         Mockito.verify(service).getDocumentAsBase64(correlationId, documentId);
-        Assert.assertEquals(encodedBase64, result.getDocument());
+        assertEquals(encodedBase64, result.getDocument());
     }
     
     @DisplayName("GET, Get Document Not Found  - Documents API Delegate")  

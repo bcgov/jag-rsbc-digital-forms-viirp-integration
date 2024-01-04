@@ -4,7 +4,7 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     ​
     <property name="CONSOLE_LOG_PATTERN"
-              value="%black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1.}) [%X{correlationId}]: %msg%n%throwable"/>
+              value="%black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1}) [%X{correlationId}]: %msg%n%throwable"/>
     <appender name="http" class="com.splunk.logging.HttpEventCollectorLogbackAppender">
                 <url>${SPLUNK_URL}</url>
                 <token>${SPLUNK_TOKEN_VIPS}</token>

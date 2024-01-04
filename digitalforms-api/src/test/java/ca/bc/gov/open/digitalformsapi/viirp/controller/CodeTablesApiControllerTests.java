@@ -1,19 +1,17 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+//import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
@@ -32,7 +31,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(value = "test")
 @AutoConfigureMockMvc(addFilters = false)
-@RunWith(MockitoJUnitRunner.class)
+//@RunWith(MockitoJUnitRunner.class)
 @ExtendWith(MockitoExtension.class)
 class CodeTablesApiControllerTests {
 	
@@ -60,7 +59,7 @@ class CodeTablesApiControllerTests {
         ResponseEntity<GetCodetablesServiceResponse> controllerResponse = controller.codetablesCorrelationIdGet(correlationId);
         GetCodetablesServiceResponse result = controllerResponse.getBody();
         Mockito.verify(service).getCodeTableValues(correlationId);
-        Assert.assertEquals("Success", result.getRespMsg());
+        assertEquals("Success", result.getRespMsg());
     }
 	
 	@Test

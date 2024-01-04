@@ -1,10 +1,7 @@
-# Digital Forms API Application properties. 
+# Digital Forms VI IRP API Application properties. 
 # Note: Values prefixed with $ are externalized values and must be set via OS Secrets or if running locally 
 # using environmental variables with same name. 
-
-app:
-  version: 0.0.2     
-    
+   
 management:
   endpoint:
     beans:
@@ -49,6 +46,8 @@ vips:
     username: ${DIGITALFORMS_VIPSORDS_USER}
     
 digitalforms:
+  app:
+    version: 1.0.2
   client:
     basePath: ${DIGITALFORMS_ORDS_BASEPATH}
     password: ${DIGITALFORMS_ORDS_PASSWORD}

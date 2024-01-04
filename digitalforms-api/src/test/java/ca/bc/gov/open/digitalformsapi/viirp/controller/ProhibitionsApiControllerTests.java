@@ -1,11 +1,12 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import ca.bc.gov.open.digitalformsapi.viirp.UnitTestUtilities;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
@@ -153,7 +154,7 @@ public class ProhibitionsApiControllerTests {
         ResponseEntity<CreateProhibitionServiceResponse> controllerResponse = controller.prohibitionsCorrelationIdPost(correlationId, createProhibition);
         CreateProhibitionServiceResponse result = controllerResponse.getBody();
         Mockito.verify(service).createProhibition(correlationId, createProhibition);
-        Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getRespMsg());
+        assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getRespMsg());
     }
     
     
@@ -169,7 +170,7 @@ public class ProhibitionsApiControllerTests {
 		Mockito.when(service.createProhibition(correlationId, createProhibition)).thenReturn(response);
         
 		// Ensure Digital Form Exception type is thrown in this case
-		Assertions.assertThrows(DigitalFormsException.class, () -> {
+		assertThrows(DigitalFormsException.class, () -> {
 			controller.prohibitionsCorrelationIdPost(correlationId, createProhibition);
 		});
     }
@@ -185,10 +186,11 @@ public class ProhibitionsApiControllerTests {
 		response.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
 		Mockito.when(service.createProhibition(correlationId, createProhibition)).thenReturn(response);
         
-		// Ensure Digital Form Exception type is thrown in this case
-		Assertions.assertThrows(DigitalFormsException.class, () -> {
+		//Ensure Digital Form Exception type is thrown in this case
+		assertThrows(DigitalFormsException.class, () -> {
 			controller.prohibitionsCorrelationIdPost(correlationId, createProhibition);
 		});
+	
     }
     
     // TODO - This checks for 500 errors when validation fails. Why - Because of Springboot's inadequate validation handling. 
@@ -234,7 +236,7 @@ public class ProhibitionsApiControllerTests {
         // Create successful search notice number call with prohibitionId and validate response 
         ResponseEntity<GetProhibitionServiceResponse> controllerResponse = controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
         GetProhibitionServiceResponse result = controllerResponse.getBody();
-        Assertions.assertEquals("VICTORIA", result.getResult().getCityNm());
+        assertEquals("VICTORIA", result.getResult().getCityNm());
         
     }
     
@@ -257,7 +259,7 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearchNotFound);
     	
     	// Ensure ResourceNotFoundException type is thrown in this case
-    	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+    	assertThrows(ResourceNotFoundException.class, () -> {
     			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
     	});
     
@@ -281,7 +283,7 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
         
         // Ensure DigitalFormsException type is thrown in this case
-    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    	assertThrows(DigitalFormsException.class, () -> {
     			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
     	});
     
@@ -299,7 +301,7 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
         
         // Ensure DigitalFormsException type is thrown in this case
-    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    	assertThrows(DigitalFormsException.class, () -> {
     			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
     	});
     	
@@ -317,7 +319,7 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
         
         // Ensure DigitalFormsException type is thrown in this case
-    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    	assertThrows(DigitalFormsException.class, () -> {
     			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
     	});
     	
@@ -347,7 +349,7 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.getProhibition(correlationId, prohibitionId)).thenReturn(vipsProhibitionNone);
         
         // Ensure ResourceNotFoundException type is thrown in this case
-    	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+    	assertThrows(ResourceNotFoundException.class, () -> {
     			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
     	});
     	
@@ -371,8 +373,10 @@ public class ProhibitionsApiControllerTests {
 		vipsProhibition.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
 	    Mockito.when(service.getProhibition(correlationId, prohibitionId)).thenReturn(vipsProhibition);
 	    
+	    //DigitalFormsException ex = new DigitalFormsException("test");
+	    
         // Ensure DigitalFormsException type is thrown in this case
-    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    	assertThrows(DigitalFormsException.class, () -> {
     			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
     	});
     	
@@ -397,7 +401,7 @@ public class ProhibitionsApiControllerTests {
 	    Mockito.when(service.getProhibition(correlationId, prohibitionId)).thenReturn(vipsProhibition);
 	    
         // Ensure DigitalFormsException type is thrown in this case
-    	Assertions.assertThrows(DigitalFormsException.class, () -> {
+    	assertThrows(DigitalFormsException.class, () -> {
     			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
     	});
     	

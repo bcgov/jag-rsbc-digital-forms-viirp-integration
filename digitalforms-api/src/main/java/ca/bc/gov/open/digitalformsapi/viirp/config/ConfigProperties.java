@@ -9,9 +9,14 @@ import org.springframework.stereotype.Component;
  * @author 237563
  *
  */
+//@Component
+//@ConfigurationProperties
 @Component
 @ConfigurationProperties
 public class ConfigProperties {
+	
+    @Value("${digitalforms.app.version}")
+    private String digitalformsAppVersion;
 
 	//Endpoint properties and credentials
     @Value("${vips.rest-api.url}")
@@ -46,6 +51,15 @@ public class ConfigProperties {
 
 	@Value("${digitalforms.basic-auth.password}")
 	private String digitalFormsBasicAuthPassword;
+	
+	
+	public String getDigitalformsAppVersion() {
+		return digitalformsAppVersion;
+	}
+
+	public void setDigitalformsAppVersion(String digitalformsAppVersion) {
+		this.digitalformsAppVersion = digitalformsAppVersion;
+	}
 
 	public String getVipsRestApiUrl() {
 		return vipsRestApiUrl;

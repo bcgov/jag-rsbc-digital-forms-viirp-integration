@@ -1,5 +1,6 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -132,7 +133,7 @@ public class DFPayloadApiTests {
 		when(dfPayloadService.getDFPayload(any(), any())).thenThrow(unauthorizedApiException);
 		
 		// Create GET DF Payload call and ensure UnauthorizedException type of exception is thrown in this case
-		Assertions.assertThrows(UnauthorizedException.class, () -> {
+		assertThrows(UnauthorizedException.class, () -> {
 			controller.dfpayloadsNoticeNoCorrelationIdGet(noticeNo, correlationId);
 		});
 	}

@@ -13,7 +13,7 @@
 	
 	<groupId>ca.bc.gov.open</groupId>
 	<artifactId>digitalforms-viirp-api</artifactId>
-	<version>0.0.2</version>
+	<version>1.0.2</version>
 	<name>digitalforms-viirp-api</name>
 	<description>RoadSafetyBC DigitalForms API (VI/IRP)</description>
 	
@@ -52,14 +52,6 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		
-		<!-- spring-security-core -->
-		<!--
-		<dependency>
-		    <groupId>org.springframework.security</groupId>
-		    <artifactId>spring-security-core</artifactId>
-		</dependency>
-		-->
-		
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
@@ -77,8 +69,7 @@
             <scope>test</scope>
 		</dependency>
 		
-		<!-- VIPS ORDS library dependency linked submodule (Shared with DPS and 
-			Digital Forms Reviews) -->
+		<!-- VIPS ORDS library dependency linked submodule -->
 		<dependency>
 			<groupId>ca.bc.gov.open</groupId>
 			<artifactId>jag-vips-client</artifactId>
@@ -86,17 +77,14 @@
 			<scope>compile</scope>
 		</dependency>
 
-		<!-- DIGITALFORMS ORDS library dependency (Shared with DF Reviews) -->
+		<!-- DIGITALFORMS ORDS library linked submodule -->
 		<dependency>
 			<groupId>ca.bc.gov.open</groupId>
 			<artifactId>digitalforms-ords-client</artifactId>
 			<version>0.1.2</version>
-			<!--
 			<scope>compile</scope>
-			-->
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.springframework/org.springframework.beans -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
@@ -176,14 +164,12 @@
             <artifactId>jackson-datatype-joda</artifactId>
         </dependency>
         
-        <!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
 		<dependency>
 		    <groupId>com.googlecode.json-simple</groupId>
 		    <artifactId>json-simple</artifactId>
 		    <version>1.1.1</version>
 		</dependency>
-		
-		<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+	
 		<dependency>
 		    <groupId>commons-codec</groupId>
 		    <artifactId>commons-codec</artifactId>

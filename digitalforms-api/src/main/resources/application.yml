@@ -1,4 +1,4 @@
-# Digital Forms API Application properties. 
+# Digital Forms VI IRP API Application properties. 
 # Note: Values prefixed with $ are externalized values and must be set via OS Secrets or if running locally 
 # using environmental variables with same name. 
    

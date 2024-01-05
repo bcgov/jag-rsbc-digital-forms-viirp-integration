@@ -13,7 +13,7 @@ RUN git submodule update --remote --merge
 ##############################################################################################
 #### Stage where the maven dependencies are cached                                         ###
 ##############################################################################################
-FROM maven:3.8-eclipse-temurin-11 as dependencies-cache
+FROM maven:3.8.2-eclipse-temurin-17 as dependencies-cache
 
 WORKDIR /build
 
@@ -54,7 +54,7 @@ RUN  mvn clean package \
 ##############################################################################################
 #### Stage where Docker is running a java process to run a service built in previous stage ###
 ##############################################################################################
-FROM eclipse-temurin:11-jre-jammy
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 

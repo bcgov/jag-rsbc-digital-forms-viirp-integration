@@ -12,9 +12,9 @@
 	</parent>
 	
 	<groupId>ca.bc.gov.open</groupId>
-	<artifactId>digitalforms-viirp-api</artifactId>
+	<artifactId>digitalforms-api</artifactId>
 	<version>1.0.2</version>
-	<name>digitalforms-viirp-api</name>
+	<name>digitalforms-api</name>
 	<description>RoadSafetyBC DigitalForms API (VI/IRP)</description>
 	
 	<properties>

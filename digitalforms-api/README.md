@@ -6,8 +6,8 @@ This is the API level of this of this project.
 
 | Layer              | Technology            |
 | ------------------ | --------------------- |
-| Service            | Java, SpringFramework |
-| Application Server | Spring Boot / Tomcat  |
+| Service            | Java 21, Spring Framework |
+| Application Server | Spring Boot 4 / Tomcat 11 |
 | Runtime            | BC DevOps OpenShift   |
 
 ### Environmental Variables
@@ -79,6 +79,46 @@ mvn spring-boot:run
 ```
 git submodule update --remote --merge
 ```
+
+### Regression tests
+
+With `JAVA_HOME` pointing to JDK 21, run from the repository root:
+
+```
+mvn -B -ntp clean verify
+```
+
+The HTTP regression suites in [src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller](src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller)
+start the application on a random port with the real security filters, controllers,
+JSON codecs, and VIPS WebClient. A loopback HTTP stub replaces only the remote VIPS
+service; no real credentials, database writes, or Docker daemon are required.
+They cover:
+
+- All four retired `/dfpayloads/{noticeNo}/{correlationId}` operations returning 404
+  after authentication, and their absence from generated OpenAPI.
+- Authenticated prohibition/impoundment creation followed by search and retrieval,
+  including forwarded authentication/audit headers and JSON field preservation.
+- Missing/invalid credentials, missing notices, VIPS failures, and licence validation.
+- Null or absent search pagination metadata, which must not break Jackson 3 decoding.
+
+These are HTTP contract tests, not proof of persistence in Oracle. Live VIPS/ORDS
+connectivity, database persistence and container deployment require environment validation.
+The shared client's existing test runner currently discovers zero tests; its sources
+and test configuration are maintained in that separate repository.
+
+### RSVIPS-889 cleanup
+
+The `/dfpayloads/*` API, its local delegate/models/helpers, and the
+`jag-digitalforms-client` dependency/submodule reference have been removed from VI/IRP.
+`DIGITALFORMS_ORDS_*` variables are no longer used by this application; remove them
+only from VI/IRP-specific deployment secrets, not secrets shared by other applications.
+The ORDS client repositories and database packages have not been changed.
+`/utility/ords/ping/{correlationId}` now checks VIPS ORDS only.
+
+The retained `/prohibitions/*` and `/impoundments/*` routes still call the existing
+VIPS WS `/cases/...` APIs through `VipsRestServiceImpl`. This cleanup/Java 21/Spring
+Boot 4 upgrade does not implement the later AOT source/verification/idempotency
+rules or change that downstream write path.
 
 ### Security
 

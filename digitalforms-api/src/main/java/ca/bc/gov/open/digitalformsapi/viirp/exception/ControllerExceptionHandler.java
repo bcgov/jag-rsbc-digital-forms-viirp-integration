@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.model.ErrorMessage;
 
@@ -44,6 +45,18 @@ public class ControllerExceptionHandler {
   
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorMessage> resourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+    ErrorMessage message = new ErrorMessage();
+    message.setStatusMessage(ex.getMessage());
+    
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    
+    return new ResponseEntity<ErrorMessage>(message, headers, HttpStatus.NOT_FOUND);
+  }
+  
+  // Since Spring 6.1, unmapped URLs raise NoResourceFoundException; keep returning 404 rather than falling into the generic 500 handler.
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ErrorMessage> noResourceFoundException(NoResourceFoundException ex, WebRequest request) {
     ErrorMessage message = new ErrorMessage();
     message.setStatusMessage(ex.getMessage());
     

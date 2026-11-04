@@ -60,7 +60,7 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 ```
 this will pull the last working version of jag-vips-client (submodule).
 
-2) Set the compiler version to java 11
+2) Set the compiler version to java 21
 
 3) From the digitalforms (parent) level, run: 
 

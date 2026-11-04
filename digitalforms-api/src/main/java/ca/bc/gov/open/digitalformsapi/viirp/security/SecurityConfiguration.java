@@ -14,7 +14,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsAuthenticationFailureHandler;
@@ -42,14 +41,14 @@ class SecurityConfiguration {
 
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
-                        .requestMatchers(new AntPathRequestMatcher("api/v1/auth/**")
-                                , new AntPathRequestMatcher("/v3/api-docs/**")
-                                , new AntPathRequestMatcher("/swagger-resources*")
-                                , new AntPathRequestMatcher("/swagger-ui.html")
-                                , new AntPathRequestMatcher("/swagger-ui/**")
-                                , new AntPathRequestMatcher("/webjars/**")
-                                , new AntPathRequestMatcher("/swagger-config/**")
-                                , new AntPathRequestMatcher("/actuator/**")
+                        .requestMatchers("/api/v1/auth/**"
+                                , "/v3/api-docs/**"
+                                , "/swagger-resources*"
+                                , "/swagger-ui.html"
+                                , "/swagger-ui/**"
+                                , "/webjars/**"
+                                , "/swagger-config/**"
+                                , "/actuator/**"
                         ).permitAll().anyRequest().authenticated()
                 );
 

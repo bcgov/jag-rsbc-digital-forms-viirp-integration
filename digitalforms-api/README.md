@@ -25,9 +25,6 @@ These values must be set as environmental variables if running the API locally (
 | DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |                  |
 | DIGITALFORMS_VIPSORDS_USER      | user                        |                  |
 | DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |                  |
-| DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |                  |
-| DIGITALFORMS_ORDS_USER          | user						|                  |
-| DIGITALFORMS_ORDS_PASSWORD      | password					|                  |
 | DIGITALFORMS_BASICAUTH_USER          | user					|                  |
 | DIGITALFORMS_BASICAUTH_PASSWORD      | password				|                  |
 | DIGITALFORMS_SWAGGER_ENABLED      | true					|                  |
@@ -118,7 +115,6 @@ secrets when in the DEV/TEST/PROD environments.
 | `impoundment`    | Impoundment operations               |
 | `prohibition`    | Prohibition operations               |
 | `documents`       | Document operations                 |
-| `df payloads`    | Digital Forms Payload operations     |
 | `code tables`    | Code Table value operations          |
 | `utility`          | Utility operations  	                 |
 

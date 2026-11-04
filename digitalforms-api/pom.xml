@@ -248,14 +248,6 @@
 			<scope>compile</scope>
 		</dependency>
 
-		<!-- DIGITALFORMS ORDS library linked submodule -->
-		<dependency>
-			<groupId>ca.bc.gov.open</groupId>
-			<artifactId>digitalforms-ords-client</artifactId>
-			<version>0.1.2</version>
-			<scope>compile</scope>
-		</dependency>
-
 		<!-- logback -->
 		<dependency>
 			<groupId>ch.qos.logback</groupId>

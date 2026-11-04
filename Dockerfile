@@ -22,7 +22,6 @@ COPY pom.xml pom.xml
 COPY digitalforms-api/pom.xml digitalforms-api/pom.xml
 COPY digitalforms-api-specification/pom.xml digitalforms-api-specification/pom.xml
 
-COPY --from=libraries /libs/jag-digitalforms-client/pom.xml jag-digitalforms-client/pom.xml
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/pom.xml jag-vips-client/src/jag-vips-client/pom.xml
 
 RUN  mvn dependency:go-offline \
@@ -41,8 +40,6 @@ WORKDIR /build
 COPY digitalforms-api/src digitalforms-api/src
 COPY digitalforms-api-specification/src digitalforms-api-specification/src
 
-COPY --from=libraries /libs/jag-digitalforms-client/src jag-digitalforms-client/src
-COPY --from=libraries /libs/jag-digitalforms-client/digitalformsords.yaml jag-digitalforms-client/digitalformsords.yaml
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/src jag-vips-client/src/jag-vips-client/src
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/vipsords.yaml jag-vips-client/src/jag-vips-client/vipsords.yaml
 

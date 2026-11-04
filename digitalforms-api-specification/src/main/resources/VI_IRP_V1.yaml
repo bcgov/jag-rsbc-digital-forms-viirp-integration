@@ -277,151 +277,6 @@ paths:
           $ref: '#/components/responses/404NotFound' 
         500:
           $ref: '#/components/responses/500ServerError'         
-  /dfpayloads/{noticeNo}/{correlationId}:
-    get:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Retrieve a payload from the Digital Forms staging table (Impoundment or Prohibition).  
-      parameters:
-      - name: noticeNo
-        in: path
-        description: Impoundment or Prohibition notice number. 
-        required: true
-        schema:
-          type: string
-          maxLength: 8
-          minLength: 8 
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true      
-      responses:
-        200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDFPayloadServiceResponse'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'
-        404:
-          $ref: '#/components/responses/404NotFound'
-        500:
-          $ref: '#/components/responses/500ServerError'
-    post:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Create a new payload in the Digital Forms staging table (Impoundment or Prohibition).
-      parameters:
-        - in: path
-          name: correlationId
-          schema:
-            type: string
-          required: true
-        - in: path
-          name: noticeNo
-          description: Impoundment or Prohibition notice number. 
-          required: true
-          schema:
-            type: string
-            maxLength: 8
-            minLength: 8   
-      requestBody:
-        description: body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostDFPayloadServiceRequest'
-        required: true
-      responses:
-        201:
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
-        500:
-          $ref: '#/components/responses/500ServerError'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'
-    put:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Update a payload in the Digital Forms staging table (Impoundment or Prohibition).
-      parameters:
-        - in: path
-          name: correlationId
-          schema:
-            type: string
-          required: true
-        - in: path
-          name: noticeNo
-          description: Impoundment or Prohibition notice number. 
-          required: true
-          schema:
-            type: string
-            maxLength: 8
-            minLength: 8   
-      requestBody:
-        description: body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PutDFPayloadServiceRequest'
-        required: true
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'           
-        404:
-          $ref: '#/components/responses/404NotFound'        
-        500:
-          $ref: '#/components/responses/500ServerError'
-    delete:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Delete a payload from the Digital Forms staging table (Impoundment or Prohibition).
-      parameters:
-        - in: path
-          name: correlationId
-          schema:
-            type: string
-          required: true
-        - in: path
-          name: noticeNo
-          description: Impoundment or Prohibition notice number. 
-          required: true
-          schema:
-            type: string
-            maxLength: 8
-            minLength: 8   
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'           
-        404:
-          $ref: '#/components/responses/404NotFound'        
-        500:
-          $ref: '#/components/responses/500ServerError'                                  
   /codetables/{correlationId}:
     get:
       tags:
@@ -1128,7 +983,7 @@ components:
         prohibitionNoticeNo:
           type: string
           maxLength: 12
-          description: Notice Number beginning with 21 or 22 for Prohibitions. 
+          description: Notice Number beginning with 21, 22, or 80-89 for Prohibitions.
         provinceCd:
           type: string
           maxLength: 2
@@ -1419,40 +1274,6 @@ components:
           type: string
         objectDsc:
           type: string
-    GetDFPayloadServiceResponse:
-      type: object
-      description: Digital Forms Schema GET Response
-      properties:
-        noticeTypeCd:
-          type: string
-        payload:
-          type: object
-        active:
-          type: boolean
-        processed: 
-          type: boolean
-    PostDFPayloadServiceRequest:
-      type: object
-      description: Digital Forms Schema POST Request
-      required:
-        - noticeTypeCd
-        - payload
-        - active
-        - processed
-      properties:
-        noticeTypeCd:
-          type: string
-        payload:
-          type: string
-        active:
-          type: boolean
-        processed: 
-          type: boolean
-    PostDFPayloadServiceResponse:
-      type: object
-      properties:
-        status_message:
-          type: string                        
     VipsImpoundmentBasicsObj:
       type: object
       properties:
@@ -1479,18 +1300,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VipsImpoundmentRegistrationObj'
-    PutDFPayloadServiceRequest:
-      type: object
-      description: Digital Forms Schema PUT Request
-      properties:
-        noticeTypeCd:
-          type: string
-        payload:
-          type: string
-        active:
-          type: boolean
-        processed: 
-          type: boolean            
     VipsImpoundmentRegistrationObj:
       type: object
       properties:

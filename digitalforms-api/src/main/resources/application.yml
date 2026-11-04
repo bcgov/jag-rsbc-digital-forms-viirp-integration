@@ -48,10 +48,6 @@ vips:
 digitalforms:
   app:
     version: 1.0.2
-  client:
-    basePath: ${DIGITALFORMS_ORDS_BASEPATH}
-    password: ${DIGITALFORMS_ORDS_PASSWORD}
-    username: ${DIGITALFORMS_ORDS_USER}
     
   basic-auth:
     user: ${DIGITALFORMS_BASICAUTH_USER:}

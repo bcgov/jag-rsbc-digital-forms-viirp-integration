@@ -25,7 +25,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
               "vipsRegistrationCreate": {
                 "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
                 "surnameNm": "HTTP TEST", "vipsAddressArray": [],
-                "vipsLicenceCreateObj": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
+                "vipsLicenceObj": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
               }
             }
             """;
@@ -47,7 +47,9 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertEquals(NOTICE, submitted.at("/vipsProhibitionCreate/prohibitionNoticeNo").asText());
         assertEquals(123456789012345L, submitted.at("/vipsDocumentIdArray/0").asLong());
         assertEquals("N", submitted.at("/vipsProhibitionCreate/driverLicenceSeizedYN").asText());
-        assertEquals("00001234", submitted.at("/vipsRegistrationCreate/vipsLicenceCreateObj/driverLicenceNo").asText());
+        assertEquals("00001234", submitted.at("/vipsRegistrationCreate/vipsLicenceObj/driverLicenceNo").asText());
+        assertFalse(submitted.at("/vipsRegistrationCreate").has("vipsLicenceCreateObj"),
+                "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertTrue(submitted.at("/vipsProhibitionCreate/expiryDt").isNull());
 
         vips.enqueue(200, """
@@ -85,5 +87,37 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertTrue(error.path("status_message").asText().contains(NOTICE));
         assertFalse(error.has("respMsg"));
         downstream("POST", "/cases/prohibitions");
+    }
+
+    @Test
+    void vipsCreateWarningCodesAreReportedAsSuccessWithWarning() throws Exception {
+        String createPath = "/prohibitions/" + correlationId;
+        vips.enqueue(200, "{\"respCd\":11,\"respMsg\":\"Update Drivers manually\"}");
+        assertEquals("success - Update Drivers manually",
+                responseJson(request("POST", createPath, BODY, AUTH), 200).path("respMsg").asText());
+        downstream("POST", "/cases/prohibitions");
+
+        vips.enqueue(200, "{\"respCd\":29,\"respMsg\":\"ICBC post execute failed\"}");
+        assertEquals("success - ICBC was not updated",
+                responseJson(request("POST", createPath, BODY, AUTH), 200).path("respMsg").asText());
+        downstream("POST", "/cases/prohibitions");
+    }
+
+    @Test
+    void unexpectedVipsCreateCodeIsNotReportedAsSuccess() throws Exception {
+        vips.enqueue(200, "{\"respCd\":21,\"respMsg\":\"Unexpected\"}");
+        JsonNode error = responseJson(request("POST", "/prohibitions/" + correlationId, BODY, AUTH), 500);
+        assertTrue(error.path("status_message").asText().contains("21"));
+        assertTrue(error.path("status_message").asText().contains(NOTICE));
+        downstream("POST", "/cases/prohibitions");
+    }
+
+    @Test
+    void prohibitionCityLongerThanVipsColumnIsRejectedBeforeCallingVips() throws Exception {
+        String tooLongCity = "\"" + "X".repeat(31) + "\"";
+        int status = request("POST", "/prohibitions/" + correlationId,
+                BODY.replace("\"VICTORIA\"", tooLongCity), AUTH).statusCode();
+        assertTrue(status >= 400, "31-character cityNm must be rejected; VIPS city_nm is VARCHAR2(30)");
+        assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
     }
 }

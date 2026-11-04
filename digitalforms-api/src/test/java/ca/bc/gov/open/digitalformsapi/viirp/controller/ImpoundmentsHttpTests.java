@@ -22,7 +22,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
               "vipsRegistrationCreateArray": [{
                 "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
                 "surnameNm": "HTTP TEST", "vipsAddressArray": [],
-                "vipsLicenceCreateObj": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
+                "vipsLicenceObj": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
               }],
               "vipsVehicleCreate": {"registrationNo": "00005678", "licencePlateNo": "TEST"}
             }
@@ -43,7 +43,9 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         assertEquals(NOTICE, submitted.at("/vipsImpoundCreate/impoundmentNoticeNo").asText());
         assertEquals(123456789012345L, submitted.at("/vipsDocumentIdArray/0").asLong());
         assertEquals(json.readTree("[\"STUNT\"]"), submitted.at("/vipsImpoundCreate/originalCauseCds"));
-        assertEquals("00001234", submitted.at("/vipsRegistrationCreateArray/0/vipsLicenceCreateObj/driverLicenceNo").asText());
+        assertEquals("00001234", submitted.at("/vipsRegistrationCreateArray/0/vipsLicenceObj/driverLicenceNo").asText());
+        assertFalse(submitted.at("/vipsRegistrationCreateArray/0").has("vipsLicenceCreateObj"),
+                "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertEquals("00005678", submitted.at("/vipsVehicleCreate/registrationNo").asText());
 
         vips.enqueue(200, "{\"respCd\":0,\"resultsCount\":null,\"result\":[{\"impoundmentId\":123456789012345}]}");
@@ -76,6 +78,29 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         JsonNode error = responseJson(request("POST", "/impoundments/" + correlationId, BODY, AUTH), 500);
         assertTrue(error.path("status_message").asText().contains(NOTICE));
         assertFalse(error.has("respMsg"));
+        downstream("POST", "/cases/impoundments");
+    }
+
+    @Test
+    void vipsCreateWarningCodesAreReportedAsSuccessWithWarning() throws Exception {
+        String createPath = "/impoundments/" + correlationId;
+        vips.enqueue(200, "{\"respCd\":29,\"respMsg\":\"ICBC post execute failed\"}");
+        assertEquals("success - ICBC was not updated",
+                responseJson(request("POST", createPath, BODY, AUTH), 200).path("respMsg").asText());
+        downstream("POST", "/cases/impoundments");
+
+        vips.enqueue(200, "{\"respCd\":11,\"respMsg\":\"Update Drivers manually\"}");
+        assertEquals("success - Update Drivers manually",
+                responseJson(request("POST", createPath, BODY, AUTH), 200).path("respMsg").asText());
+        downstream("POST", "/cases/impoundments");
+    }
+
+    @Test
+    void unexpectedVipsCreateCodeIsNotReportedAsSuccess() throws Exception {
+        vips.enqueue(200, "{\"respCd\":21,\"respMsg\":\"Unexpected\"}");
+        JsonNode error = responseJson(request("POST", "/impoundments/" + correlationId, BODY, AUTH), 500);
+        assertTrue(error.path("status_message").asText().contains("21"));
+        assertTrue(error.path("status_message").asText().contains(NOTICE));
         downstream("POST", "/cases/impoundments");
     }
 

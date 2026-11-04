@@ -43,10 +43,10 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		
 		logger.info("Heard a call to the endpoint 'impoundmentsCorrelationIdPost'");
 		
-		// DF-2933: If the "vipsLicenceCreateObj" node present, ensure DL is minimally supplied.
+		// DF-2933: If the "vipsLicenceObj" node present, ensure DL is minimally supplied.
 		for (VipsRegistrationCreate reg : createImpoundment.getVipsRegistrationCreateArray()) {
-			if (null != reg.getVipsLicenceCreateObj()) {
-				if (!StringUtils.hasText(reg.getVipsLicenceCreateObj().getDriverLicenceNo())) {
+			if (null != reg.getVipsLicenceObj()) {
+				if (!StringUtils.hasText(reg.getVipsLicenceObj().getDriverLicenceNo())) {
 					throw new BadRequestException(DigitalFormsConstants.DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL);
 				}
 			}
@@ -65,12 +65,21 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		// Depending on the result code from VIPS, we set the response Entity accordingly. 
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SHOW_MANUAL_DIALOG_CD) {
+			logger.warn("VIPS created impoundment with warning. Response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
+			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MANUAL_DRIVER_UPDATE_MSG);
+		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_INTERNAL_FAILURE_CD) {
+			logger.warn("VIPS created impoundment with warning. Response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
+			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_ICBC_NOT_UPDATED_MSG);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to created impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to created impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
+		} else {
+			logger.error("Unexpected VIPS response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
+			throw new DigitalFormsException("Unexpected VIPS WS response code " + _resp.getRespCd() + ". Failed to create impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		}
 		
 		return new ResponseEntity<>(resp, HttpStatus.OK);

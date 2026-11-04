@@ -45,12 +45,21 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 		// Depending on the result code from VIPS, we set the response Entity accordingly. 
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
 			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SHOW_MANUAL_DIALOG_CD) {
+			logger.warn("VIPS created prohibition with warning. Response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
+			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MANUAL_DRIVER_UPDATE_MSG);
+		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_INTERNAL_FAILURE_CD) {
+			logger.warn("VIPS created prohibition with warning. Response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
+			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_ICBC_NOT_UPDATED_MSG);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to created prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to created prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
+		} else {
+			logger.error("Unexpected VIPS response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
+			throw new DigitalFormsException("Unexpected VIPS WS response code " + _resp.getRespCd() + ". Failed to create prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		}
 		
 		return new ResponseEntity<>(resp, HttpStatus.OK);

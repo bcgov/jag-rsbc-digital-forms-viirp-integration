@@ -24,6 +24,8 @@ public final class DigitalFormsConstants {
 	// VIPS General Response code values
 	public static final int VIPSWS_SUCCESS_CD = 0;
 	public static final int VIPSWS_GENERAL_FAILURE_CD = 1;
+	public static final int VIPSWS_SHOW_MANUAL_DIALOG_CD = 11; // saved; VIPS UI shows "Update Drivers manually".
+	public static final int VIPSWS_INTERNAL_FAILURE_CD = 29; // saved; ICBC post-processing failed ("ICBC was not updated").
 	public static final int VIPSWS_JAVA_EX = 99; // low level JAVA issue rather than a DB problem.
 	
 	// VIPS ORDS Response code values
@@ -32,6 +34,8 @@ public final class DigitalFormsConstants {
 	
 	//Digital Forms message constants
 	public static final String DIGITALFORMS_SUCCESS_MSG = "success";
+	public static final String DIGITALFORMS_SUCCESS_MANUAL_DRIVER_UPDATE_MSG = "success - Update Drivers manually";
+	public static final String DIGITALFORMS_SUCCESS_ICBC_NOT_UPDATED_MSG = "success - ICBC was not updated";
 	public static final String DIGITALFORMS_VALIDATION_FAILURE_SUB_MSG = "Validation failed"; 
 	public static final String DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL = "Invalid license object - DL is a required field.";
 	

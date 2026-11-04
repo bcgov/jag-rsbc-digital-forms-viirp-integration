@@ -112,7 +112,7 @@ public class ImpoundmentsApiControllerTests {
 		vipsLicenceCreateObj.setDriverLicenceNo("4771979");
 		vipsLicenceCreateObj.setDlJurisdictionCd("FL");
 		
-		vipsRegistrationCreate.setVipsLicenceCreateObj(vipsLicenceCreateObj);
+		vipsRegistrationCreate.setVipsLicenceObj(vipsLicenceCreateObj);
 		vipsRegistrationCreate.setVipsAddressArray(vipsAddressArray);
 		
 		VipsVehicleCreate vipsVehicleCreate = new VipsVehicleCreate();

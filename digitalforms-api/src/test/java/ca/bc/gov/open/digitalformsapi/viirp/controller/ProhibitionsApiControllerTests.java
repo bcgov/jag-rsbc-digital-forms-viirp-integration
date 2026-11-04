@@ -111,7 +111,7 @@ public class ProhibitionsApiControllerTests {
 		vipsLicenceCreateObj.setDriverLicenceNo("4771979");
 		vipsLicenceCreateObj.setDlJurisdictionCd("FL");
 		
-		vipsRegistrationCreate.setVipsLicenceCreateObj(vipsLicenceCreateObj);
+		vipsRegistrationCreate.setVipsLicenceObj(vipsLicenceCreateObj);
 		vipsRegistrationCreate.setVipsAddressArray(vipsAddressArray);
 		
 		List<Long> vipsDocumentIdArray = new ArrayList<>();

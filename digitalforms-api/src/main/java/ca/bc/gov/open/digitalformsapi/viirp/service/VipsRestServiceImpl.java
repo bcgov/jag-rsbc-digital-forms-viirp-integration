@@ -226,7 +226,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
-                .body(Mono.just(prohibition), ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment.class) // body of request.
+                .body(Mono.just(prohibition), CreateProhibition.class) // body of request.
                 .retrieve()
                 .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse.class) // body of response (need VIPS class)
         		.block();

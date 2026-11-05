@@ -41,6 +41,8 @@ objects:
         type: Docker
         dockerStrategy:
           dockerfilePath: Dockerfile
+          # Pull the base image on every build to pick up OS patches re-pushed under the same tag.
+          forcePull: true
       output:
         to:
           kind: ImageStreamTag

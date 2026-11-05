@@ -2,7 +2,7 @@
 #### Stage where the git submodules are updated                                            ###
 ##############################################################################################
 
-FROM alpine/git as libraries
+FROM alpine/git:2.54.0 as libraries
 
 WORKDIR /libs
 
@@ -13,7 +13,7 @@ RUN git submodule update --init --recursive
 ##############################################################################################
 #### Stage where the maven dependencies are cached                                         ###
 ##############################################################################################
-FROM maven:3.9.9-eclipse-temurin-21 as dependencies-cache
+FROM maven:3.9.16-eclipse-temurin-21 as dependencies-cache
 
 WORKDIR /build
 
@@ -51,7 +51,8 @@ RUN  mvn clean package \
 ##############################################################################################
 #### Stage where Docker is running a java process to run a service built in previous stage ###
 ##############################################################################################
-FROM eclipse-temurin:21-jre-alpine
+# Pinned so the JDK and its timezone data (tzdata 2026e) only change on purpose; bump via Dependabot.
+FROM eclipse-temurin:21.0.13_9-jre-alpine
 
 WORKDIR /app
 

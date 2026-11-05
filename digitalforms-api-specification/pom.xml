@@ -10,9 +10,9 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring-boot-version>4.1.1</spring-boot-version>
-        <springdoc-openapi-version>3.1.0</springdoc-openapi-version>
-        <jackson-databind-nullable>0.2.6</jackson-databind-nullable>
+        <spring-boot-version>4.1.2</spring-boot-version>
+        <springdoc-openapi-version>3.2.0</springdoc-openapi-version>
+        <jackson-databind-nullable>0.2.13</jackson-databind-nullable>
     </properties>
 
     <dependencyManagement>
@@ -64,7 +64,7 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>6.6.0</version>
+                <version>7.27.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -80,6 +80,9 @@
                             	<useTags>true</useTags>
                                 <delegatePattern>true</delegatePattern>
                                 <useJakartaEe>true</useJakartaEe>
+                                <useSpringBoot4>true</useSpringBoot4>
+                                <!-- keep 6.x behaviour: optional arrays stay null rather than [] when omitted -->
+                                <containerDefaultToNull>true</containerDefaultToNull>
                             </configOptions>
                         </configuration>
                     </execution>
@@ -89,7 +92,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.12.1</version>
+                <version>3.15.0</version>
                 <configuration>
                     <release>${java.version}</release>
                     <proc>none</proc>

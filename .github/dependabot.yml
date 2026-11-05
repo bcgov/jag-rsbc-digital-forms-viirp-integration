@@ -1,8 +1,10 @@
 version: 2
 updates:
-  # Java dependencies
+  # Java dependencies (the root pom is skipped: it references the jag-vips-client submodule)
   - package-ecosystem: "maven"
-    directory: "/digitalforms-api"
+    directories:
+      - "/digitalforms-api"
+      - "/digitalforms-api-specification"
     schedule:
       interval: "weekly"
       day: "tuesday"

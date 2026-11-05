@@ -51,6 +51,8 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertFalse(submitted.at("/vipsRegistrationCreate").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertTrue(submitted.at("/vipsProhibitionCreate/expiryDt").isNull());
+        assertTrue(submitted.at("/vipsProhibitionCreate/dreEvaluationCds").isNull(),
+                "Omitted optional arrays must be forwarded as null, not []");
 
         vips.enqueue(200, """
                 {"respCd":0,"resultsCount":null,"result":[{"prohibitionId":123456789012345}]}
@@ -118,6 +120,14 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         int status = request("POST", "/prohibitions/" + correlationId,
                 BODY.replace("\"VICTORIA\"", tooLongCity), AUTH).statusCode();
         assertTrue(status >= 400, "31-character cityNm must be rejected; VIPS city_nm is VARCHAR2(30)");
+        assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
+    }
+
+    @Test
+    void missingRequiredDocumentIdArrayIsRejectedBeforeCallingVips() throws Exception {
+        String body = BODY.replace("\"vipsDocumentIdArray\": [123456789012345],", "");
+        int status = request("POST", "/prohibitions/" + correlationId, body, AUTH).statusCode();
+        assertTrue(status >= 400, "vipsDocumentIdArray is required by the spec");
         assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
     }
 }

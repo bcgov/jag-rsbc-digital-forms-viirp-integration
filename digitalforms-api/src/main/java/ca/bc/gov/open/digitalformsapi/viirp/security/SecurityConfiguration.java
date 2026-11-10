@@ -43,6 +43,7 @@ class SecurityConfiguration {
                 .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                         .requestMatchers("/api/v1/auth/**"
                                 , "/v3/api-docs/**"
+                                , "/v3/api-docs.yaml"
                                 , "/swagger-resources*"
                                 , "/swagger-ui.html"
                                 , "/swagger-ui/**"

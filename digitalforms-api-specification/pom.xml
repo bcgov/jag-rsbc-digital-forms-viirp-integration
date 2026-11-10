@@ -75,12 +75,17 @@
                             <generatorName>spring</generatorName>
                             <apiPackage>ca.bc.gov.open.digitalformsapi.viirp.api</apiPackage>
                             <modelPackage>ca.bc.gov.open.digitalformsapi.viirp.model</modelPackage>
-                            <supportingFilesToGenerate>ApiUtil.java</supportingFilesToGenerate>
+                            <!-- SpringDocConfiguration publishes the YAML's info and security schemes via springdoc -->
+                            <supportingFilesToGenerate>ApiUtil.java,SpringDocConfiguration.java</supportingFilesToGenerate>
                             <configOptions>
                             	<useTags>true</useTags>
+                                <configPackage>ca.bc.gov.open.digitalformsapi.viirp.api.config</configPackage>
                                 <delegatePattern>true</delegatePattern>
+                                <!-- The servlet context path owns the public base URL, not generated controllers. -->
+                                <requestMappingMode>none</requestMappingMode>
                                 <useJakartaEe>true</useJakartaEe>
                                 <useSpringBoot4>true</useSpringBoot4>
+                                <openApiNullable>false</openApiNullable>
                                 <!-- keep 6.x behaviour: optional arrays stay null rather than [] when omitted -->
                                 <containerDefaultToNull>true</containerDefaultToNull>
                             </configOptions>

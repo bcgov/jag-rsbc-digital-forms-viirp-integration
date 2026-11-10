@@ -22,20 +22,18 @@ public interface VipsRestService {
 	/**
 	 * Retrieves a {@link GetCodetablesServiceResponse} by proxying the VIPS WS call to the 'configuration' endpoint
 	 * 
-	 * @param correlationId
 	 * @return
 	 */
-	public GetCodetablesServiceResponse getCodeTableValues(String correlationId);
+	public GetCodetablesServiceResponse getCodeTableValues();
 	
 	/**
 	 * 
 	 * Retrieves a {@link CreateImpoundmentServiceResponse} by proxying the VIPS WS call to the POST 'impoundment' endpoint
 	 * 
-	 * @param correlationId
 	 * @param impoundment
 	 * @return
 	 */
-	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(String correlationId, ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment);
+	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment);
 
 	/**
 	 * 
@@ -43,11 +41,10 @@ public interface VipsRestService {
 	 * 
 	 * @See ImpoundmentsApiDelegateImpl. 
 	 * 
-	 * @param correlationId
 	 * @param noticeNo
 	 * @return
 	 */
-	public SearchImpoundmentsServiceResponse searchImpoundment(String correlationId, String noticeNo);
+	public SearchImpoundmentsServiceResponse searchImpoundment(String noticeNo);
 	
 	
 	/**
@@ -55,11 +52,10 @@ public interface VipsRestService {
 	 * Returns a {@link SearchImpoundmentsServiceResponse} by calling VIPS WS to search for a given impoundment Id.
 	 * 
 	 * 
-	 * @param correlationId
 	 * @param impoundmentId
 	 * @return
 	 */
-	public GetImpoundmentServiceResponse getImpoundment(String correlationId, Long impoundmentId);
+	public GetImpoundmentServiceResponse getImpoundment(Long impoundmentId);
 
 	
 	/**
@@ -68,11 +64,10 @@ public interface VipsRestService {
 	 * 
 	 * @See ProhibitionsApiDelegateImpl. 
 	 * 
-	 * @param correlationId
 	 * @param noticeNo
 	 * @return
 	 */
-	public SearchProhibitionsServiceResponse searchProhibition(String correlationId, String noticeNo);
+	public SearchProhibitionsServiceResponse searchProhibition(String noticeNo);
 	
 	
 	/**
@@ -80,33 +75,30 @@ public interface VipsRestService {
 	 * Returns a {@link SearchProhibitionServiceResponse} by calling VIPS WS to search for a given impoundment Id.
 	 * 
 	 * 
-	 * @param correlationId
 	 * @param ProhibitionId
 	 * @return
 	 */
-	public GetProhibitionServiceResponse getProhibition(String correlationId, Long prohibitionId);
+	public GetProhibitionServiceResponse getProhibition(Long prohibitionId);
 	
 	
 	/**
 	 * 
 	 * Returns a {@link VipsGetDocumentByIdResponse} by calling VIPS WS to return a document Base64 for a given document Id.
 	 * 
-	 * @param correlationId
 	 * @param documentId
 	 * @return
 	 */
-	public VipsGetDocumentByIdResponse getDocumentAsBase64(String correlationId, Long documentId);
+	public VipsGetDocumentByIdResponse getDocumentAsBase64(Long documentId);
 	
 	/**
 	 * 
 	 * Returns a {@link GetDocumentsListServiceResponse} by calling VIPS WS to retrieve documents associated with a given Impoundment or Prohibition Id.
 	 * 
-	 * @param correlationId
 	 * @param impoundmentId
 	 * @param prohibitionId
 	 * @return
 	 */
-	public GetDocumentsListServiceResponse getDocumentsMetaList(String correlationId, Long impoundmentId, Long prohibitionId);
+	public GetDocumentsListServiceResponse getDocumentsMetaList(Long impoundmentId, Long prohibitionId);
 
 	
 	/**
@@ -123,10 +115,9 @@ public interface VipsRestService {
 	 * 
 	 * Returns a {@link CreateProhibitionServiceResponse} by proxying the VIPS WS call to the POST 'prohibition' endpoint
 	 * 
-	 * @param correlationId
 	 * @param prohibition
 	 * @return
 	 */
-	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse createProhibition(String correlationId, ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition impoundment);
+	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse createProhibition(ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition impoundment);
 	
 }

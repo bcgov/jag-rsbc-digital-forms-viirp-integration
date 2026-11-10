@@ -53,7 +53,10 @@ digitalforms:
     user: ${DIGITALFORMS_BASICAUTH_USER:}
     password: ${DIGITALFORMS_BASICAUTH_PASSWORD:}
     
-# Spring Doc Swagger-UI enable / disable    
+# springdoc publishes the API docs at /v3/api-docs. SPRINGDOC_APIDOCS_ENABLED=false (PROD) turns off the docs and
+# Swagger UI. Setting it explicitly also silences springdoc's "enabled by default" startup warning.
 springdoc:
+    api-docs:
+      enabled: ${SPRINGDOC_APIDOCS_ENABLED:true}
     swagger-ui:
       enabled: ${DIGITALFORMS_SWAGGER_ENABLED:false}

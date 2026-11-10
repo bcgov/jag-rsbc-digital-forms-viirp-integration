@@ -31,9 +31,9 @@ public class UtilityApiDelegateImpl implements UtilityApiDelegate{
 		
 	@SuppressWarnings("unchecked")
 	@Override
-	public ResponseEntity<PingResponse> utilityOrdsPingCorrelationIdGet(String correlationId) {
+	public ResponseEntity<PingResponse> pingOrds(String xCorrelationID) {
 		
-		logger.info("Heard a call to 'utilityOrdsPingCorrelationIdGet'");
+		logger.info("Heard a call to 'pingOrds'");
 		
 		PingResponse resp = new PingResponse();
 		try {

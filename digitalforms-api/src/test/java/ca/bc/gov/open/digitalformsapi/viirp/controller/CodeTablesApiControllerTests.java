@@ -26,7 +26,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 //import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
-import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(value = "test")
@@ -50,28 +49,25 @@ class CodeTablesApiControllerTests {
 	@Test
     public void testCodeTablesApiGetSuccess() {
         
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
 		GetCodetablesServiceResponse response = new GetCodetablesServiceResponse();
 		response.setRespMsg("Success");
+		response.setConfiguration(new ca.bc.gov.open.digitalformsapi.viirp.model.VipsConfigurationObj());
 
-        Mockito.when(service.getCodeTableValues(correlationId)).thenReturn(response);
-        ResponseEntity<GetCodetablesServiceResponse> controllerResponse = controller.codetablesCorrelationIdGet(correlationId);
+        Mockito.when(service.getCodeTableValues()).thenReturn(response);
+        ResponseEntity<GetCodetablesServiceResponse> controllerResponse = controller.getCodeTables(null);
         GetCodetablesServiceResponse result = controllerResponse.getBody();
-        Mockito.verify(service).getCodeTableValues(correlationId);
+        Mockito.verify(service).getCodeTableValues();
         assertEquals("Success", result.getRespMsg());
     }
 	
 	@Test
 	public void testCodeTablesApiGetError500WithNoBasicAuth() throws Exception {
 		
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
-	    mvc.perform(get("/codetables/{correlationId}", correlationId)
+	    mvc.perform(get("/codetables")
             		.contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is5xxServerError())
 	    	.andExpect(content().contentType("application/json"))
 	    	.andExpect(result -> assertTrue(result.getResolvedException() instanceof DigitalFormsException))
-	    	.andExpect(jsonPath("$.status_message").value("VIPS API Service failed to respond, after max attempts of: " + properties.getVipsRestApiRetryCount()));
+			.andExpect(jsonPath("$.status_message").value("Internal Server Error"));
 	}
 }

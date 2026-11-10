@@ -19,6 +19,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsRegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
+import ca.bc.gov.open.digitalformsapi.viirp.service.NoticeConflictService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
 @Service
@@ -29,6 +30,9 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	@Autowired
 	private VipsRestService digitalformsApiService;
 
+	@Autowired
+	private NoticeConflictService noticeConflicts;
+
 	/**
 	 * POST Impoundment (TO VIPS WS) 
 	 * 
@@ -38,13 +42,16 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	 * 	500. from the SSG if VIPS WS is unavailable or responds with any code other than 200. 
 	 */
 	@Override
-	public ResponseEntity<CreateImpoundmentServiceResponse> impoundmentsCorrelationIdPost(String correlationId,
-	        CreateImpoundment createImpoundment) {
+	public ResponseEntity<CreateImpoundmentServiceResponse> createImpoundment(CreateImpoundment createImpoundment,
+	        String xCorrelationID) {
 		
-		logger.info("Heard a call to the endpoint 'impoundmentsCorrelationIdPost'");
+		logger.info("Heard a call to the endpoint 'createImpoundment'");
 		
 		// DF-2933: If the "vipsLicenceObj" node present, ensure DL is minimally supplied.
 		for (VipsRegistrationCreate reg : createImpoundment.getVipsRegistrationCreateArray()) {
+			if (reg == null) {
+				throw new BadRequestException("vipsRegistrationCreateArray must not contain null entries.");
+			}
 			if (null != reg.getVipsLicenceObj()) {
 				if (!StringUtils.hasText(reg.getVipsLicenceObj().getDriverLicenceNo())) {
 					throw new BadRequestException(DigitalFormsConstants.DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL);
@@ -52,11 +59,13 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			}
 		}
 		
+		noticeConflicts.checkImpoundment(createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
+
 		CreateImpoundmentServiceResponse resp = new CreateImpoundmentServiceResponse();
 		
 		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse _resp = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse();
 		try {
-			_resp = digitalformsApiService.createImpoundment(correlationId, createImpoundment);
+			_resp = digitalformsApiService.createImpoundment(createImpoundment);
 		} catch (WebClientException e) {
 			logger.error("VIPS Internal Server Error: " + e.getMessage());
 			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to create impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
@@ -72,6 +81,8 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			logger.warn("VIPS created impoundment with warning. Response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_ICBC_NOT_UPDATED_MSG);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
+			// Preserve the database constraint as the final guard against concurrent creates.
+			noticeConflicts.checkImpoundment(createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Failed to created impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
@@ -81,8 +92,12 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			logger.error("Unexpected VIPS response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Unexpected VIPS WS response code " + _resp.getRespCd() + ". Failed to create impoundment for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 		}
+		if (_resp.getImpoundmentId() == null) {
+			throw new DigitalFormsException("VIPS WS did not return an impoundment ID for Notice Number : " + createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
+		}
+		resp.setImpoundmentId(_resp.getImpoundmentId());
 		
-		return new ResponseEntity<>(resp, HttpStatus.OK);
+		return new ResponseEntity<>(resp, HttpStatus.CREATED);
 		
 	}
 
@@ -100,17 +115,16 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	 * 	500. from the SSG if VIPS WS is unavailable or responds with any code other than 200. 
 	 */
 	@Override
-	public ResponseEntity<GetImpoundmentServiceResponse> impoundmentsNoticeNoCorrelationIdGet(String noticeNo,
-	        String correlationId) {
+	public ResponseEntity<GetImpoundmentServiceResponse> getImpoundment(String noticeNo, String xCorrelationID) {
 		
-		logger.info("Heard a call to the endpoint 'impoundmentsImpoundmentIdCorrelationIdGet' with noticeNo " + noticeNo);
+		logger.info("Heard a call to the endpoint 'getImpoundment' with noticeNo " + noticeNo);
 		
 		GetImpoundmentServiceResponse resp = new GetImpoundmentServiceResponse();
 		
 		// Start cascade by fetching impoundmentId for notice number. 
 		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse _resp = new SearchImpoundmentsServiceResponse();
 		try {
-			_resp = digitalformsApiService.searchImpoundment(correlationId, noticeNo);
+			_resp = digitalformsApiService.searchImpoundment(noticeNo);
 		} catch (WebClientException e) {
 			logger.error("VIPS Internal Server Error: " + e.getMessage());
 			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search impoundment for Notice Number : " + noticeNo);
@@ -132,7 +146,7 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			// Continue cascade to fetch impoundment object for impoundment id. 
 			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse _resp2 = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse();
 			try {
-				_resp2 = digitalformsApiService.getImpoundment(correlationId, impoundmentId);
+				_resp2 = digitalformsApiService.getImpoundment(impoundmentId);
 			} catch (WebClientException e) {
 				logger.error("VIPS Internal Server Error: " + e.getMessage());
 				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get impoundment for impoundmentId : " + impoundmentId);
@@ -158,6 +172,8 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
 				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
 				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get impoundment for impoundment Id : " + impoundmentId);
+			} else {
+				throw new DigitalFormsException("Unexpected VIPS response code: " + _resp2.getRespCd());
 			}	
 			
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
@@ -166,6 +182,8 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
 			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get impoundment for Notice Number : " + noticeNo);
+		} else {
+			throw new DigitalFormsException("Unexpected VIPS response code: " + _resp.getRespCd());
 		}
 		
 		return new ResponseEntity<>(resp, HttpStatus.OK);

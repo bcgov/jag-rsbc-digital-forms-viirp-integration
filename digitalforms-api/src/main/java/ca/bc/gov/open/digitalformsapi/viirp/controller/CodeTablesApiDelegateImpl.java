@@ -22,19 +22,22 @@ public class CodeTablesApiDelegateImpl implements CodetablesApiDelegate{
 	private VipsRestService digitalformsApiService;
 	
 	@Override
-	public ResponseEntity<GetCodetablesServiceResponse> codetablesCorrelationIdGet(String correlationId) {
+	public ResponseEntity<GetCodetablesServiceResponse> getCodeTables(String xCorrelationID) {
 		
-		logger.info("Heard a call to the endpoint 'codetablesCorrelationIdGet'");
+		logger.info("Heard a call to the endpoint 'getCodeTables'");
 		
 		GetCodetablesServiceResponse _resp = new GetCodetablesServiceResponse();
 		
 		try {
-			_resp = digitalformsApiService.getCodeTableValues(correlationId);
+			_resp = digitalformsApiService.getCodeTableValues();
 		} catch (WebClientException e) {
 			logger.error("VIPS Internal Server Error: " + e.getMessage());
-			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get codetables with correlationId : " + correlationId);
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get codetables.");
 		}
 		
+		if (_resp == null || _resp.getConfiguration() == null) {
+			throw new DigitalFormsException("VIPS returned no code-table configuration.");
+		}
 		return new ResponseEntity<GetCodetablesServiceResponse>(_resp, HttpStatus.OK);
 	}
 }

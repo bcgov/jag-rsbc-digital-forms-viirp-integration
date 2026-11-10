@@ -62,8 +62,6 @@ public class VipsRestServiceTest {
 	@Test
 	public void testGetCodeTableValues() {
 
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-
 		GetCodetablesServiceResponse codeTablesServiceResponse = new GetCodetablesServiceResponse();
 		VipsConfigurationObj configuration = new VipsConfigurationObj();
 
@@ -77,7 +75,7 @@ public class VipsRestServiceTest {
 		when(this.responseMock.bodyToMono(GetCodetablesServiceResponse.class))
 				.thenReturn(Mono.just(codeTablesServiceResponse));
 
-		var result = service.getCodeTableValues(correlationId);
+		var result = service.getCodeTableValues();
 
 		assertThat(result).isNotNull();
 		assertThat(result.getRespMsg()).isEqualTo("Success");
@@ -88,7 +86,6 @@ public class VipsRestServiceTest {
 	@Test
 	public void getDocumentAsBase64() {
 
-		String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
 		Long documentId = DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID;
 
 		VipsGetDocumentByIdResponse vipsDocumentResponse = new VipsGetDocumentByIdResponse();
@@ -109,7 +106,7 @@ public class VipsRestServiceTest {
 		when(this.requestHeadersMock.retrieve()).thenReturn(this.responseMock);
 		when(this.responseMock.bodyToMono(String.class)).thenReturn(Mono.just(encodedBase64));
 
-		var result = service.getDocumentAsBase64(correlationId, documentId);
+		var result = service.getDocumentAsBase64(documentId);
 
 		assertThat(result).isNotNull();
 		assertThat(result.getDocument()).isEqualTo(encodedBase64);

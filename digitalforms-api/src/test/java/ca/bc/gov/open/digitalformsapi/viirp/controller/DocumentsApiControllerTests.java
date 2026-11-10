@@ -178,10 +178,8 @@ public class DocumentsApiControllerTests {
     
     @DisplayName("POST, Success - Store Document")
     @Test
-    public void testDocumentsCorrelationIdPostSuccess() throws ApiException {
+    public void testStoreDocumentSuccess() throws ApiException {
         
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
 		when(documentApi.storeDocumentPost(any(), any(), any(), any(), any(), any(), any(), any()))
 		.thenReturn(goodOrds);
 		
@@ -189,7 +187,7 @@ public class DocumentsApiControllerTests {
 		.thenReturn("guid");
 		
 		// Create successful call and validate response 
-        ResponseEntity<VipsDocumentResponse> controllerResponse = controller.documentsCorrelationIdPost(correlationId, goodStoreVIPSDocument);
+        ResponseEntity<VipsDocumentResponse> controllerResponse = controller.storeDocument(goodStoreVIPSDocument, null);
         VipsDocumentResponse result = controllerResponse.getBody();
         Assertions.assertEquals("567", result.getDocumentId());
         
@@ -197,10 +195,8 @@ public class DocumentsApiControllerTests {
     
     @DisplayName("POST, Failure - Bad ORDS response, 500 expected")
     @Test
-    public void testDocumentsCorrelationIdPostOrdsFailure() throws ApiException {
+    public void testStoreDocumentOrdsFailure() throws ApiException {
         
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
 		when(documentApi.storeDocumentPost(any(), any(), any(), any(), any(), any(), any(), any()))
 		.thenReturn(badOrds);
 		
@@ -209,31 +205,28 @@ public class DocumentsApiControllerTests {
 		
 		// Ensure Digital Form Exception type is thrown in this case
 		assertThrows(DigitalFormsException.class, () -> {
-			controller.documentsCorrelationIdPost(correlationId, goodStoreVIPSDocument);
+			controller.storeDocument(goodStoreVIPSDocument, null);
 		});
 	    
     }
     
-    @DisplayName("POST, Failure - Data missing from the store document request body, 500 expected")
+    @DisplayName("POST, Failure - Data missing from the store document request body, 400 expected")
     @Test
-    public void testDocumentsCorrelationIdPostBadRequest() throws Exception {
+    public void testStoreDocumentBadRequest() throws Exception {
         
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
 	    mvc.perform( MockMvcRequestBuilders
-	    	      .post("/documents/{correlationId}", correlationId)
+	    	      .post("/documents")
 	    	      .content(UnitTestUtilities.asJsonString(badStoreVIPSDocument))
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
-	    	      .andExpect(status().isInternalServerError());
+				.andExpect(status().isBadRequest());
 
     }
     
     @DisplayName("GET, Get Document Success  - Documents API Delegate")  
     @Test
-	public void testDocumentsDocumentIdCorrelationIdGetSuccess() throws Exception {
+	public void testGetDocumentSuccess() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	Long documentId = DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID;
     	
     	Base64.Encoder enc = Base64.getEncoder();
@@ -243,50 +236,48 @@ public class DocumentsApiControllerTests {
 		vipsDocumentResponse.setDocument(encodedBase64);
 		
 		// Mock underlying VIPS REST get document request that returns base64
-        Mockito.when(service.getDocumentAsBase64(correlationId, documentId)).thenReturn(vipsDocumentResponse);
+        Mockito.when(service.getDocumentAsBase64(documentId)).thenReturn(vipsDocumentResponse);
         
         // Return base64 document string successfully from the call with documentId and validate response 
-        ResponseEntity<VipsGetDocumentByIdResponse> controllerResponse = controller.documentsDocumentIdCorrelationIdGet(correlationId, documentId);
+        ResponseEntity<VipsGetDocumentByIdResponse> controllerResponse = controller.getDocument(documentId, null);
         VipsGetDocumentByIdResponse result = controllerResponse.getBody();
-        Mockito.verify(service).getDocumentAsBase64(correlationId, documentId);
+        Mockito.verify(service).getDocumentAsBase64(documentId);
         assertEquals(encodedBase64, result.getDocument());
     }
     
     @DisplayName("GET, Get Document Not Found  - Documents API Delegate")  
     @Test
-	public void testDocumentsDocumentIdCorrelationIdGetNotFound() throws Exception {
+	public void testGetDocumentNotFound() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	Long documentId = DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID;
 		
 		// Empty response object from VIPS means document is not found for the given documentID
 		vipsDocumentResponse.setDocument("");
 		
 		// Mock underlying VIPS REST get document request that returns empty result
-        Mockito.when(service.getDocumentAsBase64(correlationId, documentId)).thenReturn(vipsDocumentResponse);
+        Mockito.when(service.getDocumentAsBase64(documentId)).thenReturn(vipsDocumentResponse);
     	
     	// Ensure ResourceNotFoundException type is thrown in this case
     	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
-    			controller.documentsDocumentIdCorrelationIdGet(correlationId, documentId);
+    			controller.getDocument(documentId, null);
     	});
     }
     
     @DisplayName("GET, Get Document Internal Server Error  - Documents API Delegate")  
     @Test
-	public void testDocumentsDocumentIdCorrelationIdGetInvalidBase64() throws Exception {
+	public void testGetDocumentInvalidBase64() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	Long documentId = DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID;
 		
 		// Set an invalid base64 string to the response from VIPS 
 		vipsDocumentResponse.setDocument("%%%%%");
 		
 		// Mock underlying VIPS REST get document request that returns bad data due to internal error
-        Mockito.when(service.getDocumentAsBase64(correlationId, documentId)).thenReturn(vipsDocumentResponse);
+        Mockito.when(service.getDocumentAsBase64(documentId)).thenReturn(vipsDocumentResponse);
     	
     	// Ensure DigitalFormsException type is thrown in this case
     	Assertions.assertThrows(DigitalFormsException.class, () -> {
-    			controller.documentsDocumentIdCorrelationIdGet(correlationId, documentId);
+    			controller.getDocument(documentId, null);
     	});
     }
     
@@ -294,14 +285,13 @@ public class DocumentsApiControllerTests {
     @Test
 	public void documentsAssociationNoticeDocumentIdPostSuccess() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	Long documentId = 606L;
     		
     	// Mock underlying VIPS REST get document request that returns bad data due to internal error
         Mockito.when(service.createDocumentAsociationPost(documentId, goodVipsNoticeObj)).thenReturn(goodDocumentAssociateResponse); 
         
         // Create successful call and validate response 
-        ResponseEntity<AssociateDocumentToNoticeServiceResponse> controllerResponse = controller.documentsAssociationNoticeDocumentIdCorrelationIdPost(correlationId, documentId, goodVipsNoticeObj);
+        ResponseEntity<AssociateDocumentToNoticeServiceResponse> controllerResponse = controller.associateDocumentToNotice(documentId, goodVipsNoticeObj, null);
         AssociateDocumentToNoticeServiceResponse result = controllerResponse.getBody();
         Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getStatusMessage());
     }
@@ -310,7 +300,6 @@ public class DocumentsApiControllerTests {
     @Test
 	public void documentsAssociationNoticeDocumentIdPostFailureNotFound() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	Long documentId = 606L;
     		
     	// Mock underlying VIPS REST get document request that returns bad data due to internal error
@@ -318,7 +307,7 @@ public class DocumentsApiControllerTests {
         
         // Ensure ResourceNotFoundException type is thrown in this case
     	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
-    			controller.documentsAssociationNoticeDocumentIdCorrelationIdPost(correlationId, documentId, goodVipsNoticeObj);
+    			controller.associateDocumentToNotice(documentId, goodVipsNoticeObj, null);
     	});
     }
     
@@ -326,7 +315,6 @@ public class DocumentsApiControllerTests {
     @Test
 	public void documentsAssociationNoticeDocumentIdPostVIPSWSGenFailure() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	Long documentId = 606L;
     		
     	// Mock underlying VIPS REST get document request that returns bad data due to internal error
@@ -334,7 +322,7 @@ public class DocumentsApiControllerTests {
         
         // Ensure DigitalFormsException type is thrown in this case
     	Assertions.assertThrows(DigitalFormsException.class, () -> {
-    			controller.documentsAssociationNoticeDocumentIdCorrelationIdPost(correlationId, documentId, goodVipsNoticeObj);
+    			controller.associateDocumentToNotice(documentId, goodVipsNoticeObj, null);
     	});
     }
     
@@ -343,11 +331,11 @@ public class DocumentsApiControllerTests {
 	public void documentsAssociationNoticeDocumentIdPostMissingNoticeNoFailure() throws Exception {
     	
     	 mvc.perform( MockMvcRequestBuilders
-	    	      .post("/documents/association/notice/606/{correlationId}", DigitalFormsConstants.UNIT_TEST_CORRELATION_ID)
+	    	      .post("/documents/association/notice/606")
 	    	      .content(UnitTestUtilities.asJsonString(missingNoticeNoVipsNoticeObj))
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
-	    	      .andExpect(status().isInternalServerError());
+				.andExpect(status().isBadRequest());
     	
     }
     
@@ -356,11 +344,11 @@ public class DocumentsApiControllerTests {
 	public void documentsAssociationNoticeDocumentIdPostMissingNoticeTypeCdFailure() throws Exception {
     	
     	 mvc.perform( MockMvcRequestBuilders
-	    	      .post("/documents/association/notice/606/{correlationId}", DigitalFormsConstants.UNIT_TEST_CORRELATION_ID)
+	    	      .post("/documents/association/notice/606")
 	    	      .content(UnitTestUtilities.asJsonString(missingNoticeTypeCdVipsNoticeObj))
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
-	    	      .andExpect(status().isInternalServerError());
+				.andExpect(status().isBadRequest());
     	
     }
     
@@ -368,22 +356,21 @@ public class DocumentsApiControllerTests {
     @Test
 	public void testDocumentsApiGETDocumentsWithImpoundmentIdSuccess() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchImpoundment(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Documents response in good case 
         vipsDocumentsResponse.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
         vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsDocumentsResponse);
+        Mockito.when(service.getDocumentsMetaList(impoundmentId, null)).thenReturn(vipsDocumentsResponse);
         
         // Create successful get documents call with noticeNo and validate response 
-        ResponseEntity<GetDocumentsListServiceResponse> controllerResponse = controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+        ResponseEntity<GetDocumentsListServiceResponse> controllerResponse = controller.listNoticeDocuments(noticeNo, null);
         GetDocumentsListServiceResponse result = controllerResponse.getBody();
         Assertions.assertTrue(result.getResults().size() > 0);
         Assertions.assertEquals("MV2702A", result.getResults().get(0).getDocumentTypeCd());
@@ -393,44 +380,43 @@ public class DocumentsApiControllerTests {
     @Test
 	public void testDocumentsApiGETDocumentsWithProhibitionIdSuccess() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long prohibitionId = DigitalFormsConstants.UNIT_TEST_PROHIBITION_ID;
     	
-    	// Mock underlying VIPS REST Impoundment Search Failure
-		vipsSearch.setRespMsg(DigitalFormsConstants.VIPS_NOTICE_NOT_FOUND);
-		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
-        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+		// A successful empty impoundment search allows the prohibition lookup.
+		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
+		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
+		vipsSearch.setResult(java.util.List.of());
+        Mockito.when(service.searchImpoundment(noticeNo)).thenReturn(vipsSearch);
 		
 		// Mock underlying VIPS REST Prohibition Search
 		vipsProhibitionSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsProhibitionSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsProhibitionSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsProhibitionSearch);
         
         // Mock underlying VIPS REST Get Documents response in good case 
         vipsDocumentsResponse.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
         vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.getDocumentsMetaList(correlationId, null, prohibitionId)).thenReturn(vipsDocumentsResponse);
+        Mockito.when(service.getDocumentsMetaList(null, prohibitionId)).thenReturn(vipsDocumentsResponse);
         
         // Create successful get documents call with noticeNo and validate response 
-        ResponseEntity<GetDocumentsListServiceResponse> controllerResponse = controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+        ResponseEntity<GetDocumentsListServiceResponse> controllerResponse = controller.listNoticeDocuments(noticeNo, null);
         GetDocumentsListServiceResponse result = controllerResponse.getBody();
         Assertions.assertTrue(result.getResults().size() > 0);
         Assertions.assertEquals("MV2702A", result.getResults().get(0).getDocumentTypeCd());
     }
     
-    @DisplayName("GET, Documents Not Found - Documents API Delegate")  
+    @DisplayName("GET, Empty document collection - Documents API Delegate")
     @Test
 	public void testDocumentsApiGETDocumentsNotFound() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchImpoundment(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Documents response returning no documents in the response list even though the
         // search return with an impoundment Id.
@@ -439,34 +425,32 @@ public class DocumentsApiControllerTests {
         vipsEmptyDocumentsResponse.setResult(null); // no documents in the response 
         
         vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsEmptyDocumentsResponse);
+        Mockito.when(service.getDocumentsMetaList(impoundmentId, null)).thenReturn(vipsEmptyDocumentsResponse);
         
-        // Ensure ResourceNotFoundException type is thrown in this case
-    	Assertions.assertThrows(ResourceNotFoundException.class, () -> {
-    			controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
-    	});	
+        var response = controller.listNoticeDocuments(noticeNo, null);
+        assertEquals(200, response.getStatusCode().value());
+        Assertions.assertTrue(response.getBody().getResults().isEmpty());
     }
     
     @DisplayName("GET, Documents General Failure - Documents API Delegate")  
     @Test
 	public void testDocumentsApiGETDocumentstGenFailure() throws Exception {
     	
-      	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchImpoundment(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Documents response reporting general failure 
         vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
-	    Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsDocumentsResponse);
+	    Mockito.when(service.getDocumentsMetaList(impoundmentId, null)).thenReturn(vipsDocumentsResponse);
 	    
         // Ensure DigitalFormsException type is thrown in this case
     	Assertions.assertThrows(DigitalFormsException.class, () -> {
-    			controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.listNoticeDocuments(noticeNo, null);
     	});	
     }
     
@@ -474,22 +458,21 @@ public class DocumentsApiControllerTests {
     @Test
 	public void testImpoundmentApiGETVIPSImpoundmentInternalFailure() throws Exception {
     	
-       	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long impoundmentId = DigitalFormsConstants.UNIT_TEST_IMPOUNDMENT_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchImpoundment(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchImpoundment(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Documents response reporting internal Java failure 
         vipsDocumentsResponse.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
-	    Mockito.when(service.getDocumentsMetaList(correlationId, impoundmentId, null)).thenReturn(vipsDocumentsResponse);
+	    Mockito.when(service.getDocumentsMetaList(impoundmentId, null)).thenReturn(vipsDocumentsResponse);
 	    
         // Ensure DigitalFormsException type is thrown in this case
     	Assertions.assertThrows(DigitalFormsException.class, () -> {
-    			controller.documentsListNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.listNoticeDocuments(noticeNo, null);
     	});
     }
     

@@ -49,6 +49,9 @@ public class ProhibitionsApiControllerTests {
 	@Mock
     private VipsRestService service;
 
+    @Mock
+    private ca.bc.gov.open.digitalformsapi.viirp.service.NoticeConflictService noticeConflicts;
+
     @InjectMocks
     private ProhibitionsApiDelegateImpl controller;
     
@@ -142,19 +145,19 @@ public class ProhibitionsApiControllerTests {
     @Test
     public void testProhibitionCreateApiPOSTSuccess() {
         
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
 		// Mock underlying VIPS REST service 
 		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse response = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse();
 		response.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		response.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.createProhibition(correlationId, createProhibition)).thenReturn(response);
+		response.setProhibitionId(123L);
+        Mockito.when(service.createProhibition(createProhibition)).thenReturn(response);
         
         // Create successful call and validate response 
-        ResponseEntity<CreateProhibitionServiceResponse> controllerResponse = controller.prohibitionsCorrelationIdPost(correlationId, createProhibition);
+        ResponseEntity<CreateProhibitionServiceResponse> controllerResponse = controller.createProhibition(createProhibition, null);
         CreateProhibitionServiceResponse result = controllerResponse.getBody();
-        Mockito.verify(service).createProhibition(correlationId, createProhibition);
+        Mockito.verify(service).createProhibition(createProhibition);
         assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getRespMsg());
+		assertEquals(123L, result.getProhibitionId());
     }
     
     
@@ -162,16 +165,14 @@ public class ProhibitionsApiControllerTests {
     @Test
     public void testProhibitionCreateApiPOSTVipsWSGeneralFailure() {
         
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
 		// Mock underlying VIPS REST service to send VIPS general failure. 
 		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse response = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse();
 		response.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
-		Mockito.when(service.createProhibition(correlationId, createProhibition)).thenReturn(response);
+		Mockito.when(service.createProhibition(createProhibition)).thenReturn(response);
         
 		// Ensure Digital Form Exception type is thrown in this case
 		assertThrows(DigitalFormsException.class, () -> {
-			controller.prohibitionsCorrelationIdPost(correlationId, createProhibition);
+			controller.createProhibition(createProhibition, null);
 		});
     }
     
@@ -179,24 +180,17 @@ public class ProhibitionsApiControllerTests {
     @Test
     public void testProhibitionCreateApiPOSTVipsJavaFailure() {
         
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-		
 		// Mock underlying VIPS REST service to send VIPS general failure. 
 		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse response = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse();
 		response.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
-		Mockito.when(service.createProhibition(correlationId, createProhibition)).thenReturn(response);
+		Mockito.when(service.createProhibition(createProhibition)).thenReturn(response);
         
 		//Ensure Digital Form Exception type is thrown in this case
 		assertThrows(DigitalFormsException.class, () -> {
-			controller.prohibitionsCorrelationIdPost(correlationId, createProhibition);
+			controller.createProhibition(createProhibition, null);
 		});
 	
     }
-    
-    // TODO - This checks for 500 errors when validation fails. Why - Because of Springboot's inadequate validation handling. 
-    // Currently the default 500 error is thrown when validation fails instead of the proper 400 BAD REQUEST. 
-    // I don't have an immediate fix for this as it is complicated by the way we presently auto-generate the controller delegates
-    // from the specification file.  
     
     @DisplayName("POST, BAD REQUEST  - Prohibition Delegate")  
     @Test
@@ -204,14 +198,12 @@ public class ProhibitionsApiControllerTests {
     	
     	createProhibition.getVipsProhibitionCreate().setIncidentDtm("2021-10-22T0a:23:23.100-07:00"); // Doesn't match regex for date/time. 
 		
-		String correlationId = DigitalFormsConstants.REQUEST_CORRELATION_ID;
-	    
 	    mvc.perform( MockMvcRequestBuilders
-	    	      .post("/prohibitions/{correlationId}", correlationId)
+	    	      .post("/prohibitions")
 	    	      .content(UnitTestUtilities.asJsonString(createProhibition))
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
-	    	      .andExpect(status().isInternalServerError());
+				.andExpect(status().isBadRequest());
 	    
 	}
    
@@ -219,22 +211,21 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETSearchSuccess() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long prohibitionId = DigitalFormsConstants.UNIT_TEST_PROHIBITION_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Prohibition response in good case 
 		vipsProhibition.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsProhibition.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.getProhibition(correlationId, prohibitionId)).thenReturn(vipsProhibition);
+        Mockito.when(service.getProhibition(prohibitionId)).thenReturn(vipsProhibition);
         
         // Create successful search notice number call with prohibitionId and validate response 
-        ResponseEntity<GetProhibitionServiceResponse> controllerResponse = controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+        ResponseEntity<GetProhibitionServiceResponse> controllerResponse = controller.getProhibition(noticeNo, null);
         GetProhibitionServiceResponse result = controllerResponse.getBody();
         assertEquals("VICTORIA", result.getResult().getCityNm());
         
@@ -244,7 +235,6 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETSearchNotFound() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	
     	ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse vipsSearchNotFound = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse();
@@ -256,11 +246,11 @@ public class ProhibitionsApiControllerTests {
     	// Mock underlying VIPS REST Search 
 		vipsSearchNotFound.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearchNotFound.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearchNotFound);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearchNotFound);
     	
     	// Ensure ResourceNotFoundException type is thrown in this case
     	assertThrows(ResourceNotFoundException.class, () -> {
-    			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.getProhibition(noticeNo, null);
     	});
     
     }
@@ -269,7 +259,6 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETSearchResultSizeGreaterThanOne() throws Exception {
     	
-       	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     
     	//add one more prohibition ID to the search results.
@@ -280,11 +269,11 @@ public class ProhibitionsApiControllerTests {
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearch);
         
         // Ensure DigitalFormsException type is thrown in this case
     	assertThrows(DigitalFormsException.class, () -> {
-    			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.getProhibition(noticeNo, null);
     	});
     
     }
@@ -293,16 +282,15 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETSearchVIPSGenFailure() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearch);
         
         // Ensure DigitalFormsException type is thrown in this case
     	assertThrows(DigitalFormsException.class, () -> {
-    			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.getProhibition(noticeNo, null);
     	});
     	
     }
@@ -311,16 +299,15 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETSearchVIPSInternalFailure() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearch);
         
         // Ensure DigitalFormsException type is thrown in this case
     	assertThrows(DigitalFormsException.class, () -> {
-    			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.getProhibition(noticeNo, null);
     	});
     	
     	
@@ -330,14 +317,13 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETProhibitionNotFound() throws Exception {
     	
-    	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long prohibitionId = DigitalFormsConstants.UNIT_TEST_PROHIBITION_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Prohibition response returning no impoundment even though the
         // search return with an prohibition Id. (Very BAD case for VIPS if this ever happened)
@@ -346,11 +332,11 @@ public class ProhibitionsApiControllerTests {
  		vipsProhibitionNone.setResult(null); // no prohibition in the response 
         
 		vipsProhibition.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.getProhibition(correlationId, prohibitionId)).thenReturn(vipsProhibitionNone);
+        Mockito.when(service.getProhibition(prohibitionId)).thenReturn(vipsProhibitionNone);
         
         // Ensure ResourceNotFoundException type is thrown in this case
     	assertThrows(ResourceNotFoundException.class, () -> {
-    			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.getProhibition(noticeNo, null);
     	});
     	
     	
@@ -360,24 +346,23 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETVIPSProhibitionGenFailure() throws Exception {
     	
-      	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long prohibitionId = DigitalFormsConstants.UNIT_TEST_PROHIBITION_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Prohibition response reporting general failure 
 		vipsProhibition.setRespCd(DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD);
-	    Mockito.when(service.getProhibition(correlationId, prohibitionId)).thenReturn(vipsProhibition);
+	    Mockito.when(service.getProhibition(prohibitionId)).thenReturn(vipsProhibition);
 	    
 	    //DigitalFormsException ex = new DigitalFormsException("test");
 	    
         // Ensure DigitalFormsException type is thrown in this case
     	assertThrows(DigitalFormsException.class, () -> {
-    			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.getProhibition(noticeNo, null);
     	});
     	
     	
@@ -387,45 +372,44 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionApiGETVIPSProhibitionInternalFailure() throws Exception {
     	
-       	String correlationId = DigitalFormsConstants.UNIT_TEST_CORRELATION_ID;
     	String noticeNo = DigitalFormsConstants.UNIT_TEST_NOTICE_NUMBER;
     	Long prohibitionId = DigitalFormsConstants.UNIT_TEST_PROHIBITION_ID;
 		
 		// Mock underlying VIPS REST Search 
 		vipsSearch.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
 		vipsSearch.setRespCd(DigitalFormsConstants.VIPSWS_SUCCESS_CD);
-        Mockito.when(service.searchProhibition(correlationId, noticeNo)).thenReturn(vipsSearch);
+        Mockito.when(service.searchProhibition(noticeNo)).thenReturn(vipsSearch);
         
         // Mock underlying VIPS REST Get Prohibition response reporting internal Java failure 
 		vipsProhibition.setRespCd(DigitalFormsConstants.VIPSWS_JAVA_EX);
-	    Mockito.when(service.getProhibition(correlationId, prohibitionId)).thenReturn(vipsProhibition);
+	    Mockito.when(service.getProhibition(prohibitionId)).thenReturn(vipsProhibition);
 	    
         // Ensure DigitalFormsException type is thrown in this case
     	assertThrows(DigitalFormsException.class, () -> {
-    			controller.prohibitionsNoticeNoCorrelationIdGet(noticeNo, correlationId);
+    			controller.getProhibition(noticeNo, null);
     	});
     	
    
     }
     
     
-    @DisplayName("GET, Prohibition missing CorrelationId or Notice No - Prohibition Delegate")  
+    @DisplayName("POST, Prohibition unsupported route - Prohibition Delegate")
     @Test
-	public void testProhibitionApiGETVIPSProhibitionMissingCorrlelationOrNotice() throws Exception {
+	public void testProhibitionApiPOSTUnsupportedRoute() throws Exception {
     
 		   mvc.perform( MockMvcRequestBuilders
-		  	      .post("/prohibitions")
+		  	      .post("/prohibitions/123456")
 		  	      .content(UnitTestUtilities.asJsonString(createProhibition))
 		  	      .contentType(MediaType.APPLICATION_JSON)
 		  	      .accept(MediaType.APPLICATION_JSON))
-		  	      .andExpect(status().isNotFound());
+		  	      .andExpect(status().isMethodNotAllowed());
     
 		   mvc.perform( MockMvcRequestBuilders
-			  	      .post("/prohibitions/123456")
+			  	      .post("/prohibitions/123456/extra")
 			  	      .content(UnitTestUtilities.asJsonString(createProhibition))
 			  	      .contentType(MediaType.APPLICATION_JSON)
 			  	      .accept(MediaType.APPLICATION_JSON))
-			  	      .andExpect(status().isInternalServerError());
+					.andExpect(status().isNotFound());
     }
     
     @DisplayName("POST, Prohibition missing body - Prohibition Delegate")  
@@ -433,10 +417,10 @@ public class ProhibitionsApiControllerTests {
 	public void testProhibitionApiPOSTVIPSProhibitionNoBody() throws Exception {
     
 		   mvc.perform( MockMvcRequestBuilders
-		  	      .post("/prohibitions/1234567/22222222")
+				.post("/prohibitions")
 		  	      .contentType(MediaType.APPLICATION_JSON)
 		  	      .accept(MediaType.APPLICATION_JSON))
-		  	      .andExpect(status().isInternalServerError());
+				.andExpect(status().isBadRequest());
     
     }
     

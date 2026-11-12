@@ -3,6 +3,8 @@ package ca.bc.gov.open.digitalformsapi.viirp.model.vips;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 /**
  * 
  * SearchImpoundmentsServiceResponse - used to capture multiple responses from Impoundment Search.
@@ -18,6 +20,8 @@ public final class SearchImpoundmentsServiceResponse extends VipswsBasicResponse
     private Long resultsPerPage; 
     private Long resultsCount;
     
+    // Keep nullable pagination fields on the setter path rather than the primitive constructor argument.
+    @JsonCreator
     public SearchImpoundmentsServiceResponse(){};
 
     public SearchImpoundmentsServiceResponse(int respCd, String respMsg, Long page, Long resultsPerPage, long resultsCount, List<VipsImpoundmentBasicsObj> result){

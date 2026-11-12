@@ -28,34 +28,24 @@ public class UtilityApiDelegateImpl implements UtilityApiDelegate{
 	
 	@Autowired
 	private HealthApi vipsHealthApi;
-	
-	@Autowired
-	private ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.HealthApi digitalFormsHealthApi;
 		
 	@SuppressWarnings("unchecked")
 	@Override
-	public ResponseEntity<PingResponse> utilityOrdsPingCorrelationIdGet(String correlationId) {
+	public ResponseEntity<PingResponse> pingOrds(String xCorrelationID) {
 		
-		logger.info("Heard a call to 'utilityOrdsPingCorrelationIdGet'");
+		logger.info("Heard a call to 'pingOrds'");
 		
 		PingResponse resp = new PingResponse();
 		try {
 			
 			JSONObject jsonResponse = new JSONObject();
 			jsonResponse.put("VIPS ORDS Health Status", vipsHealthApi.health().getStatus());
-			jsonResponse.put("DIGITAL FORMS ORDS Health Status", digitalFormsHealthApi.health().getStatus());
 			resp.setResponseMessage(jsonResponse);
 			
 			return new ResponseEntity<>(resp, HttpStatus.OK); 
 						
 		} catch (ApiException e) {
 			String msg = "Error encountered while pinging VIPS ORDS Health endpoint: " + e.getMessage();
-			e.printStackTrace();
-			logger.error(msg);
-			throw new DigitalFormsException(msg, e);
-			
-		} catch (ca.bc.gov.open.pssg.rsbc.digitalforms.ordsclient.api.handler.ApiException  e) {
-			String msg = "Error encountered while pinging DigitalForms ORDS Health endpoints: " + e.getMessage();
 			e.printStackTrace();
 			logger.error(msg);
 			throw new DigitalFormsException(msg, e);

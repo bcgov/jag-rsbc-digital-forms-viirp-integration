@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.1.3</version>
+		<version>4.1.2</version>
 		<relativePath />
 	</parent>
 	
@@ -18,14 +18,64 @@
 	<description>RoadSafetyBC DigitalForms API (VI/IRP)</description>
 	
 	<properties>
-		<java.version>17</java.version>
-		<snakeyaml.version>2.2</snakeyaml.version>
-		<spring-version>6.0.14</spring-version>
-		<tomcat-version>10.1.16</tomcat-version>
-		<reactor-netty-version>1.0.39</reactor-netty-version>
-		<logback-version>1.4.12</logback-version>
-		<netty-version>4.1.100.Final</netty-version>
+		<java.version>21</java.version>
+		<argLine></argLine>
 	</properties>
+
+	<!--
+		The shared jag-vips-client submodule pins older versions of these libraries and cannot be
+		changed here. Spring Boot does not manage them, so pin current versions for this application.
+		joda-time 2.15.1 carries the B.C. permanent UTC-7 timezone rules (2.12.5 does not).
+	-->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>joda-time</groupId>
+				<artifactId>joda-time</artifactId>
+				<version>2.15.1</version>
+			</dependency>
+			<dependency>
+				<groupId>com.squareup.okhttp3</groupId>
+				<artifactId>okhttp</artifactId>
+				<version>4.12.1</version>
+			</dependency>
+			<dependency>
+				<groupId>com.squareup.okhttp3</groupId>
+				<artifactId>logging-interceptor</artifactId>
+				<version>4.12.1</version>
+			</dependency>
+			<dependency>
+				<groupId>com.squareup.okio</groupId>
+				<artifactId>okio</artifactId>
+				<version>3.18.2</version>
+			</dependency>
+			<dependency>
+				<groupId>com.squareup.okio</groupId>
+				<artifactId>okio-jvm</artifactId>
+				<version>3.18.2</version>
+			</dependency>
+			<dependency>
+				<groupId>io.gsonfire</groupId>
+				<artifactId>gson-fire</artifactId>
+				<version>1.9.0</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>2.22.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.json</groupId>
+				<artifactId>json</artifactId>
+				<version>20260814</version>
+			</dependency>
+			<dependency>
+				<groupId>org.mapstruct</groupId>
+				<artifactId>mapstruct</artifactId>
+				<version>1.6.3</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<repositories>
 		<repository>
@@ -38,6 +88,13 @@
 	<dependencies>
 
 		<dependency>
+			<groupId>com.atlassian.oai</groupId>
+			<artifactId>openapi-request-validator-core</artifactId>
+			<version>3.0.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>ca.bc.gov.open.digitalformsapi.viirp</groupId>
 			<artifactId>digitalforms-api-specification</artifactId>
 			<version>1.0-SNAPSHOT</version>
@@ -46,7 +103,7 @@
 		<!-- springboot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -68,8 +125,14 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -79,158 +142,9 @@
 		
 		<!-- spring sec -->
 		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
 			<scope>test</scope>
-		</dependency>
-		
-		<!-- tomcat -->
-		<dependency>
-		    <groupId>org.apache.tomcat.embed</groupId>
-		    <artifactId>tomcat-embed-core</artifactId>
-		    <version>${tomcat-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.apache.tomcat.embed</groupId>
-		    <artifactId>tomcat-embed-el</artifactId>
-		    <version>${tomcat-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.apache.tomcat.embed</groupId>
-		    <artifactId>tomcat-embed-websocket</artifactId>
-		    <version>${tomcat-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.apache.tomcat</groupId>
-		    <artifactId>tomcat-annotations-api</artifactId>
-		    <version>${tomcat-version}</version>
-		</dependency>
-		
-		<!-- spring -->
-		<dependency>
-		    <groupId>org.springframework</groupId>
-		    <artifactId>spring-web</artifactId>
-		    <version>${spring-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.springframework</groupId>
-		    <artifactId>spring-webmvc</artifactId>
-		    <version>${spring-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.springframework</groupId>
-		    <artifactId>spring-webflux</artifactId>
-		    <version>${spring-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.springframework</groupId>
-		    <artifactId>spring-test</artifactId>
-		    <version>${spring-version}</version>
-		    <scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-			<scope>compile</scope>
-		</dependency>
-		
-		<!-- reactor -->
-		<dependency>
-		    <groupId>io.projectreactor.netty</groupId>
-		    <artifactId>reactor-netty-core</artifactId>
-		    <version>${reactor-netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.projectreactor.netty</groupId>
-		    <artifactId>reactor-netty-http</artifactId>
-		    <version>${reactor-netty-version}</version>
-		</dependency>
-		
-		<!-- netty -->
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-buffer</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-codec</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-codec-dns</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-codec-http</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-codec-http2</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-codec-socks</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-common</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-handler</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-handler-proxy</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-resolver</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-resolver-dns</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-resolver-dns-classes-macos</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-resolver-dns-native-macos</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-transport</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-transport-classes-epoll</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-transport-native-epoll</artifactId>
-		    <version>${netty-version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>io.netty</groupId>
-		    <artifactId>netty-transport-native-unix-common</artifactId>
-		    <version>${netty-version}</version>
 		</dependency>
 		
 		<!-- unit test -->
@@ -244,35 +158,32 @@
 		<dependency>
 			<groupId>ca.bc.gov.open</groupId>
 			<artifactId>jag-vips-client</artifactId>
-			<version>0.1.2</version>
+			<version>0.2.3</version>
 			<scope>compile</scope>
-		</dependency>
-
-		<!-- DIGITALFORMS ORDS library linked submodule -->
-		<dependency>
-			<groupId>ca.bc.gov.open</groupId>
-			<artifactId>digitalforms-ords-client</artifactId>
-			<version>0.1.2</version>
-			<scope>compile</scope>
+			<exclusions>
+				<!-- json-simple declares junit as a compile dependency -->
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- logback -->
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>${logback-version}</version>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-core</artifactId>
-			<version>${logback-version}</version>
 		</dependency>
 
 		<!-- Splunk -->
 		<dependency>
 			<groupId>com.splunk.logging</groupId>
 			<artifactId>splunk-library-javalogging</artifactId>
-			<version>1.11.7</version>
+			<version>1.11.11</version>
 		</dependency>
 	
 		<!--  Jackson  -->
@@ -310,18 +221,24 @@
         <dependency>
 		    <groupId>org.yaml</groupId>
 		    <artifactId>snakeyaml</artifactId>
-		    <version>${snakeyaml.version}</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<optional>true</optional>
 		</dependency>
         
 		<dependency>
 		    <groupId>com.googlecode.json-simple</groupId>
 		    <artifactId>json-simple</artifactId>
 		    <version>1.1.1</version>
+		    <exclusions>
+		        <exclusion>
+		            <groupId>junit</groupId>
+		            <artifactId>junit</artifactId>
+		        </exclusion>
+		    </exclusions>
 		</dependency>
 	
 		<dependency>
@@ -334,8 +251,34 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

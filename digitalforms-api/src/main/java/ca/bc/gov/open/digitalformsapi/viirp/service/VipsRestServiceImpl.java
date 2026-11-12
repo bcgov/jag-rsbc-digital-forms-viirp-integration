@@ -38,7 +38,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	}
 
 	@Override
-	public GetCodetablesServiceResponse getCodeTableValues(String correlationId) {
+	public GetCodetablesServiceResponse getCodeTableValues() {
 		return webClient
                 .get()
                 .uri("/configuration")
@@ -56,7 +56,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	 * 
 	 */
 	@Override
-	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(String correlationId, ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment) {
+	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment) {
 		
 		return webClient
                 .post()
@@ -78,11 +78,11 @@ public class VipsRestServiceImpl implements VipsRestService {
  	 * 
 	 */
 	@Override
-	public SearchImpoundmentsServiceResponse searchImpoundment(String correlationId, String noticeNo) {
+	public SearchImpoundmentsServiceResponse searchImpoundment(String noticeNo) {
 		
 		return webClient
                 .get()
-                .uri("/cases/impoundments/search?impoundmentNoticeNo=" + noticeNo)
+                .uri("/cases/impoundments/search?impoundmentNoticeNo={noticeNo}", noticeNo)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
         		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
@@ -99,7 +99,7 @@ public class VipsRestServiceImpl implements VipsRestService {
  	 * 
 	 */
 	@Override
-	public GetImpoundmentServiceResponse getImpoundment(String correlationId, Long impoundmentId) {
+	public GetImpoundmentServiceResponse getImpoundment(Long impoundmentId) {
 		
 		return webClient
                 .get()
@@ -121,11 +121,11 @@ public class VipsRestServiceImpl implements VipsRestService {
  	 * 
 	 */
 	@Override
-	public SearchProhibitionsServiceResponse searchProhibition(String correlationId, String noticeNo) {
+	public SearchProhibitionsServiceResponse searchProhibition(String noticeNo) {
 		
 		return webClient
                 .get()
-                .uri("/cases/prohibitions/search?prohibitionNoticeNo=" + noticeNo)
+                .uri("/cases/prohibitions/search?prohibitionNoticeNo={noticeNo}", noticeNo)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
         		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
@@ -142,7 +142,7 @@ public class VipsRestServiceImpl implements VipsRestService {
  	 * 
 	 */
 	@Override
-	public GetProhibitionServiceResponse getProhibition(String correlationId, Long prohibitionId) {
+	public GetProhibitionServiceResponse getProhibition(Long prohibitionId) {
 		
 		return webClient
                 .get()
@@ -164,7 +164,7 @@ public class VipsRestServiceImpl implements VipsRestService {
  	 * 
 	 */
 	@Override
-	public VipsGetDocumentByIdResponse getDocumentAsBase64(String correlationId, Long documentId) {
+	public VipsGetDocumentByIdResponse getDocumentAsBase64(Long documentId) {
 		
 		return webClient
                 .get()
@@ -217,7 +217,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	 * 
 	 */
 	@Override
-	public CreateProhibitionServiceResponse createProhibition(String correlationId, CreateProhibition prohibition) {
+	public CreateProhibitionServiceResponse createProhibition(CreateProhibition prohibition) {
 		
 		return webClient
                 .post()
@@ -226,7 +226,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
-                .body(Mono.just(prohibition), ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment.class) // body of request.
+                .body(Mono.just(prohibition), CreateProhibition.class) // body of request.
                 .retrieve()
                 .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse.class) // body of response (need VIPS class)
         		.block();
@@ -239,7 +239,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	 *
 	 */
 	@Override
-	public GetDocumentsListServiceResponse getDocumentsMetaList(String correlationId, Long impoundmentId,
+	public GetDocumentsListServiceResponse getDocumentsMetaList(Long impoundmentId,
 			Long prohibitionId) {
 		
 		String documentsUri = "/documents?";

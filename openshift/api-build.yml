@@ -2,7 +2,7 @@ kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
   annotations:
-    description: Build template for an openjdk11-openshift based app.
+    description: Docker build template for the Java 21 / Spring Boot 4 VI/IRP API.
     tags: vips-api-image
     iconClass: icon-java
   name: ${NAME}-build-template
@@ -41,6 +41,8 @@ objects:
         type: Docker
         dockerStrategy:
           dockerfilePath: Dockerfile
+          # Pull the base image on every build to pick up OS patches re-pushed under the same tag.
+          forcePull: true
       output:
         to:
           kind: ImageStreamTag

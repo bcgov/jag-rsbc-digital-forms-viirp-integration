@@ -24,6 +24,8 @@ public final class DigitalFormsConstants {
 	// VIPS General Response code values
 	public static final int VIPSWS_SUCCESS_CD = 0;
 	public static final int VIPSWS_GENERAL_FAILURE_CD = 1;
+	public static final int VIPSWS_SHOW_MANUAL_DIALOG_CD = 11; // saved; VIPS UI shows "Update Drivers manually".
+	public static final int VIPSWS_INTERNAL_FAILURE_CD = 29; // saved; ICBC post-processing failed ("ICBC was not updated").
 	public static final int VIPSWS_JAVA_EX = 99; // low level JAVA issue rather than a DB problem.
 	
 	// VIPS ORDS Response code values
@@ -32,6 +34,8 @@ public final class DigitalFormsConstants {
 	
 	//Digital Forms message constants
 	public static final String DIGITALFORMS_SUCCESS_MSG = "success";
+	public static final String DIGITALFORMS_SUCCESS_MANUAL_DRIVER_UPDATE_MSG = "success - Update Drivers manually";
+	public static final String DIGITALFORMS_SUCCESS_ICBC_NOT_UPDATED_MSG = "success - ICBC was not updated";
 	public static final String DIGITALFORMS_VALIDATION_FAILURE_SUB_MSG = "Validation failed"; 
 	public static final String DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL = "Invalid license object - DL is a required field.";
 	
@@ -43,27 +47,12 @@ public final class DigitalFormsConstants {
 	public static final String VIPS_NOTICE_NOT_FOUND = "Notice not found";
 	
 	//Unit test constants
-	public static final String UNIT_TEST_CORRELATION_ID = "1234567";
 	public static final String UNIT_TEST_NOTICE_NUMBER = "22222222";
-	public static final String UNIT_TEST_NOTICE_TYPE = "IRP";
 	public static final Long UNIT_TEST_IMPOUNDMENT_ID = 1234L;
 	public static final Long UNIT_TEST_PROHIBITION_ID = 1234L;
 	public static final Long UNIT_TEST_DOCUMENT_ID = 1234L;
 	
 	// rest response media type
 	public static final String JSON_CONTENT = "application/json";
-
-	public static final String UNIT_TEST_NOTICE_PAYLOAD = "{\r\n"
-			+ "  \"noticeNo\": \"21900603\",\r\n"
-			+ "  \"noticeTypeCd\": \"IRP\",\r\n"
-			+ "  \"payload\": {\r\n"
-			+ "        \"car\": \"Buick\",\r\n"
-			+ "        \"name\": \"John\",\r\n"
-			+ "        \"noticeType\": \"IRP\",\r\n"
-			+ "        \"age\": 30\r\n"
-			+ "   },\r\n"
-			+ "  \"activeYN\": true,\r\n"
-			+ "  \"processedYN\": true\r\n"
-			+ "}";
 	
 }

@@ -72,6 +72,9 @@ objects:
             requests:
               cpu: ${CPU_REQUEST}
               memory: ${MEMORY_REQUEST}
+          env:
+          - name: TZ
+            value: America/Vancouver
           envFrom:
           - secretRef:
               name: ${SECRET1_NAME}

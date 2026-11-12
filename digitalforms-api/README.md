@@ -6,8 +6,8 @@ This is the API level of this of this project.
 
 | Layer              | Technology            |
 | ------------------ | --------------------- |
-| Service            | Java, SpringFramework |
-| Application Server | Spring Boot / Tomcat  |
+| Service            | Java 21, Spring Framework |
+| Application Server | Spring Boot 4 / Tomcat 11 |
 | Runtime            | BC DevOps OpenShift   |
 
 ### Environmental Variables
@@ -25,13 +25,9 @@ These values must be set as environmental variables if running the API locally (
 | DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |                  |
 | DIGITALFORMS_VIPSORDS_USER      | user                        |                  |
 | DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |                  |
-| DIGITALFORMS_ORDS_BASEPATH      | http://localhost:8080/api/  |                  |
-| DIGITALFORMS_ORDS_USER          | user						|                  |
-| DIGITALFORMS_ORDS_PASSWORD      | password					|                  |
 | DIGITALFORMS_BASICAUTH_USER          | user					|                  |
 | DIGITALFORMS_BASICAUTH_PASSWORD      | password				|                  |
-| DIGITALFORMS_SWAGGER_ENABLED      | true					|                  |
-| SPLUNK_URL					  | url							| 'splunk' profile only|               
+| SPLUNK_URL					  | url							| 'splunk' profile only|
 | SPLUNK_TOKEN_VIPS				  | splunk token				| 'splunk' profile only|   
 
 ### Optional Environmental Variables
@@ -43,6 +39,8 @@ These values can be set as environmental variables to overwrite the default valu
 | DIGITALFORMS_VIPSAPI_TIMEOUT 	  | 2000                        |
 | DIGITALFORMS_VIPSAPI_RETRY_COUNT| 3                           |
 | DIGITALFORMS_VIPSAPI_RETRY_DELAY| 5                           |
+| DIGITALFORMS_SWAGGER_ENABLED    | false (Swagger UI off)      |
+| SPRINGDOC_APIDOCS_ENABLED       | true (`false` turns off the API docs and Swagger UI) |
 
 ## API Services
 
@@ -54,6 +52,65 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/swagger-ui/index.html | The Swagger-UI tool to query the API
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/actuator/health		| Health check actuator endpoint
 
+### HTTP contract
+
+[VI_IRP_V1.yaml](../digitalforms-api-specification/src/main/resources/VI_IRP_V1.yaml)
+is the authoritative public contract. OpenAPI Generator produces the interfaces,
+controllers and models; do not edit generated files. Change the YAML first, then
+update the delegates and run the contract tests.
+
+springdoc publishes API docs built from the generated controllers at `/v3/api-docs`
+(JSON) and `/v3/api-docs.yaml`, beneath the context path, for example
+`http://localhost:8082/digitalforms-viirp/v1/v3/api-docs`. `/digitalforms-viirp/v1`
+is the context path, which carries the API version; `v3` is springdoc's default
+path and refers to OpenAPI 3. The generator also produces springdoc's title,
+description, version and `basicAuth` scheme from the YAML, so nothing in the docs
+is handwritten. The docs describe the same API as the YAML but are springdoc's
+rendering of it: OpenAPI 3.1, with an absolute server URL taken from the request,
+and without the `X-Correlation-ID` response header (the generator's annotations
+omit response headers). Share the YAML itself with API consumers.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `DIGITALFORMS_SWAGGER_ENABLED` | `false` | `true` enables Swagger UI at `/swagger-ui/index.html`. |
+| `SPRINGDOC_APIDOCS_ENABLED` | `true` | `false` (PROD) turns off `/v3/api-docs`, `/v3/api-docs.yaml` and Swagger UI, which then return 404. The API itself is unaffected. |
+
+| Response | Meaning |
+|---|---|
+| 200 | Successful GET; an existing notice with no documents returns `{"results":[]}`. |
+| 201 | Successful prohibition, impoundment, document or document-association POST; includes saved-with-warning codes 11 and 29. |
+| 400 | Missing/malformed JSON, invalid parameter types or failed request constraints. |
+| 401 | Missing/invalid authentication, with a `WWW-Authenticate` Basic challenge. |
+| 404 | Unknown route or missing requested notice/document. |
+| 405 | Unsupported method, with an `Allow` header. |
+| 406 / 415 | Unsupported response/request media type. |
+| 409 | Confirmed duplicate prohibition or impoundment notice number. |
+| 500 | Internal/downstream failure, with a safe generic message. |
+
+Errors use `{"status_message":"..."}`. Validation errors identify fields without
+exposing controller signatures; unexpected failures return `Internal Server Error`
+and retain diagnostic details in server logs.
+
+#### Correlation ID
+
+Every operation accepts an optional `X-Correlation-ID` request header (1-64
+characters from `A-Z`, `a-z`, `0-9`, `.`, `_` and `-`; a UUID is recommended).
+When the header is omitted, the API generates a UUID. The effective value is always
+returned in the `X-Correlation-ID` response header, including on error responses,
+and is logged as `correlationId` for every log line of the request. It is used only
+for tracing; it is not forwarded to VIPS and is not an idempotency key. An invalid
+value, or more than one `X-Correlation-ID` header, is rejected with 400 before
+authentication. `CorrelationIdFilter` enforces this; its pattern must match the
+`CorrelationId` parameter in the YAML (a test guards against drift).
+
+Creates check for an exact existing notice number before submitting. If VIPS WS
+returns its generic failure code 1, the API checks again for a concurrent create.
+Only a confirmed existing notice becomes 409; an unavailable lookup or unrelated
+failure remains 500. Oracle uniqueness constraints remain the final guard.
+This is not idempotency: after an ambiguous failure, retrieve by notice number
+before resubmitting. A dedicated downstream duplicate code would remove reliance
+on the follow-up lookup. No database or shared-client changes are required.
+
 ### Building, installing and running the application locally
 
 1) After clone run:  
@@ -63,7 +120,7 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 ```
 this will pull the last working version of jag-vips-client (submodule).
 
-2) Set the compiler version to java 11
+2) Set the compiler version to java 21
 
 3) From the digitalforms (parent) level, run: 
 
@@ -82,6 +139,63 @@ mvn spring-boot:run
 ```
 git submodule update --remote --merge
 ```
+
+### Regression tests
+
+With `JAVA_HOME` pointing to JDK 21, run from the repository root:
+
+```
+mvn -B -ntp clean verify
+```
+
+The HTTP regression suites in [src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller](src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller)
+start the application on a random port with the real security filters, controllers,
+JSON codecs, and VIPS WebClient/ORDS client. A loopback HTTP stub replaces the remote
+VIPS WS and ORDS services; no real credentials, database writes, or Docker daemon are required.
+They cover:
+
+- All four retired `/dfpayloads/*` operations returning 404
+  after authentication, and their absence from the canonical OpenAPI contract.
+- Authenticated prohibition/impoundment creation followed by search and retrieval,
+  including forwarded authentication/audit headers and JSON field preservation.
+- Missing/invalid credentials, missing notices, VIPS failures, and licence validation.
+- Null or absent search pagination metadata, which must not break Jackson 3 decoding.
+- All ten public operations, including document upload/retrieval/association/listing,
+  code tables and ORDS ping.
+- Missing/malformed bodies, required fields, parameter constraints, media types,
+  duplicates/concurrent creates and unexpected downstream response codes.
+- Every required field in both create requests, with cases derived from the YAML:
+  missing/null values, empty/space/tab/newline-only required strings, empty required
+  objects and collections with `minItems`. Multiple registrations and addresses
+  exercise nested validation beyond the first array element. Invalid requests must
+  return 400 identifying the field without reaching VIPS. Positive controls preserve
+  optional licence objects and allowed empty arrays; separate cases cover the
+  impoundment-only requirement for a licence number when a licence object is supplied.
+- Response status, content type, `X-Correlation-ID` header and body-schema validation
+  against the YAML for every tested public operation. Guard tests deliberately inject
+  wrong statuses, shapes and headers to prove drift fails the tests.
+- `X-Correlation-ID` generation, echo on every response (including 401/404/405/406/415/500),
+  logging, and 400 rejection of invalid or repeated headers before authentication.
+- Published JSON/YAML contract equality and Swagger UI's canonical document URL.
+
+These are HTTP contract tests, not proof of persistence in Oracle. Live VIPS/ORDS
+connectivity, database persistence and container deployment require environment validation.
+The shared client's existing test runner currently discovers zero tests; its sources
+and test configuration are maintained in that separate repository.
+
+### RSVIPS-889 cleanup
+
+The `/dfpayloads/*` API, its local delegate/models/helpers, and the
+`jag-digitalforms-client` dependency/submodule reference have been removed from VI/IRP.
+`DIGITALFORMS_ORDS_*` variables are no longer used by this application; remove them
+only from VI/IRP-specific deployment secrets, not secrets shared by other applications.
+The ORDS client repositories and database packages have not been changed.
+`/utility/ords/ping` now checks VIPS ORDS only.
+
+The retained `/prohibitions/*` and `/impoundments/*` routes still call the existing
+VIPS WS `/cases/...` APIs through `VipsRestServiceImpl`. This cleanup/Java 21/Spring
+Boot 4 upgrade does not implement the later AOT source/verification/idempotency
+rules or change that downstream write path.
 
 ### Security
 
@@ -118,7 +232,6 @@ secrets when in the DEV/TEST/PROD environments.
 | `impoundment`    | Impoundment operations               |
 | `prohibition`    | Prohibition operations               |
 | `documents`       | Document operations                 |
-| `df payloads`    | Digital Forms Payload operations     |
 | `code tables`    | Code Table value operations          |
 | `utility`          | Utility operations  	                 |
 

@@ -2,18 +2,18 @@
 #### Stage where the git submodules are updated                                            ###
 ##############################################################################################
 
-FROM alpine/git as libraries
+FROM alpine/git:2.54.0 as libraries
 
 WORKDIR /libs
 
 COPY . .
 
-RUN git submodule update --remote --merge
+RUN git submodule update --init --recursive
 
 ##############################################################################################
 #### Stage where the maven dependencies are cached                                         ###
 ##############################################################################################
-FROM maven:3.8.2-eclipse-temurin-17 as dependencies-cache
+FROM maven:3.9.16-eclipse-temurin-21 as dependencies-cache
 
 WORKDIR /build
 
@@ -22,7 +22,6 @@ COPY pom.xml pom.xml
 COPY digitalforms-api/pom.xml digitalforms-api/pom.xml
 COPY digitalforms-api-specification/pom.xml digitalforms-api-specification/pom.xml
 
-COPY --from=libraries /libs/jag-digitalforms-client/pom.xml jag-digitalforms-client/pom.xml
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/pom.xml jag-vips-client/src/jag-vips-client/pom.xml
 
 RUN  mvn dependency:go-offline \
@@ -41,8 +40,6 @@ WORKDIR /build
 COPY digitalforms-api/src digitalforms-api/src
 COPY digitalforms-api-specification/src digitalforms-api-specification/src
 
-COPY --from=libraries /libs/jag-digitalforms-client/src jag-digitalforms-client/src
-COPY --from=libraries /libs/jag-digitalforms-client/digitalformsords.yaml jag-digitalforms-client/digitalformsords.yaml
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/src jag-vips-client/src/jag-vips-client/src
 COPY --from=libraries /libs/jag-vips-client/src/jag-vips-client/vipsords.yaml jag-vips-client/src/jag-vips-client/vipsords.yaml
 
@@ -54,7 +51,12 @@ RUN  mvn clean package \
 ##############################################################################################
 #### Stage where Docker is running a java process to run a service built in previous stage ###
 ##############################################################################################
-FROM eclipse-temurin:17-jre-alpine
+# Pinned so the JDK and its timezone data (tzdata 2026e) only change on purpose; bump via Dependabot.
+FROM eclipse-temurin:21.0.13_9-jre-alpine
+
+# Apply Alpine security fixes published after the base image was built (the JDK is not apk-managed,
+# so it stays pinned) and remove GnuPG, which the base image only needs to verify the JDK download.
+RUN apk upgrade --no-cache && apk del --no-cache gnupg
 
 WORKDIR /app
 

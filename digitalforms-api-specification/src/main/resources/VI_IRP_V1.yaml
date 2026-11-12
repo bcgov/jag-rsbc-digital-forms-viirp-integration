@@ -6,21 +6,18 @@ info:
     name: Digital Forms VI IRP
   version: "1.0"
 servers:
-- url: //localhost:8080
+- url: /digitalforms-viirp/v1
 paths:
-  /impoundments/{correlationId}:
+  /impoundments:
     post:
       tags:
       - Impoundments
+      operationId: createImpoundment
       security:
         - basicAuth: []
       summary: Create impoundment
       parameters:
-        - in: path
-          name: correlationId
-          schema:
-            type: string
-          required: true
+      - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: body
         content:
@@ -31,6 +28,9 @@ paths:
       responses:
         201:
           description: Created
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -39,10 +39,19 @@ paths:
           $ref: '#/components/responses/500ServerError'
         401:
           $ref: '#/components/responses/401NotAuthorized'
-  /impoundments/{noticeNo}/{correlationId}:
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+        '415':
+          $ref: '#/components/responses/415UnsupportedMediaType'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+  /impoundments/{noticeNo}:
     get:
       tags:
       - Impoundments
+      operationId: getImpoundment
       security:
         - basicAuth: []
       summary: Retrieve impoundment
@@ -53,14 +62,14 @@ paths:
         required: true
         schema:
           type: string
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true   
+        example: "00900123"
+      - $ref: '#/components/parameters/CorrelationId'
       responses:
         200:
           description: Successful operation
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -71,29 +80,33 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         404:
           $ref: '#/components/responses/404NotFound'
-  /prohibitions/{correlationId}:
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+  /prohibitions:
     post:
       tags:
       - Prohibitions
+      operationId: createProhibition
       security:
         - basicAuth: []
       summary: Create Prohibition
       parameters:
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true  
+      - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: body
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateProhibition'
-        required: false
+        required: true
       responses:
         201:
           description: Created
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -104,10 +117,19 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         500:
           $ref: '#/components/responses/500ServerError'  
-  /prohibitions/{noticeNo}/{correlationId}:
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+        '415':
+          $ref: '#/components/responses/415UnsupportedMediaType'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+  /prohibitions/{noticeNo}:
     get:
       tags:
       - Prohibitions
+      operationId: getProhibition
       security:
         - basicAuth: []
       summary: Retrieve prohibition
@@ -118,14 +140,14 @@ paths:
         required: true
         schema:
           type: string
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true      
+        example: "21900123"
+      - $ref: '#/components/parameters/CorrelationId'
       responses:
         200:
           description: Successful operation
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -136,29 +158,33 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         404:
           $ref: '#/components/responses/404NotFound'
-  /documents/{correlationId}:
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+  /documents:
     post:
       security:
         - basicAuth: []
       tags:
       - Documents
+      operationId: storeDocument
       summary: Store VIPS document
       parameters:
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true  
+      - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: body
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/storeVIPSDocument'
-        required: false
+        required: true
       responses:
         201:
           description: Created
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -171,19 +197,19 @@ paths:
           $ref: '#/components/responses/404NotFound'
         500:
           $ref: '#/components/responses/500ServerError'  
-  /documents/{documentId}/{correlationId}:
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+        '415':
+          $ref: '#/components/responses/415UnsupportedMediaType'
+  /documents/{documentId}:
     get:
       security:
         - basicAuth: []
       tags:
       - Documents
+      operationId: getDocument
       summary: Retrieve VIPS document (Base64)
       parameters:
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true  
       - name: documentId
         in: path
         description: documentId
@@ -191,9 +217,15 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+        example: 102220
+      - $ref: '#/components/parameters/CorrelationId'
       responses:
         200:
           description: Success
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -206,12 +238,15 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         404:
           $ref: '#/components/responses/404NotFound'
-  /documents/list/{noticeNo}/{correlationId}:
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+  /documents/list/{noticeNo}:
     get:
       security:
         - basicAuth: []
       tags:
       - Documents  
+      operationId: listNoticeDocuments
       summary: Retrieve documents meta data (list)
       parameters:
       - name: noticeNo
@@ -219,14 +254,14 @@ paths:
         schema:
           type: string
         required: true  
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true
+        example: "21900123"
+      - $ref: '#/components/parameters/CorrelationId'
       responses:
         200:
           description: Successful operation
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -237,19 +272,19 @@ paths:
           $ref: '#/components/responses/404NotFound'
         500:
           $ref: '#/components/responses/500ServerError'
-  /documents/association/notice/{documentId}/{correlationId}:
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+  /documents/association/notice/{documentId}:
     post:
       tags:
       - Documents
+      operationId: associateDocumentToNotice
       security:
         - basicAuth: []
       summary: Create document notice association
       parameters:
-      - name: correlationId 
-        in: path
-        required: true
-        schema:
-          type: string
       - name: documentId
         in: path
         description: documentId
@@ -257,6 +292,9 @@ paths:
         schema:
           type: integer
           format: int64
+          minimum: 1
+        example: 102220
+      - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: body
         content:
@@ -267,6 +305,9 @@ paths:
       responses:
         201:
           description: Created
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -277,167 +318,28 @@ paths:
           $ref: '#/components/responses/404NotFound' 
         500:
           $ref: '#/components/responses/500ServerError'         
-  /dfpayloads/{noticeNo}/{correlationId}:
-    get:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Retrieve a payload from the Digital Forms staging table (Impoundment or Prohibition).  
-      parameters:
-      - name: noticeNo
-        in: path
-        description: Impoundment or Prohibition notice number. 
-        required: true
-        schema:
-          type: string
-          maxLength: 8
-          minLength: 8 
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true      
-      responses:
-        200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDFPayloadServiceResponse'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'
-        404:
-          $ref: '#/components/responses/404NotFound'
-        500:
-          $ref: '#/components/responses/500ServerError'
-    post:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Create a new payload in the Digital Forms staging table (Impoundment or Prohibition).
-      parameters:
-        - in: path
-          name: correlationId
-          schema:
-            type: string
-          required: true
-        - in: path
-          name: noticeNo
-          description: Impoundment or Prohibition notice number. 
-          required: true
-          schema:
-            type: string
-            maxLength: 8
-            minLength: 8   
-      requestBody:
-        description: body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostDFPayloadServiceRequest'
-        required: true
-      responses:
-        201:
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
-        500:
-          $ref: '#/components/responses/500ServerError'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'
-    put:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Update a payload in the Digital Forms staging table (Impoundment or Prohibition).
-      parameters:
-        - in: path
-          name: correlationId
-          schema:
-            type: string
-          required: true
-        - in: path
-          name: noticeNo
-          description: Impoundment or Prohibition notice number. 
-          required: true
-          schema:
-            type: string
-            maxLength: 8
-            minLength: 8   
-      requestBody:
-        description: body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PutDFPayloadServiceRequest'
-        required: true
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'           
-        404:
-          $ref: '#/components/responses/404NotFound'        
-        500:
-          $ref: '#/components/responses/500ServerError'
-    delete:
-      tags:
-      - DfPayloads
-      security:
-        - basicAuth: []
-      summary: Delete a payload from the Digital Forms staging table (Impoundment or Prohibition).
-      parameters:
-        - in: path
-          name: correlationId
-          schema:
-            type: string
-          required: true
-        - in: path
-          name: noticeNo
-          description: Impoundment or Prohibition notice number. 
-          required: true
-          schema:
-            type: string
-            maxLength: 8
-            minLength: 8   
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
-        401:
-          $ref: '#/components/responses/401NotAuthorized'           
-        404:
-          $ref: '#/components/responses/404NotFound'        
-        500:
-          $ref: '#/components/responses/500ServerError'                                  
-  /codetables/{correlationId}:
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+        '415':
+          $ref: '#/components/responses/415UnsupportedMediaType'
+  /codetables:
     get:
       tags:
       - Codetables
+      operationId: getCodeTables
       security:
         - basicAuth: []
       summary: Get code table values
       parameters:
-      - name: correlationId
-        in: path
-        schema:
-          type: string
-        required: true  
+      - $ref: '#/components/parameters/CorrelationId'
       responses:
         200:
           description: Status 200
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -446,23 +348,26 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         500:
           $ref: '#/components/responses/500ServerError'
-  /utility/ords/ping/{correlationId}:
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+  /utility/ords/ping:
     get:
       tags:
       - Utility
+      operationId: pingOrds
       security:
         - basicAuth: []
       summary: ORDS Health Check Ping
       parameters:
-      - name: correlationId
-        in: path
-        description: correlation id
-        required: true
-        schema:
-          type: string
+      - $ref: '#/components/parameters/CorrelationId'
       responses:
         200:
           description: Successful operation
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
@@ -473,38 +378,113 @@ paths:
           $ref: '#/components/responses/403Forbidden'
         404:
           $ref: '#/components/responses/404NotFound'          
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+        '500':
+          $ref: '#/components/responses/500ServerError'
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      description: >-
+        Optional caller-supplied ID used to trace this request in the API logs. Must be 1-64 characters
+        from A-Z, a-z, 0-9, '.', '_' and '-' (a UUID is recommended). When omitted, the API generates a
+        UUID. The effective value is always returned in the X-Correlation-ID response header. An invalid
+        value, or more than one X-Correlation-ID header, is rejected with 400 before authentication.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+        pattern: '^[A-Za-z0-9._-]{1,64}$'
+      example: 3f2b8c4e-6a1d-4f7e-9b2a-1c5d8e7f9a01
+  headers:
+    X-Correlation-ID:
+      description: >-
+        Correlation ID for this request: the supplied X-Correlation-ID request header, or a generated
+        UUID when the header was omitted or rejected.
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+        pattern: '^[A-Za-z0-9._-]{1,64}$'
   responses:
     400BadRequest:
-      description: Bad Request.
+      description: Bad Request, including an invalid X-Correlation-ID header.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/errorMessage'
     401NotAuthorized:
       description: The requester is unauthorized.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/errorMessage'
     403Forbidden:
       description: Forbidden.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/errorMessage'
     404NotFound:
       description: Not Found.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/errorMessage'
     500ServerError:
       description: Internal Server Error.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    406NotAcceptable:
+      description: The requested response media type is not supported.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    409Conflict:
+      description: A notice with this number already exists. Use the GET endpoint to retrieve it.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    415UnsupportedMediaType:
+      description: Content-Type must be application/json.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
       content:
         application/json:
           schema:
@@ -515,16 +495,19 @@ components:
       required:
         - dataSourceCd
         - registrationRoleCd
-        - vipAddressArray
+        - vipsAddressArray
       properties:
         dataSourceCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 4
           example: "VIPS"
           description: Current values are "VIPS" (manual), "ICBC" (coming from divers). May need a new code for DF??
         firstGivenNm:
           type: string
           maxLength: 35
+          example: "JANE"
           description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
         icbcEnterpriseId:
           type: string
@@ -533,29 +516,38 @@ components:
         organizationNm:
           type: string
           maxLength: 200
+          example: "ACME LEASING LTD"
           description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
         registrationRoleCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 10
+          example: "DRVR"
         secondGivenNm:
           type: string
           maxLength: 35
+          example: "MARIE"
           description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
         surnameNm:
           type: string
           maxLength: 35
+          example: "DOE"
           description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
         thirdGivenNm:
           type: string
           maxLength: 35
+          example: "ANNE"
         vipsAddressArray:
           type: array
           items:
             $ref: '#/components/schemas/VipsAddressCreateObj'
-        vipsLicenceCreateObj:
+        vipsLicenceObj:
           $ref: '#/components/schemas/VipsLicenceCreate'
     GetImpoundmentServiceResponse:
       type: object
+      required:
+        - result
       properties:
         result:
           $ref: '#/components/schemas/VipsImpoundObj'
@@ -567,42 +559,59 @@ components:
       properties:
         noticeNo:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
+          example: "21900123"
         noticeTypeCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
+          example: "IRP"
     AssociateDocumentToNoticeServiceResponse:
       type: object
+      required:
+        - status_message
       properties:
         status_message:
-          type: string      
+          type: string
     VipsAddressObj:
       type: object
+      nullable: true
       required:
         - registrationAddressTypeCd 
       properties:
         additionalDeliveryLineTxt:
           type: string
+          nullable: true
           maxLength: 100
         addressFirstLineTxt:
           type: string
+          nullable: true
           maxLength: 100
         addressSecondLineTxt:
           type: string
+          nullable: true
           maxLength: 100
         addressThirdLineTxt:
           type: string
+          nullable: true
           maxLength: 100
         cityNm:
           type: string
+          nullable: true
           maxLength: 35
         countryNm:
           type: string
+          nullable: true
           maxLength: 3
           description: code table value
         postalCodeTxt:
           type: string
+          nullable: true
           maxLength: 10
         provinceCd:
           type: string
+          nullable: true
           maxLength: 2
           description: code table value
         registrationAddressTypeCd:
@@ -611,31 +620,42 @@ components:
           description: code table value
     VipsDocumentObj:
       type: object
+      nullable: true
       properties:
         addToFileDtm:
           type: string
+          nullable: true
         disclosedToClientDtm:
           type: string
+          nullable: true
         disclosureDocumentYN:
           type: string
+          nullable: true
         documentId:
           type: integer
+          nullable: true
           format: int64
         documentTypeCd:
           type: string
+          nullable: true
         documentTypeDsc:
           type: string
+          nullable: true
         impoundmentId:
           type: integer
+          nullable: true
           format: int64
         pageCount:
           type: integer
+          nullable: true
           format: int64
         prohibitionId:
           type: integer
+          nullable: true
           format: int64
         receivedDtm:
           type: string
+          nullable: true
     CreateImpoundment:
       type: object
       required:
@@ -652,6 +672,7 @@ components:
             format: int64
             description: Holds id(s) of stored documents. Required. An empty array is allowed. 
             example: 102220
+          example: [102220]
         vipsImpoundCreate:
           $ref: '#/components/schemas/VipsImpoundmentCreate'
         vipsImpoundmentArray:
@@ -661,17 +682,26 @@ components:
             format: int64
             maxLength: 15
             description: Placeholder for priors. Not expected to be used by DF. These will be calculated by VIPS. 
+          example: []
         vipsRegistrationCreateArray:
           type: array
           items:
             $ref: '#/components/schemas/VipsRegistrationCreate'
+          minItems: 1
         vipsVehicleCreate:
           $ref: '#/components/schemas/VipsVehicleCreate'
     CreateImpoundmentServiceResponse:
       type: object
+      required:
+        - respMsg
+        - impoundmentId
       properties:
         respMsg:
           type: string
+          description: '"success", or a "success - ..." warning when VIPS created the impoundment but ICBC needs follow-up.'
+        impoundmentId:
+          type: integer
+          format: int64
     VipsAddressCreateObj:
       type: object
       required:
@@ -680,44 +710,60 @@ components:
         additionalDeliveryLineTxt:
           type: string
           maxLength: 100
+          example: "C/O JOHN DOE"
         addressFirstLineTxt:
           type: string
           maxLength: 100
+          example: "123 MAIN ST"
         addressSecondLineTxt:
           type: string
           maxLength: 100
+          example: "UNIT 4"
         addressThirdLineTxt:
           type: string
           maxLength: 100
+          example: "BUILDING B"
         cityNm:
           type: string
           maxLength: 35
+          example: "VANCOUVER"
         countryNm:
           type: string
           maxLength: 3
+          example: "CAN"
           description: code table value
         postalCodeTxt:
           type: string
           maxLength: 10
+          example: "V5K0A1"
         provinceCd:
           type: string
           maxLength: 2
+          example: "BC"
           description: code table value
         registrationAddressTypeCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
+          example: "RES"
           description: Must be one of "RES", "MAIL", or "BUSI"
     VipsLicenceObj:
       type: object
+      nullable: true
       properties:
         birthDt:
           type: string
+          nullable: true
         dlJurisdictionCd:
           type: string
+          nullable: true
           description: code table value
         driverLicenceNo:
           type: string
+          nullable: true
         licenceId:
           type: integer
+          nullable: true
           format: int64
     VipsImpoundmentCreate:
       type: object
@@ -733,90 +779,126 @@ components:
         dlJurisdictionCd:
           type: string
           maxLength: 10
+          example: "BC"
           description: code table value
         driverLicenceNo:
           type: string
           maxLength: 8
+          example: "1234567"
           description: DB max length is 20 to account for future expansion
         impoundLotOperatorId:
           type: integer
           format: int64
           maxLength: 15
+          example: 80
         impoundmentDt:
           type: string
+          minLength: 1
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2026-11-05T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         impoundmentNoticeNo:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 12
+          example: "00900123"
           description: Notice Number beginning with 00 for impoundments. 
         noticeSubjectCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 10
+          example: "VEHI"
           description: For impoundments, this value is always "VEHI"
         noticeTypeCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 10
+          example: "IMP"
           description: For impoundments, this value is always "IMP"
         originalCauseCds:
           type: array
           items:
             type: string
             maxLength: 10
+            example: "EXSPEED"
             description: For impoundments no max limit on array size.
+          minItems: 1
+          example: ["EXSPEED"]
         policeDetatchmentId:
           type: integer
           format: int64
           maxLength: 15
+          example: 83
           description: code table value
         policeFileNo:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 15
+          example: "26-123456"
         policeOfficerNm:
           type: string
           maxLength: 100
+          example: "J SMITH"
         policeOfficerNo:
           type: string
           maxLength: 30 
+          example: "1234"
         projectedReleaseDt:
           type: string
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2026-11-12T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         seizureLocationTxt:
           type: string
           maxLength: 4000
+          example: "1200 BLOCK GRANVILLE ST, VANCOUVER"
     VipsRegistrationObj:
       type: object
+      nullable: true
       properties:
         dataSourceCd:
           type: string
+          nullable: true
         firstGivenNm:
           type: string
+          nullable: true
         icbcEnterpriseId:
           type: string
+          nullable: true
         licenceId:
           type: integer
+          nullable: true
           format: int64
         organizationNm:
           type: string
+          nullable: true
         registrationId:
           type: integer
+          nullable: true
           format: int64
         registrationRoleCd:
           type: string
+          nullable: true
         secondGivenNm:
           type: string
+          nullable: true
         surnameNm:
           type: string
+          nullable: true
         thirdGivenNm:
           type: string
+          nullable: true
         vehicleId:
           type: integer
+          nullable: true
           format: int64
         vipsAddressArray:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsAddressObj'
         vipsLicenceObj:
@@ -832,151 +914,204 @@ components:
         licencePlateNo:
           type: string
           maxLength: 10
+          example: "ABC123"
         lpDecalValidYy:
           type: integer
           format: int64
           maxLength: 4
+          example: 2027
         lpJurisdictionCd:
           type: string
           maxLength: 10
+          example: "BC"
           description: code table value
         manufacturedYy:
           type: integer
           format: int64
           maxLength: 4
+          example: 2003
         nscJurisdictionTxt:
           type: string
           maxLength: 20
+          example: "BC"
         registrationNo:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 15
+          example: "12345678"
         vehicleColourTxt:
           type: string
           maxLength: 50
+          example: "BLUE"
         vehicleIdentificationNo:
           type: string
           maxLength: 35
+          example: "1HGCM82633A004352"
         vehicleMakeTxt:
           type: string
           maxLength: 50
+          example: "HONDA"
         vehicleModelTxt:
           type: string
           maxLength: 50
+          example: "ACCORD"
         vehicleStyleTxt:
           type: string
           maxLength: 50
+          example: "SEDAN"
         vehicleTypeCd:
           type: string
           maxLength: 10
+          example: "1"
           description: code table value
     VipsImpoundObj:
       type: object
       properties:
         cancelled:
           type: boolean
+          nullable: true
         dlJurisdictionCd:
           type: string
+          nullable: true
           description: code table value
         documents:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsDocumentObj'
         driverLicenceNo:
           type: string
+          nullable: true
         icbcTransmissionCd:
           type: string
+          nullable: true
         impoundLotOperatorId:
           type: integer
+          nullable: true
           format: int64
         impoundmentDt:
           type: string
+          nullable: true
         impoundmentId:
           type: integer
+          nullable: true
           format: int64
         impoundmentNoticeNo:
           type: string
+          nullable: true
         noticeSubjectCd:
           type: string
+          nullable: true
         noticeTypeCd:
           type: string
+          nullable: true
         originalCauseCds:
           type: array
+          nullable: true
           items:
             type: string
         policeDetatchmentId:
           type: integer
+          nullable: true
           format: int64
         policeFileNo:
           type: string
+          nullable: true
         policeOfficerNm:
           type: string
+          nullable: true
         policeOfficerNo:
           type: string
+          nullable: true
         projectedReleaseDt:
           type: string
+          nullable: true
         registrations:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsRegistrationObj'
         seizureLocationTxt:
           type: string
+          nullable: true
         vehicle:
           $ref: '#/components/schemas/VipsVehicleObj'
         vehicleId:
           type: integer
+          nullable: true
           format: int64
     VipsVehicleObj:
       type: object
+      nullable: true
       properties:
         commercialMotorCarrierId:
           type: string
+          nullable: true
         licencePlateNo:
           type: string
+          nullable: true
         lpDecalValidYy:
           type: integer
+          nullable: true
           format: int64
         lpJurisdictionCd:
           type: string
+          nullable: true
           description: code table value
         manufacturedYy:
           type: integer
+          nullable: true
           format: int64
         nscJurisdictionTxt:
           type: string
+          nullable: true
         registrationNo:
           type: string
+          nullable: true
         vehicleColourTxt:
           type: string
+          nullable: true
         vehicleId:
           type: integer
+          nullable: true
           format: int64
         vehicleIdentificationNo:
           type: string
+          nullable: true
         vehicleMakeTxt:
           type: string
+          nullable: true
         vehicleModelTxt:
           type: string
+          nullable: true
         vehicleStyleTxt:
           type: string
+          nullable: true
         vehicleTypeCd:
           type: string
+          nullable: true
     VipsLicenceCreate:
       type: object
       properties:
         birthDt:
           type: string
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "1985-04-12T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset 
         dlJurisdictionCd:
           type: string
           maxLength: 10
+          example: "BC"
           description: code table value
         driverLicenceNo:
           type: string
           maxLength: 10 
+          example: "1234567"
     GetProhibitionServiceResponse:
       type: object
+      required:
+        - result
       properties:
         result:
           $ref: '#/components/schemas/VipsProhibitionObj'
@@ -985,61 +1120,85 @@ components:
       properties:
         cancelled:
           type: boolean
+          nullable: true
         cityNm:
           type: string
+          nullable: true
         documents:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsDocumentObj'
         dreEvaluationCds:
           type: array
+          nullable: true
           items:
             type: string
         driverLicenceSeizedYN:
           type: string
+          nullable: true
         effectiveDt:
           type: string
+          nullable: true
         expiryDt:
           type: string
+          nullable: true
         icbcTransmissionCd:
           type: string
+          nullable: true
         incidentDtm:
           type: string
+          nullable: true
         licenceId:
           type: integer
+          nullable: true
           format: int64
         noticeServedDt:
           type: string
+          nullable: true
         noticeSubjectCd:
           type: string
+          nullable: true
         noticeTypeCd:
           type: string
+          nullable: true
         originalCauseCd:
           type: string
+          nullable: true
         policeDetatchmentId:
           type: integer
+          nullable: true
           format: int64
         policeFileNo:
           type: string
+          nullable: true
         policeOfficerNm:
           type: string
+          nullable: true
         policeOfficerNo:
           type: string
+          nullable: true
         prohibitionId:
           type: integer
+          nullable: true
           format: int64
         prohibitionNoticeNo:
           type: string
+          nullable: true
         provinceCd:
           type: string
+          nullable: true
         registration:
           $ref: '#/components/schemas/VipsRegistrationObj'
         streetDetailsTxt:
           type: string
+          nullable: true
         tempDlEffectiveDt:
           type: string
+          nullable: true
         tempDlExpiryDt:
           type: string
+          nullable: true
     CreateProhibition:
       type: object
       required:
@@ -1054,6 +1213,7 @@ components:
             format: int64
             description: Holds id(s) of stored documents. Required. An empty array is allowed. 
             example: 102220
+          example: [102220]
         vipsProhibitionCreate:
           $ref: '#/components/schemas/VipsProhibitionCreate'
         vipsRegistrationCreate:
@@ -1068,96 +1228,133 @@ components:
         - noticeTypeCd
         - originalCauseCd
         - policeDetatchmentId
+        - prohibitionNoticeNo
       properties:
         cityNm:
           type: string
-          maxLength: 35
+          maxLength: 30
+          example: "VANCOUVER"
         dreEvaluationCds:
           type: array
           items:
             type: string
+          example: []
         driverLicenceSeizedYN:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 1
+          example: "Y"
         effectiveDt:
           type: string
+          minLength: 1
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2026-11-05T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         expiryDt:
           type: string
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2027-02-03T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         incidentDtm:
           type: string
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2026-11-05T01:30:00.000-07:00"
           description: ISO-8601. Date and time with offset
         noticeServedDt:
           type: string
+          minLength: 1
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2026-11-05T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         noticeSubjectCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 10
+          example: "PERS"
           description: For prohibitions, this value is always "PERS"
         noticeTypeCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 10
+          example: "IRP"
           description: For prohibitions this value is always "UL", "IRP", or "ADP"
         originalCauseCd:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           maxLength: 10
+          example: "IRP90FAIL"
           description: For prohibitions this is a single value.  
         policeDetatchmentId:
           type: integer
           format: int64
           maxLength: 15
+          example: 83
           description: code table value
         policeFileNo:
           type: string
           maxLength: 15
+          example: "26-123456"
         policeOfficerNm:
           type: string
           maxLength: 60
+          example: "J SMITH"
         policeOfficerNo:
           type: string
           maxLength: 30
+          example: "1234"
         prohibitionNoticeNo:
           type: string
+          minLength: 1
+          pattern: '.*\S.*'
           maxLength: 12
-          description: Notice Number beginning with 21 or 22 for Prohibitions. 
+          example: "21900123"
+          description: Notice Number beginning with 21, 22, or 80-89 for Prohibitions.
         provinceCd:
           type: string
           maxLength: 2
+          example: "BC"
         streetDetailsTxt:
           type: string
           maxLength: 4000
+          example: "1200 BLOCK GRANVILLE ST"
         tempDlEffectiveDt:
           type: string
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2026-11-05T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
         tempDlExpiryDt:
           type: string
           pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2021-01-30T00:00:00.000-07:00"
+          example: "2026-11-05T00:00:00.000-07:00"
           description: ISO-8601. Date only with offset
     CreateProhibitionServiceResponse:
       type: object
+      required:
+        - respMsg
+        - prohibitionId
       properties:
         respMsg:
           type: string
+          description: '"success", or a "success - ..." warning when VIPS created the prohibition but ICBC needs follow-up.'
+        prohibitionId:
+          type: integer
+          format: int64
     vipsDocumentResponse:
       type: object
+      required:
+        - document_id
       properties:
         document_id:
           type: string
           description: Doc id to be attached to impoundment or prohibition.
     vipsGetDocumentByIdResponse:
       type: object
+      required:
+        - document
       properties:
         document:
           type: string
@@ -1176,45 +1373,64 @@ components:
         - type_code
         - mime_type
         - mime_sub_type
-        - auth_guid
         - file_object
       properties:
         type_code:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           description: type code, example MV2687
           maxLength: 10
+          example: "MV2723"
         mime_type:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           description: mime type, example application
           maxLength: 30
+          example: "application"
         mime_sub_type:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           description: mime sub type, example pdf
           maxLength: 20
+          example: "pdf"
         file_object:
           type: string
+          pattern: '.*\S.*'
+          minLength: 1
           format: byte
           description: base64-encoded file content
+          example: "JVBERi0xLjQK"
         notice_type_code:
           type: string
           description: notice type code. One of IRP, ADP, UL, or IMP. 
           maxLength: 3  
+          example: "IRP"
         notice_subject_code:
           type: string
           description: notice subject code. One of PERS or VEHI 
           maxLength: 4   
+          example: "PERS"
         pageCount:
           type: integer
           format: int32
+          example: 1
     GetCodetablesServiceResponse:
         type: object
+        required:
+          - configuration
         properties:
           configuration:
             $ref: '#/components/schemas/VipsConfigurationObj'
           respMsg:
             type: string
+            nullable: true
     GetDocumentsListServiceResponse:
       type: object
+      required:
+        - results
       properties:
         results:
           type: array
@@ -1225,291 +1441,266 @@ components:
         properties:
           addresses:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           contactMethods:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           countries:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           data_sources:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           decisionOutcomes:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
           disposalActs:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           disposalDecisions:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           documentNotices:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByDocObj'
           documents:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
           dreEvaluations:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
           driverLicenceOffices:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsIdNameObj'
           groundsDecisions:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByRVWAppObj'
           impoundLotOperators:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsIdNameObj'
           jurisdictions:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           noticePrefixNos:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
           noticeTypes:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           originalCauses:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescAbbrByNoticeObj'
           policeDetachments:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsIdNameObj'
           provinces:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           registration_roles:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           releaseReasons:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           reviewApplications:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
           reviewRoles:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
           reviewStatuses:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           reviewTypes:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
           scheduleAppTypes:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsIdNameObj'
           unavailabilityReasons:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'
           vehicleTypes:
             type: array
+            nullable: true
             items:
               $ref: '#/components/schemas/VipsCodeDescriptionObj'       
     VipsCodeDescByRVWAppObj:
       type: object
+      nullable: true
       properties:
         codes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsCodeDescriptionObj'
         reviewAppActiveYN:
           type: string
+          nullable: true
         reviewAppTypeCd:
           type: string
+          nullable: true
         reviewAppTypeDsc:
           type: string          
+          nullable: true
     VipsCodeDescriptionObj:
       type: object
+      nullable: true
       properties:
         activeYN:
           type: string
+          nullable: true
         internalYN:
           type: string
+          nullable: true
         objectCd:
           type: string
+          nullable: true
         objectDsc:
           type: string           
+          nullable: true
     VipsCodeDescByNoticeObj:
       type: object
+      nullable: true
       properties:
         codes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsCodeDescriptionObj'
         noticeActiveYN:
           type: string
+          nullable: true
         noticeTypeCd:
           type: string
+          nullable: true
         noticeTypeDsc:
           type: string        
+          nullable: true
     VipsCodeDescByDocObj:
       type: object
+      nullable: true
       properties:
         codes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsCodeDescriptionObj'
         documentActiveYN:
           type: string
+          nullable: true
         documentTypeCd:
           type: string
+          nullable: true
         documentTypeDsc:
           type: string        
+          nullable: true
     VipsIdNameObj:
       type: object
+      nullable: true
       properties:
         activeYN:
           type: string
+          nullable: true
         identityId:
           type: integer
+          nullable: true
           format: int64
         identityNm:
           type: string      
+          nullable: true
     VipsCodeDescAbbrByNoticeObj:
       type: object
+      nullable: true
       properties:
         codes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/VipsCodeDescAbbrevObj'
         noticeActiveYN:
           type: string
+          nullable: true
         noticeTypeCd:
           type: string
+          nullable: true
         noticeTypeDsc:
           type: string      
+          nullable: true
     VipsCodeDescAbbrevObj:
       type: object
+      nullable: true
       properties:
         activeYN:
           type: string
+          nullable: true
         objectAbbrev:
           type: string
+          nullable: true
         objectCd:
           type: string
+          nullable: true
         objectDsc:
           type: string
-    GetDFPayloadServiceResponse:
-      type: object
-      description: Digital Forms Schema GET Response
-      properties:
-        noticeTypeCd:
-          type: string
-        payload:
-          type: object
-        active:
-          type: boolean
-        processed: 
-          type: boolean
-    PostDFPayloadServiceRequest:
-      type: object
-      description: Digital Forms Schema POST Request
-      required:
-        - noticeTypeCd
-        - payload
-        - active
-        - processed
-      properties:
-        noticeTypeCd:
-          type: string
-        payload:
-          type: string
-        active:
-          type: boolean
-        processed: 
-          type: boolean
-    PostDFPayloadServiceResponse:
-      type: object
-      properties:
-        status_message:
-          type: string                        
-    VipsImpoundmentBasicsObj:
-      type: object
-      properties:
-        driverLicenceNo:
-          type: string
-        impoundmentDt:
-          type: string
-        impoundmentId:
-          type: integer
-          format: int64
-        impoundmentNoticeNo:
-          type: string
-        originalCauseCds:
-          type: array
-          items:
-            type: string
-        policeFileNo:
-          type: string
-        policeOfficerNo:
-          type: string
-        projectedReleaseDt:
-          type: string
-        registrations:
-          type: array
-          items:
-            $ref: '#/components/schemas/VipsImpoundmentRegistrationObj'
-    PutDFPayloadServiceRequest:
-      type: object
-      description: Digital Forms Schema PUT Request
-      properties:
-        noticeTypeCd:
-          type: string
-        payload:
-          type: string
-        active:
-          type: boolean
-        processed: 
-          type: boolean            
-    VipsImpoundmentRegistrationObj:
-      type: object
-      properties:
-        driverLicenceNo:
-          type: string
-        firstGivenNm:
-          type: string
-        organizationNm:
-          type: string
-        registrationRoleTypeCd:
-          type: string
-        secondGivenNm:
-          type: string
-        surnameNm:
-          type: string
-        thirdGivenNm:
-          type: string
+          nullable: true
     PingResponse:
       type: object
+      required:
+        - responseMessage
       properties:
         responseMessage:
           type: object

@@ -5,8 +5,8 @@ This is the digitalforms level (root) of this project.
 ### Built With
 
 - [Maven](https://maven.apache.org/) - Dependency Management
-- [JDK](https://www.oracle.com/java/technologies/javase/jdk11-archive-downloads.html) - Java Platform, Standard Edition 11 Development Kit
-- [Spring Boot](https://spring.io/projects/spring-boot) - Framework to ease the bootstrapping and development of new Spring Applications
+- [JDK](https://adoptium.net/temurin/releases/?version=21) - Java Platform, Standard Edition 21 Development Kit
+- [Spring Boot 4](https://spring.io/projects/spring-boot) - Framework to ease the bootstrapping and development of new Spring Applications
 - [git](https://git-scm.com/) - Free and Open-Source distributed version control system
 - [Swagger](https://swagger.io/) - Open-Source software framework backed by a large ecosystem of tools that helps developers design, build, document, and consume RESTful Web services.
 
@@ -75,7 +75,7 @@ See digitalforms-api README.md, *API Services*.
 
 ### Remote dependency 
 
-This API contains two shared dependencies, jag-vips-client, and jag-digitalforms-client. Both are used by other projects including DPS and Digital Forms, Reviews.
+This API contains a shared dependency, jag-vips-client, used by other projects including DPS and Digital Forms, Reviews.
 Endpoint and user / password data must be set as environmental variables if running locally or set as Openshift secrets when in deployed in DEV/TEST/PROD environments. 
   
 | jag-vips-client Environment Variables | Value     |
@@ -83,12 +83,6 @@ Endpoint and user / password data must be set as environmental variables if runn
 | `DIGITALFORMS_VIPSORDS_BASEPATH` | ORDS base endpoint |
 | `DIGITALFORMS_VIPSORDS_PASSWORD` | ORDS password |
 | `DIGITALFORMS_VIPSORDS_USER` | ORDS user |
-  
-| jag-digitalforms-client Environment Variables | Value     |
-| ---------- | --------- |
-| `DIGITALFORMS_ORDS_BASEPATH` | ORDS base endpoint |
-| `DIGITALFORMS_ORDS_PASSWORD` | ORDS password |
-| `DIGITALFORMS_ORDS_USER` | ORDS user |
 
 For a complete listing of environmental variables see the API, README.md (https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration/blob/release/1.0/digitalforms-api/README.md)
 

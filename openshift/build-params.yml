@@ -1,0 +1,5 @@
+NAME: digitalforms-viirp-api
+VERSION: "1.0"
+SOURCE_REPOSITORY_URL: https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration.git
+GIT_REPO_DEPLOY_KEY: vips-api-repo-key
+SOURCE_REPOSITORY_REF: master

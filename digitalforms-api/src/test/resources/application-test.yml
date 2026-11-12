@@ -1,0 +1,10 @@
+# Digital Forms API Application test properties. 
+server:
+  port: 8082
+  servlet:
+    context-path: /digitalforms-viirp/v1
+    
+digitalforms:
+  basic-auth:
+    password: password
+    user: user

@@ -1,0 +1,155 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata: {}
+parameters:
+- name: NAME
+  value: digitalforms-viirp-api
+- name: NAMESPACE
+  required: true
+- name: CPU_REQUEST
+  displayName: Requested CPU
+  description: Requested CPU
+  value: 200m
+- name: CPU_LIMIT
+  displayName: CPU upper limit
+  description: CPU upper limit
+  value: 400m
+- name: MEMORY_REQUEST
+  displayName: Requested memory
+  description: Requested memory
+  value: 200Mi
+- name: MEMORY_LIMIT
+  displayName: Memory upper limit
+  description: Memory upper limit
+  value: 500Mi
+- name: IMAGE_NAMESPACE
+  value: c220ad-tools
+- name: IMAGE_TAG
+  required: true
+- name: SECRET1_NAME
+  value: "digitalforms-api"
+- name: SECRET2_NAME
+  value: "df-vips-integration-api"
+- name: SECRET3_NAME
+  value: "splunk-config"
+objects:
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    namespace: ${NAMESPACE}
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+  spec:
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - ${NAME}
+        from:
+          kind: ImageStreamTag
+          namespace: ${IMAGE_NAMESPACE}
+          name: '${NAME}:${IMAGE_TAG}'
+    replicas: 1
+    selector:
+      app: ${NAME}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: ${NAME}
+      spec:
+        containers:
+        - image: image-registry.openshift-image-registry.svc:5000/${IMAGE_NAMESPACE}/${NAME}:${IMAGE_TAG}
+          name: ${NAME}
+          resources:
+            limits:
+              cpu: ${CPU_REQUEST}
+              memory: ${MEMORY_LIMIT}
+            requests:
+              cpu: ${CPU_REQUEST}
+              memory: ${MEMORY_REQUEST}
+          envFrom:
+          - secretRef:
+              name: ${SECRET1_NAME}
+          - secretRef:
+              name: ${SECRET2_NAME}
+          - secretRef:
+              name: ${SECRET3_NAME}
+          ports:
+            - name: web
+              containerPort: 8082
+              protocol: TCP
+          startupProbe:
+            tcpSocket:
+              port: web
+            initialDelaySeconds: 60
+            failureThreshold: 12
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /digitalforms-viirp/v1/actuator/health
+              port: web
+            initialDelaySeconds: 45
+          livenessProbe:
+            httpGet:
+              path: /digitalforms-viirp/v1/actuator/health
+              port: web
+            initialDelaySeconds: 45
+#- apiVersion: autoscaling/v1
+#  kind: HorizontalPodAutoscaler
+#  metadata:
+#    creationTimestamp: null
+#    namespace: ${NAMESPACE}
+#    labels:
+#      app: ${NAME}
+#    name: ${NAME}
+#  spec:
+#    maxReplicas: 2
+#    minReplicas: 1
+#    scaleTargetRef:
+#      apiVersion: v1
+#      kind: Deployment
+#      name: ${NAME}
+#    targetCPUUtilizationPercentage: 85
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+    namespace: ${NAMESPACE}
+  spec:
+    ports:
+    - name: 8082-tcp
+      port: 8082
+      protocol: TCP
+      targetPort: 8082
+    selector:
+      app: ${NAME}
+- apiVersion: v1
+  kind: Route
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+    namespace: ${NAMESPACE}
+  spec:
+    path: "/"
+    port:
+      targetPort: 8082-tcp
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+    to:
+      kind: Service
+      name: ${NAME}
+      weight: 100
+    wildcardPolicy: None

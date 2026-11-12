@@ -12,11 +12,14 @@
 	<url>https://github.com/bcgov/jag-rsbc-digital-forms-viirp-integration</url>
 	
 	<properties>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
     </properties>
 
     <modules>
+        <module>jag-vips-client/src/jag-vips-client</module>
+		<module>digitalforms-api-specification</module>
         <module>digitalforms-api</module>
+        <module>jag-digitalforms-client</module>
     </modules>
 
 </project>

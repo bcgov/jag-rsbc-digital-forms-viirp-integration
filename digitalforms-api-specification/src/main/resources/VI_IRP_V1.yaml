@@ -1,0 +1,1516 @@
+openapi: 3.0.1
+info:
+  title: Digital Forms VI IRP
+  description: Digital Forms Vehicle Impoundments and Prohibitions API, Version 1
+  contact:
+    name: Digital Forms VI IRP
+  version: "1.0"
+servers:
+- url: //localhost:8080
+paths:
+  /impoundments/{correlationId}:
+    post:
+      tags:
+      - Impoundments
+      security:
+        - basicAuth: []
+      summary: Create impoundment
+      parameters:
+        - in: path
+          name: correlationId
+          schema:
+            type: string
+          required: true
+      requestBody:
+        description: body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateImpoundment'
+        required: true
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateImpoundmentServiceResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+  /impoundments/{noticeNo}/{correlationId}:
+    get:
+      tags:
+      - Impoundments
+      security:
+        - basicAuth: []
+      summary: Retrieve impoundment
+      parameters:
+      - name: noticeNo
+        in: path
+        description: notice number
+        required: true
+        schema:
+          type: string
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true   
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetImpoundmentServiceResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'        
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        404:
+          $ref: '#/components/responses/404NotFound'
+  /prohibitions/{correlationId}:
+    post:
+      tags:
+      - Prohibitions
+      security:
+        - basicAuth: []
+      summary: Create Prohibition
+      parameters:
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true  
+      requestBody:
+        description: body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProhibition'
+        required: false
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProhibitionServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        403:
+          $ref: '#/components/responses/403Forbidden'
+        500:
+          $ref: '#/components/responses/500ServerError'  
+  /prohibitions/{noticeNo}/{correlationId}:
+    get:
+      tags:
+      - Prohibitions
+      security:
+        - basicAuth: []
+      summary: Retrieve prohibition
+      parameters:
+      - name: noticeNo
+        in: path
+        description: notice number
+        required: true
+        schema:
+          type: string
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true      
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProhibitionServiceResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'        
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        404:
+          $ref: '#/components/responses/404NotFound'
+  /documents/{correlationId}:
+    post:
+      security:
+        - basicAuth: []
+      tags:
+      - Documents
+      summary: Store VIPS document
+      parameters:
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true  
+      requestBody:
+        description: body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/storeVIPSDocument'
+        required: false
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/vipsDocumentResponse'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        404:
+          $ref: '#/components/responses/404NotFound'
+        500:
+          $ref: '#/components/responses/500ServerError'  
+  /documents/{documentId}/{correlationId}:
+    get:
+      security:
+        - basicAuth: []
+      tags:
+      - Documents
+      summary: Retrieve VIPS document (Base64)
+      parameters:
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true  
+      - name: documentId
+        in: path
+        description: documentId
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/vipsGetDocumentByIdResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        404:
+          $ref: '#/components/responses/404NotFound'
+  /documents/list/{noticeNo}/{correlationId}:
+    get:
+      security:
+        - basicAuth: []
+      tags:
+      - Documents  
+      summary: Retrieve documents meta data (list)
+      parameters:
+      - name: noticeNo
+        in: path
+        schema:
+          type: string
+        required: true  
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentsListServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        404:
+          $ref: '#/components/responses/404NotFound'
+        500:
+          $ref: '#/components/responses/500ServerError'
+  /documents/association/notice/{documentId}/{correlationId}:
+    post:
+      tags:
+      - Documents
+      security:
+        - basicAuth: []
+      summary: Create document notice association
+      parameters:
+      - name: correlationId 
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: documentId
+        in: path
+        description: documentId
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        description: body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VipsNoticeObj'
+        required: true
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssociateDocumentToNoticeServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        404:
+          $ref: '#/components/responses/404NotFound' 
+        500:
+          $ref: '#/components/responses/500ServerError'         
+  /dfpayloads/{noticeNo}/{correlationId}:
+    get:
+      tags:
+      - DfPayloads
+      security:
+        - basicAuth: []
+      summary: Retrieve a payload from the Digital Forms staging table (Impoundment or Prohibition).  
+      parameters:
+      - name: noticeNo
+        in: path
+        description: Impoundment or Prohibition notice number. 
+        required: true
+        schema:
+          type: string
+          maxLength: 8
+          minLength: 8 
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true      
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDFPayloadServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        404:
+          $ref: '#/components/responses/404NotFound'
+        500:
+          $ref: '#/components/responses/500ServerError'
+    post:
+      tags:
+      - DfPayloads
+      security:
+        - basicAuth: []
+      summary: Create a new payload in the Digital Forms staging table (Impoundment or Prohibition).
+      parameters:
+        - in: path
+          name: correlationId
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: noticeNo
+          description: Impoundment or Prohibition notice number. 
+          required: true
+          schema:
+            type: string
+            maxLength: 8
+            minLength: 8   
+      requestBody:
+        description: body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostDFPayloadServiceRequest'
+        required: true
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
+        500:
+          $ref: '#/components/responses/500ServerError'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+    put:
+      tags:
+      - DfPayloads
+      security:
+        - basicAuth: []
+      summary: Update a payload in the Digital Forms staging table (Impoundment or Prohibition).
+      parameters:
+        - in: path
+          name: correlationId
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: noticeNo
+          description: Impoundment or Prohibition notice number. 
+          required: true
+          schema:
+            type: string
+            maxLength: 8
+            minLength: 8   
+      requestBody:
+        description: body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutDFPayloadServiceRequest'
+        required: true
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'           
+        404:
+          $ref: '#/components/responses/404NotFound'        
+        500:
+          $ref: '#/components/responses/500ServerError'
+    delete:
+      tags:
+      - DfPayloads
+      security:
+        - basicAuth: []
+      summary: Delete a payload from the Digital Forms staging table (Impoundment or Prohibition).
+      parameters:
+        - in: path
+          name: correlationId
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: noticeNo
+          description: Impoundment or Prohibition notice number. 
+          required: true
+          schema:
+            type: string
+            maxLength: 8
+            minLength: 8   
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDFPayloadServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'           
+        404:
+          $ref: '#/components/responses/404NotFound'        
+        500:
+          $ref: '#/components/responses/500ServerError'                                  
+  /codetables/{correlationId}:
+    get:
+      tags:
+      - Codetables
+      security:
+        - basicAuth: []
+      summary: Get code table values
+      parameters:
+      - name: correlationId
+        in: path
+        schema:
+          type: string
+        required: true  
+      responses:
+        200:
+          description: Status 200
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCodetablesServiceResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
+  /utility/ords/ping/{correlationId}:
+    get:
+      tags:
+      - Utility
+      security:
+        - basicAuth: []
+      summary: ORDS Health Check Ping
+      parameters:
+      - name: correlationId
+        in: path
+        description: correlation id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingResponse'
+        401:
+          $ref: '#/components/responses/401NotAuthorized'
+        403:
+          $ref: '#/components/responses/403Forbidden'
+        404:
+          $ref: '#/components/responses/404NotFound'          
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  responses:
+    400BadRequest:
+      description: Bad Request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    401NotAuthorized:
+      description: The requester is unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    403Forbidden:
+      description: Forbidden.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    404NotFound:
+      description: Not Found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+    500ServerError:
+      description: Internal Server Error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+  schemas:
+    VipsRegistrationCreate:
+      type: object
+      required:
+        - dataSourceCd
+        - registrationRoleCd
+        - vipAddressArray
+      properties:
+        dataSourceCd:
+          type: string
+          maxLength: 4
+          example: "VIPS"
+          description: Current values are "VIPS" (manual), "ICBC" (coming from divers). May need a new code for DF??
+        firstGivenNm:
+          type: string
+          maxLength: 35
+          description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
+        icbcEnterpriseId:
+          type: string
+          maxLength: 50
+          description: May not be fillable in the field. 
+        organizationNm:
+          type: string
+          maxLength: 200
+          description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
+        registrationRoleCd:
+          type: string
+          maxLength: 10
+        secondGivenNm:
+          type: string
+          maxLength: 35
+          description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
+        surnameNm:
+          type: string
+          maxLength: 35
+          description: Minamally one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm required. 
+        thirdGivenNm:
+          type: string
+          maxLength: 35
+        vipsAddressArray:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsAddressCreateObj'
+        vipsLicenceCreateObj:
+          $ref: '#/components/schemas/VipsLicenceCreate'
+    GetImpoundmentServiceResponse:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/VipsImpoundObj'
+    VipsNoticeObj:
+      type: object
+      required:
+        - noticeNo 
+        - noticeTypeCd
+      properties:
+        noticeNo:
+          type: string
+        noticeTypeCd:
+          type: string
+    AssociateDocumentToNoticeServiceResponse:
+      type: object
+      properties:
+        status_message:
+          type: string      
+    VipsAddressObj:
+      type: object
+      required:
+        - registrationAddressTypeCd 
+      properties:
+        additionalDeliveryLineTxt:
+          type: string
+          maxLength: 100
+        addressFirstLineTxt:
+          type: string
+          maxLength: 100
+        addressSecondLineTxt:
+          type: string
+          maxLength: 100
+        addressThirdLineTxt:
+          type: string
+          maxLength: 100
+        cityNm:
+          type: string
+          maxLength: 35
+        countryNm:
+          type: string
+          maxLength: 3
+          description: code table value
+        postalCodeTxt:
+          type: string
+          maxLength: 10
+        provinceCd:
+          type: string
+          maxLength: 2
+          description: code table value
+        registrationAddressTypeCd:
+          type: string
+          maxLength: 10
+          description: code table value
+    VipsDocumentObj:
+      type: object
+      properties:
+        addToFileDtm:
+          type: string
+        disclosedToClientDtm:
+          type: string
+        disclosureDocumentYN:
+          type: string
+        documentId:
+          type: integer
+          format: int64
+        documentTypeCd:
+          type: string
+        documentTypeDsc:
+          type: string
+        impoundmentId:
+          type: integer
+          format: int64
+        pageCount:
+          type: integer
+          format: int64
+        prohibitionId:
+          type: integer
+          format: int64
+        receivedDtm:
+          type: string
+    CreateImpoundment:
+      type: object
+      required:
+        - vipsDocumentIdArray
+        - vipsImpoundCreate
+        - vipsImpoundmentArray
+        - vipsRegistrationCreateArray
+        - vipsVehicleCreate
+      properties:
+        vipsDocumentIdArray:
+          type: array
+          items:
+            type: integer
+            format: int64
+            description: Holds id(s) of stored documents. Required. An empty array is allowed. 
+            example: 102220
+        vipsImpoundCreate:
+          $ref: '#/components/schemas/VipsImpoundmentCreate'
+        vipsImpoundmentArray:
+          type: array
+          items:
+            type: integer
+            format: int64
+            maxLength: 15
+            description: Placeholder for priors. Not expected to be used by DF. These will be calculated by VIPS. 
+        vipsRegistrationCreateArray:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsRegistrationCreate'
+        vipsVehicleCreate:
+          $ref: '#/components/schemas/VipsVehicleCreate'
+    CreateImpoundmentServiceResponse:
+      type: object
+      properties:
+        respMsg:
+          type: string
+    VipsAddressCreateObj:
+      type: object
+      required:
+        - registrationAddressTypeCd
+      properties:
+        additionalDeliveryLineTxt:
+          type: string
+          maxLength: 100
+        addressFirstLineTxt:
+          type: string
+          maxLength: 100
+        addressSecondLineTxt:
+          type: string
+          maxLength: 100
+        addressThirdLineTxt:
+          type: string
+          maxLength: 100
+        cityNm:
+          type: string
+          maxLength: 35
+        countryNm:
+          type: string
+          maxLength: 3
+          description: code table value
+        postalCodeTxt:
+          type: string
+          maxLength: 10
+        provinceCd:
+          type: string
+          maxLength: 2
+          description: code table value
+        registrationAddressTypeCd:
+          type: string
+          description: Must be one of "RES", "MAIL", or "BUSI"
+    VipsLicenceObj:
+      type: object
+      properties:
+        birthDt:
+          type: string
+        dlJurisdictionCd:
+          type: string
+          description: code table value
+        driverLicenceNo:
+          type: string
+        licenceId:
+          type: integer
+          format: int64
+    VipsImpoundmentCreate:
+      type: object
+      required: 
+        - impoundmentDt
+        - impoundmentNoticeNo
+        - noticeSubjectCd
+        - noticeTypeCd
+        - originalCauseCds
+        - policeDetatchmentId
+        - policeFileNo
+      properties:
+        dlJurisdictionCd:
+          type: string
+          maxLength: 10
+          description: code table value
+        driverLicenceNo:
+          type: string
+          maxLength: 8
+          description: DB max length is 20 to account for future expansion
+        impoundLotOperatorId:
+          type: integer
+          format: int64
+          maxLength: 15
+        impoundmentDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset
+        impoundmentNoticeNo:
+          type: string
+          maxLength: 12
+          description: Notice Number beginning with 00 for impoundments. 
+        noticeSubjectCd:
+          type: string
+          maxLength: 10
+          description: For impoundments, this value is always "VEHI"
+        noticeTypeCd:
+          type: string
+          maxLength: 10
+          description: For impoundments, this value is always "IMP"
+        originalCauseCds:
+          type: array
+          items:
+            type: string
+            maxLength: 10
+            description: For impoundments no max limit on array size.
+        policeDetatchmentId:
+          type: integer
+          format: int64
+          maxLength: 15
+          description: code table value
+        policeFileNo:
+          type: string
+          maxLength: 15
+        policeOfficerNm:
+          type: string
+          maxLength: 100
+        policeOfficerNo:
+          type: string
+          maxLength: 30 
+        projectedReleaseDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset
+        seizureLocationTxt:
+          type: string
+          maxLength: 4000
+    VipsRegistrationObj:
+      type: object
+      properties:
+        dataSourceCd:
+          type: string
+        firstGivenNm:
+          type: string
+        icbcEnterpriseId:
+          type: string
+        licenceId:
+          type: integer
+          format: int64
+        organizationNm:
+          type: string
+        registrationId:
+          type: integer
+          format: int64
+        registrationRoleCd:
+          type: string
+        secondGivenNm:
+          type: string
+        surnameNm:
+          type: string
+        thirdGivenNm:
+          type: string
+        vehicleId:
+          type: integer
+          format: int64
+        vipsAddressArray:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsAddressObj'
+        vipsLicenceObj:
+          $ref: '#/components/schemas/VipsLicenceObj'
+    VipsVehicleCreate:
+      type: object
+      required: 
+        - registrationNo
+      properties:
+        commercialMotorCarrierId:
+          type: string
+          maxLength: 15
+        licencePlateNo:
+          type: string
+          maxLength: 10
+        lpDecalValidYy:
+          type: integer
+          format: int64
+          maxLength: 4
+        lpJurisdictionCd:
+          type: string
+          maxLength: 10
+          description: code table value
+        manufacturedYy:
+          type: integer
+          format: int64
+          maxLength: 4
+        nscJurisdictionTxt:
+          type: string
+          maxLength: 20
+        registrationNo:
+          type: string
+          maxLength: 15
+        vehicleColourTxt:
+          type: string
+          maxLength: 50
+        vehicleIdentificationNo:
+          type: string
+          maxLength: 35
+        vehicleMakeTxt:
+          type: string
+          maxLength: 50
+        vehicleModelTxt:
+          type: string
+          maxLength: 50
+        vehicleStyleTxt:
+          type: string
+          maxLength: 50
+        vehicleTypeCd:
+          type: string
+          maxLength: 10
+          description: code table value
+    VipsImpoundObj:
+      type: object
+      properties:
+        cancelled:
+          type: boolean
+        dlJurisdictionCd:
+          type: string
+          description: code table value
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsDocumentObj'
+        driverLicenceNo:
+          type: string
+        icbcTransmissionCd:
+          type: string
+        impoundLotOperatorId:
+          type: integer
+          format: int64
+        impoundmentDt:
+          type: string
+        impoundmentId:
+          type: integer
+          format: int64
+        impoundmentNoticeNo:
+          type: string
+        noticeSubjectCd:
+          type: string
+        noticeTypeCd:
+          type: string
+        originalCauseCds:
+          type: array
+          items:
+            type: string
+        policeDetatchmentId:
+          type: integer
+          format: int64
+        policeFileNo:
+          type: string
+        policeOfficerNm:
+          type: string
+        policeOfficerNo:
+          type: string
+        projectedReleaseDt:
+          type: string
+        registrations:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsRegistrationObj'
+        seizureLocationTxt:
+          type: string
+        vehicle:
+          $ref: '#/components/schemas/VipsVehicleObj'
+        vehicleId:
+          type: integer
+          format: int64
+    VipsVehicleObj:
+      type: object
+      properties:
+        commercialMotorCarrierId:
+          type: string
+        licencePlateNo:
+          type: string
+        lpDecalValidYy:
+          type: integer
+          format: int64
+        lpJurisdictionCd:
+          type: string
+          description: code table value
+        manufacturedYy:
+          type: integer
+          format: int64
+        nscJurisdictionTxt:
+          type: string
+        registrationNo:
+          type: string
+        vehicleColourTxt:
+          type: string
+        vehicleId:
+          type: integer
+          format: int64
+        vehicleIdentificationNo:
+          type: string
+        vehicleMakeTxt:
+          type: string
+        vehicleModelTxt:
+          type: string
+        vehicleStyleTxt:
+          type: string
+        vehicleTypeCd:
+          type: string
+    VipsLicenceCreate:
+      type: object
+      properties:
+        birthDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset 
+        dlJurisdictionCd:
+          type: string
+          maxLength: 10
+          description: code table value
+        driverLicenceNo:
+          type: string
+          maxLength: 10 
+    GetProhibitionServiceResponse:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/VipsProhibitionObj'
+    VipsProhibitionObj:
+      type: object
+      properties:
+        cancelled:
+          type: boolean
+        cityNm:
+          type: string
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsDocumentObj'
+        dreEvaluationCds:
+          type: array
+          items:
+            type: string
+        driverLicenceSeizedYN:
+          type: string
+        effectiveDt:
+          type: string
+        expiryDt:
+          type: string
+        icbcTransmissionCd:
+          type: string
+        incidentDtm:
+          type: string
+        licenceId:
+          type: integer
+          format: int64
+        noticeServedDt:
+          type: string
+        noticeSubjectCd:
+          type: string
+        noticeTypeCd:
+          type: string
+        originalCauseCd:
+          type: string
+        policeDetatchmentId:
+          type: integer
+          format: int64
+        policeFileNo:
+          type: string
+        policeOfficerNm:
+          type: string
+        policeOfficerNo:
+          type: string
+        prohibitionId:
+          type: integer
+          format: int64
+        prohibitionNoticeNo:
+          type: string
+        provinceCd:
+          type: string
+        registration:
+          $ref: '#/components/schemas/VipsRegistrationObj'
+        streetDetailsTxt:
+          type: string
+        tempDlEffectiveDt:
+          type: string
+        tempDlExpiryDt:
+          type: string
+    CreateProhibition:
+      type: object
+      required:
+        - vipsDocumentIdArray
+        - vipsProhibitionCreate
+        - vipsRegistrationCreate
+      properties:
+        vipsDocumentIdArray:
+          type: array
+          items:
+            type: integer
+            format: int64
+            description: Holds id(s) of stored documents. Required. An empty array is allowed. 
+            example: 102220
+        vipsProhibitionCreate:
+          $ref: '#/components/schemas/VipsProhibitionCreate'
+        vipsRegistrationCreate:
+          $ref: '#/components/schemas/VipsRegistrationCreate'
+    VipsProhibitionCreate:
+      type: object
+      required:
+        - driverLicenceSeizedYN
+        - effectiveDt
+        - noticeServedDt
+        - noticeSubjectCd
+        - noticeTypeCd
+        - originalCauseCd
+        - policeDetatchmentId
+      properties:
+        cityNm:
+          type: string
+          maxLength: 35
+        dreEvaluationCds:
+          type: array
+          items:
+            type: string
+        driverLicenceSeizedYN:
+          type: string
+          maxLength: 1
+        effectiveDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset
+        expiryDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset
+        incidentDtm:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date and time with offset
+        noticeServedDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset
+        noticeSubjectCd:
+          type: string
+          maxLength: 10
+          description: For prohibitions, this value is always "PERS"
+        noticeTypeCd:
+          type: string
+          maxLength: 10
+          description: For prohibitions this value is always "UL", "IRP", or "ADP"
+        originalCauseCd:
+          type: string
+          maxLength: 10
+          description: For prohibitions this is a single value.  
+        policeDetatchmentId:
+          type: integer
+          format: int64
+          maxLength: 15
+          description: code table value
+        policeFileNo:
+          type: string
+          maxLength: 15
+        policeOfficerNm:
+          type: string
+          maxLength: 60
+        policeOfficerNo:
+          type: string
+          maxLength: 30
+        prohibitionNoticeNo:
+          type: string
+          maxLength: 12
+          description: Notice Number beginning with 21 or 22 for Prohibitions. 
+        provinceCd:
+          type: string
+          maxLength: 2
+        streetDetailsTxt:
+          type: string
+          maxLength: 4000
+        tempDlEffectiveDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset
+        tempDlExpiryDt:
+          type: string
+          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
+          example: "2021-01-30T00:00:00.000-07:00"
+          description: ISO-8601. Date only with offset
+    CreateProhibitionServiceResponse:
+      type: object
+      properties:
+        respMsg:
+          type: string
+    vipsDocumentResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+          description: Doc id to be attached to impoundment or prohibition.
+    vipsGetDocumentByIdResponse:
+      type: object
+      properties:
+        document:
+          type: string
+          description: The Document returned as a base64 string for the given documentId.
+    errorMessage:
+      type: object
+      required:
+      - status_message
+      properties:
+        status_message:
+          type: string
+          description: failure message
+    storeVIPSDocument:
+      type: object
+      required:
+        - type_code
+        - mime_type
+        - mime_sub_type
+        - auth_guid
+        - file_object
+      properties:
+        type_code:
+          type: string
+          description: type code, example MV2687
+          maxLength: 10
+        mime_type:
+          type: string
+          description: mime type, example application
+          maxLength: 30
+        mime_sub_type:
+          type: string
+          description: mime sub type, example pdf
+          maxLength: 20
+        file_object:
+          type: string
+          format: byte
+          description: base64-encoded file content
+        notice_type_code:
+          type: string
+          description: notice type code. One of IRP, ADP, UL, or IMP. 
+          maxLength: 3  
+        notice_subject_code:
+          type: string
+          description: notice subject code. One of PERS or VEHI 
+          maxLength: 4   
+        pageCount:
+          type: integer
+          format: int32
+    GetCodetablesServiceResponse:
+        type: object
+        properties:
+          configuration:
+            $ref: '#/components/schemas/VipsConfigurationObj'
+          respMsg:
+            type: string
+    GetDocumentsListServiceResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsDocumentObj'        
+    VipsConfigurationObj:
+        type: object
+        properties:
+          addresses:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          contactMethods:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          countries:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          data_sources:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          decisionOutcomes:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
+          disposalActs:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          disposalDecisions:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          documentNotices:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByDocObj'
+          documents:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
+          dreEvaluations:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
+          driverLicenceOffices:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsIdNameObj'
+          groundsDecisions:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByRVWAppObj'
+          impoundLotOperators:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsIdNameObj'
+          jurisdictions:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          noticePrefixNos:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
+          noticeTypes:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          originalCauses:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescAbbrByNoticeObj'
+          policeDetachments:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsIdNameObj'
+          provinces:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          registration_roles:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          releaseReasons:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          reviewApplications:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
+          reviewRoles:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
+          reviewStatuses:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          reviewTypes:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescByNoticeObj'
+          scheduleAppTypes:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsIdNameObj'
+          unavailabilityReasons:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'
+          vehicleTypes:
+            type: array
+            items:
+              $ref: '#/components/schemas/VipsCodeDescriptionObj'       
+    VipsCodeDescByRVWAppObj:
+      type: object
+      properties:
+        codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsCodeDescriptionObj'
+        reviewAppActiveYN:
+          type: string
+        reviewAppTypeCd:
+          type: string
+        reviewAppTypeDsc:
+          type: string          
+    VipsCodeDescriptionObj:
+      type: object
+      properties:
+        activeYN:
+          type: string
+        internalYN:
+          type: string
+        objectCd:
+          type: string
+        objectDsc:
+          type: string           
+    VipsCodeDescByNoticeObj:
+      type: object
+      properties:
+        codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsCodeDescriptionObj'
+        noticeActiveYN:
+          type: string
+        noticeTypeCd:
+          type: string
+        noticeTypeDsc:
+          type: string        
+    VipsCodeDescByDocObj:
+      type: object
+      properties:
+        codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsCodeDescriptionObj'
+        documentActiveYN:
+          type: string
+        documentTypeCd:
+          type: string
+        documentTypeDsc:
+          type: string        
+    VipsIdNameObj:
+      type: object
+      properties:
+        activeYN:
+          type: string
+        identityId:
+          type: integer
+          format: int64
+        identityNm:
+          type: string      
+    VipsCodeDescAbbrByNoticeObj:
+      type: object
+      properties:
+        codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsCodeDescAbbrevObj'
+        noticeActiveYN:
+          type: string
+        noticeTypeCd:
+          type: string
+        noticeTypeDsc:
+          type: string      
+    VipsCodeDescAbbrevObj:
+      type: object
+      properties:
+        activeYN:
+          type: string
+        objectAbbrev:
+          type: string
+        objectCd:
+          type: string
+        objectDsc:
+          type: string
+    GetDFPayloadServiceResponse:
+      type: object
+      description: Digital Forms Schema GET Response
+      properties:
+        noticeTypeCd:
+          type: string
+        payload:
+          type: object
+        active:
+          type: boolean
+        processed: 
+          type: boolean
+    PostDFPayloadServiceRequest:
+      type: object
+      description: Digital Forms Schema POST Request
+      required:
+        - noticeTypeCd
+        - payload
+        - active
+        - processed
+      properties:
+        noticeTypeCd:
+          type: string
+        payload:
+          type: string
+        active:
+          type: boolean
+        processed: 
+          type: boolean
+    PostDFPayloadServiceResponse:
+      type: object
+      properties:
+        status_message:
+          type: string                        
+    VipsImpoundmentBasicsObj:
+      type: object
+      properties:
+        driverLicenceNo:
+          type: string
+        impoundmentDt:
+          type: string
+        impoundmentId:
+          type: integer
+          format: int64
+        impoundmentNoticeNo:
+          type: string
+        originalCauseCds:
+          type: array
+          items:
+            type: string
+        policeFileNo:
+          type: string
+        policeOfficerNo:
+          type: string
+        projectedReleaseDt:
+          type: string
+        registrations:
+          type: array
+          items:
+            $ref: '#/components/schemas/VipsImpoundmentRegistrationObj'
+    PutDFPayloadServiceRequest:
+      type: object
+      description: Digital Forms Schema PUT Request
+      properties:
+        noticeTypeCd:
+          type: string
+        payload:
+          type: string
+        active:
+          type: boolean
+        processed: 
+          type: boolean            
+    VipsImpoundmentRegistrationObj:
+      type: object
+      properties:
+        driverLicenceNo:
+          type: string
+        firstGivenNm:
+          type: string
+        organizationNm:
+          type: string
+        registrationRoleTypeCd:
+          type: string
+        secondGivenNm:
+          type: string
+        surnameNm:
+          type: string
+        thirdGivenNm:
+          type: string
+    PingResponse:
+      type: object
+      properties:
+        responseMessage:
+          type: object
+      title: PingResponse

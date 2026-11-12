@@ -1,0 +1,9 @@
+version: 2
+updates:
+  # Java dependencies
+  - package-ecosystem: "maven"
+    directory: "/digitalforms-api"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "18:00"

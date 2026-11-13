@@ -35,7 +35,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         String createPath = "/prohibitions";
         String getPath = "/prohibitions/" + NOTICE;
         responseJson(request("POST", createPath, BODY, null), 401);
-        responseJson(request("GET", getPath, null, basicAuth("route-test", "wrong")), 401);
+        responseJson(request("GET", getPath, null, UNLISTED_CLIENT_AUTH), 401);
         assertTrue(vips.requests.isEmpty(), "Unauthorized requests must not reach VIPS");
 
         availableNotice();

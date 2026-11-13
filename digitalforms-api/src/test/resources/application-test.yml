@@ -5,6 +5,5 @@ server:
     context-path: /digitalforms-viirp/v1
     
 digitalforms:
-  basic-auth:
-    password: password
-    user: user
+  oauth2:
+    allowed-client-ids: test-client

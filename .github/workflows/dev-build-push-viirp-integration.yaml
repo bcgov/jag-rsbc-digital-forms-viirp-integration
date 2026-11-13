@@ -1,0 +1,109 @@
+name: dev-digital-forms-viirp-integration
+permissions:
+  contents: write
+  security-events: write
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: digitalforms-viirp-api
+  WORKING_DIRECTORY: .
+  REPO_KEY: af03
+  BRANCH_NAME: develop
+  VALUES_FILE: dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Artifactory
+        uses: docker/login-action@v1
+        with:
+          registry: artifacts.developer.gov.bc.ca
+          username: ${{ secrets.ARTIFACTORY_USERNAME }}
+          password: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      
+      # Get SHORT_SHA for the version
+      - name: Get short SHA
+        id: short_sha
+        run: |
+          echo "::set-output name=SHORT_SHA::$(git rev-parse --short HEAD)"
+          echo "Short SHA: $SHORT_SHA"
+
+      - name: Build Image
+        working-directory: ${{env.WORKING_DIRECTORY}}
+        run: |
+          docker build -t artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev
+      
+      - name: Docker Push to Artifactory
+        run: |
+          docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: image
+          image-ref: artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: 0
+          ignore-unfixed: true
+          limit-severities-for-sarif: true
+          severity: HIGH,CRITICAL
+      
+      #Upload results to the Github security tab.
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Set GitOps SSH Key
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+      
+      - name: Update Helm Dev Values and Commit
+        id: helm
+        run: |
+
+          echo "Updating ${{ env.BRANCH_NAME }} helm values to trigger ArgoCD deployment "
+            
+          # Commit and push the changes
+          git config --global user.email "actions@github.com"
+          git config --global user.name "Viirp Integration GitHub Actions"
+          git clone -b ${{ env.BRANCH_NAME }} --single-branch git@github.com:bcgov-c/tenant-gitops-c220ad.git
+            
+          # Navigate to the directory containing your Helm values file for the environment develop -> DEV, test -> test
+          
+          cd tenant-gitops-c220ad/charts
+            
+          # Update the Helm values file with the new image tag and version
+          DATETIME=$(date +'%Y-%m-%d %H:%M:%S')  # Get current date and time
+          echo "Updating tag viirpversion: to ${{ steps.short_sha.outputs.SHORT_SHA }}"
+  
+          sed -i "s/viirpversion: .*/viirpversion: ${{ steps.short_sha.outputs.SHORT_SHA }} # Image Updated on $DATETIME/" ../deploy/${{ env.VALUES_FILE }}_values.yaml
+
+          git add .
+            
+          git add ../deploy/${{ env.VALUES_FILE }}_values.yaml
+            
+          # Repackage Helm Chart      
+  
+          cd gitops
+  
+          helm dependency build
+  
+          git add .
+            
+          git commit -m "Update ${{ env.BRANCH_NAME }} viirp image tag"
+
+          # pull any changes
+          git pull origin ${{ env.BRANCH_NAME }}
+          git push origin ${{ env.BRANCH_NAME }}  # Update the branch name as needed

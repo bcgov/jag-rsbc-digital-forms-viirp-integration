@@ -49,6 +49,9 @@ vips:
       count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT:3}
       # The Duration of the fixed delays
       delay: ${DIGITALFORMS_VIPSAPI_RETRY_DELAY:5}
+      # Total milliseconds a GET may take including retries (0 = no limit); keep under the 30s route timeout.
+      # Only GET/HEAD are retried; POSTs are never re-sent.
+      max-duration: ${DIGITALFORMS_VIPSAPI_RETRY_MAX_DURATION:15000}
       
   client:
     basePath: ${DIGITALFORMS_VIPSORDS_BASEPATH}

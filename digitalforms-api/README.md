@@ -36,9 +36,10 @@ These values can be set as environmental variables to overwrite the default valu
 
 | Name                            | Default Value               |
 | ------------------------------- | --------------------------- |
-| DIGITALFORMS_VIPSAPI_TIMEOUT 	  | 2000                        |
-| DIGITALFORMS_VIPSAPI_RETRY_COUNT| 3                           |
-| DIGITALFORMS_VIPSAPI_RETRY_DELAY| 5                           |
+| DIGITALFORMS_VIPSAPI_TIMEOUT 	  | 10000 (ms)                  |
+| DIGITALFORMS_VIPSAPI_RETRY_COUNT| 3 (GET/HEAD only; POSTs are never retried) |
+| DIGITALFORMS_VIPSAPI_RETRY_DELAY| 5 (seconds)                 |
+| DIGITALFORMS_VIPSAPI_RETRY_MAX_DURATION | 15000 (ms; total time for a GET including retries, 0 = no limit) |
 | DIGITALFORMS_SWAGGER_ENABLED    | false (Swagger UI off)      |
 | SPRINGDOC_APIDOCS_ENABLED       | true (`false` turns off the API docs and Swagger UI) |
 

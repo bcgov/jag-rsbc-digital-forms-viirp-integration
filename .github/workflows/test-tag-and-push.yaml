@@ -35,12 +35,12 @@ jobs:
 
       - name: Docker Pull to Artifactory
         run: |
-          docker pull artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev
+          docker pull artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev
       
       - name: Docker Tag and Push to Artifactory
         run: |
-          docker tag artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:test
-          docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:test
+          docker tag artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:test
+          docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:test
 
       - name: Set GitOps SSH Key
         uses: webfactory/ssh-agent@v0.5.4

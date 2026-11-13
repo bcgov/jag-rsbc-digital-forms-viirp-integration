@@ -39,17 +39,17 @@ jobs:
       - name: Build Image
         working-directory: ${{env.WORKING_DIRECTORY}}
         run: |
-          docker build -t artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev
+          docker build -t artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev
       
       - name: Docker Push to Artifactory
         run: |
-          docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev
+          docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: image
-          image-ref: artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:dev
+          image-ref: artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev
           format: sarif
           output: trivy-results.sarif
           exit-code: 0

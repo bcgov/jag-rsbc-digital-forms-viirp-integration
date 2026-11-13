@@ -35,19 +35,19 @@ jobs:
       
       #- name: Backup Prod Image
       #  run: |
-      #    docker pull artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:prod
-      #    docker tag artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:prod artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:prod-backup
-      #    docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:prod-backup
+      #    docker pull artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:prod
+      #    docker tag artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:prod artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:prod-backup
+      #    docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:prod-backup
     
 
       - name: Docker Pull to Artifactory
         run: |
-          docker pull artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:test
+          docker pull artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:test
       
       - name: Docker Tag and Push to Artifactory
         run: |
-          docker tag artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:test artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:prod
-          docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-viirp/${{env.IMAGE_NAME}}:prod
+          docker tag artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:test artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:prod
+          docker push artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:prod
 
       - name: Set GitOps SSH Key
         uses: webfactory/ssh-agent@v0.5.4

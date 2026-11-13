@@ -34,6 +34,9 @@ public class ConfigProperties {
     @Value("${vips.rest-api.retry.delay}")
     private long vipsRestApiRetryDelay;
     
+    @Value("${vips.rest-api.retry.max-duration}")
+    private long vipsRestApiRetryMaxDuration;
+    
     @Value("${vips.rest-api.credentials.guid}")
     private String vipsRestApiCredentialsGuid;
     
@@ -96,6 +99,14 @@ public class ConfigProperties {
 
 	public void setVipsRestApiRetryDelay(long vipsRestApiRetryDelay) {
 		this.vipsRestApiRetryDelay = vipsRestApiRetryDelay;
+	}
+
+	public long getVipsRestApiRetryMaxDuration() {
+		return vipsRestApiRetryMaxDuration;
+	}
+
+	public void setVipsRestApiRetryMaxDuration(long vipsRestApiRetryMaxDuration) {
+		this.vipsRestApiRetryMaxDuration = vipsRestApiRetryMaxDuration;
 	}
 
 	public String getVipsRestApiCredentialsGuid() {

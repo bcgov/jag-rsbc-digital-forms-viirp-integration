@@ -1,6 +1,10 @@
 package ca.bc.gov.open.digitalformsapi.viirp.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
 
 /**
  * 
@@ -8,6 +12,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class UnitTestUtilities {
+
+    public static byte[] samplePdf() throws IOException {
+        return samplePdf(1);
+    }
+
+    public static byte[] samplePdf(int pages) throws IOException {
+        try (var document = new PDDocument(); var output = new ByteArrayOutputStream()) {
+            for (int i = 0; i < pages; i++) {
+                document.addPage(new PDPage());
+            }
+            document.save(output);
+            return output.toByteArray();
+        }
+    }
 	
 	/**
      * Utility method to convert JSOB object to string. 

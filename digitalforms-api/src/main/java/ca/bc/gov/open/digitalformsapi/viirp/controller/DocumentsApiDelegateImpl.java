@@ -1,7 +1,12 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import java.util.List;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.pdfbox.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,14 +15,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.DocumentsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.BadRequestException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.StoreVIPSDocument;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
@@ -31,6 +38,13 @@ import ca.bc.gov.open.jag.ordsvipsclient.api.model.VipsDocumentOrdsResponse;
 
 @Service
 public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
+
+	private static final long MAX_DOCUMENT_BYTES = 10L * 1024 * 1024;
+	// VIPS_DOCUMENTS.PAGE_COUNT_QTY is NUMBER(5).
+	private static final int MAX_DOCUMENT_PAGES = 99_999;
+
+	@Autowired
+	private HttpServletRequest request;
 	
 	@Autowired
 	private DocumentApi documentApi;
@@ -251,30 +265,29 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	 * 
 	 * Possible Response codes:
 	 * 	201. created. 
+	 * 	400. invalid upload (not exactly one readable PDF with 1 to 99,999 pages, or invalid metadata)
 	 * 	401. unauth (digital forms basic auth failure)
 	 * 	500. from the SSG if VIPS WS is unavailable or responds with any code other than 200. 
+	 * 
+	 * The page count stored in VIPS is read from the PDF, not supplied by the client. 
 	 * @throws ApiException 
 	 */
 	@Override
 	public ResponseEntity<VipsDocumentResponse> storeDocument(
-	        StoreVIPSDocument storeVIPSDocument,
-	        String xCorrelationID) {
+	        String typeCode, MultipartFile file, String xCorrelationID,
+	        String noticeTypeCode, String noticeSubjectCode) {
 		
 		logger.info("Heard a call to the endpoint 'storeDocument'");
 		
+		PdfUpload upload = readPdfUpload(file);
 		VipsDocumentResponse resp = new VipsDocumentResponse();
 	
 		VipsDocumentOrdsResponse _resp;
 		try {
 			_resp = documentApi.storeDocumentPost(
-						storeVIPSDocument.getTypeCode(),				//required
-						storeVIPSDocument.getMimeType(), 				//required
-						storeVIPSDocument.getMimeSubType(),				//required	 
-						properties.getVipsRestApiCredentialsGuid(),		//required  Note: Uses same auth as VIPS WS API. 
-						storeVIPSDocument.getFileObject(), 				//required 
-						storeVIPSDocument.getNoticeTypeCode(),			//optional 
-						storeVIPSDocument.getNoticeSubjectCode(),		//optional
-						storeVIPSDocument.getPageCount());				//optional
+						typeCode, "application", "pdf",
+						properties.getVipsRestApiCredentialsGuid(),
+						upload.content(), noticeTypeCode, noticeSubjectCode, upload.pageCount());
 			
 			// Depending on the result code from the VIPS store document call, set the response entity accordingly. 
 			if (_resp.getStatusCode().equals(DigitalFormsConstants.VIPSORDS_SUCCESS_CD)) {
@@ -284,9 +297,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 				resp.setDocumentId(_resp.getDocumentId());
 			} else if (_resp.getStatusCode().equals(DigitalFormsConstants.VIPSORDS_GENERAL_FAILURE_CD)) {
 				logger.error("VIPS error response code: " + _resp.getStatusCode() + ", response msg:  " + _resp.getStatusMessage());
-				throw new DigitalFormsException("Failed to store document document to VIPS WS. Type Code : " + storeVIPSDocument.getTypeCode() + 
-						". Mime sub type : " + storeVIPSDocument.getMimeSubType() + 
-						". Mime type : " + storeVIPSDocument.getMimeType());
+				throw new DigitalFormsException("Failed to store document in VIPS ORDS. Type Code: " + typeCode);
 			} else {
 				throw new DigitalFormsException("Unexpected VIPS ORDS status: " + _resp.getStatusCode());
 			}
@@ -295,11 +306,53 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			
 			
 		} catch (ApiException e) {
-			logger.error(e.getMessage());
-			e.printStackTrace();
-			throw new DigitalFormsException(e.getMessage(), e);
+			throw new DigitalFormsException("VIPS ORDS document upload failed.", e);
 		}			 
 		
+	}
+
+	private record PdfUpload(byte[] content, int pageCount) { }
+
+	private PdfUpload readPdfUpload(MultipartFile file) {
+		byte[] content;
+		try {
+			// MultipartFile binding alone would silently select the first repeated file part.
+			long fileParts = request.getParts().stream()
+					.filter(part -> "file".equals(part.getName()) || part.getSubmittedFileName() != null)
+					.count();
+			if (fileParts != 1) {
+				throw new BadRequestException("Exactly one file part named 'file' is required.");
+			}
+			if (file.isEmpty()) {
+				throw new BadRequestException("file must not be empty.");
+			}
+			if (file.getSize() > MAX_DOCUMENT_BYTES) {
+				throw new MaxUploadSizeExceededException(MAX_DOCUMENT_BYTES);
+			}
+			content = file.getBytes();
+		} catch (ServletException e) {
+			throw new BadRequestException("Malformed multipart request.");
+		} catch (IOException e) {
+			throw new DigitalFormsException("Unable to read the uploaded file.", e);
+		}
+
+		if (content.length < 5 || !new String(content, 0, 5, StandardCharsets.US_ASCII).equals("%PDF-")) {
+			throw new BadRequestException("file must contain a readable PDF document.");
+		}
+		int pageCount;
+		try (var document = Loader.loadPDF(content)) {
+			pageCount = document.getNumberOfPages();
+		} catch (IOException e) {
+			logger.warn("PDF upload validation failed: {}", e.getMessage());
+			throw new BadRequestException("file must contain a readable PDF that does not require a password.");
+		}
+		if (pageCount < 1) {
+			throw new BadRequestException("file must contain a PDF with at least one page.");
+		}
+		if (pageCount > MAX_DOCUMENT_PAGES) {
+			throw new BadRequestException("file must contain a PDF with at most " + MAX_DOCUMENT_PAGES + " pages.");
+		}
+		return new PdfUpload(content, pageCount);
 	}
 	
 	@Override

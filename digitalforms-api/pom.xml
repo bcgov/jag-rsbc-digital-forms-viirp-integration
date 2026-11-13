@@ -88,6 +88,12 @@
 	<dependencies>
 
 		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.8</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.atlassian.oai</groupId>
 			<artifactId>openapi-request-validator-core</artifactId>
 			<version>3.0.0</version>
@@ -271,6 +277,13 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
 					<excludes>
 						<exclude>

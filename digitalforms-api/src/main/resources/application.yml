@@ -4,24 +4,34 @@
    
 management:
   endpoint:
-    beans:
-      cache:
-        # Actuator bean time to live. Inhibits caching of 'No param' endpoints.
-        time-to-live: 10s
-    #Actuator Health Endpoint Configuration    
     health:
-      show-components: always
-      show-details: always
+      show-components: never
+      show-details: never
   endpoints:
     web:
       exposure:
-        # Actuator endpoint exposure
-        include: health
+        include: health,info
+  info:
+    defaults:
+      enabled: false
+    build:
+      enabled: true
+    java:
+      enabled: true
         
 server:
   port: 8082
+  tomcat:
+    # Drain rejected uploads up to this bound so clients can receive the 413 response.
+    max-swallow-size: 12MB
   servlet:
     context-path: /digitalforms-viirp/v1
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
     
 # VIPS ORDS CLIENT properties
 vips:
@@ -39,6 +49,9 @@ vips:
       count: ${DIGITALFORMS_VIPSAPI_RETRY_COUNT:3}
       # The Duration of the fixed delays
       delay: ${DIGITALFORMS_VIPSAPI_RETRY_DELAY:5}
+      # Total milliseconds a GET may take including retries (0 = no limit); keep under the 30s route timeout.
+      # Only GET/HEAD are retried; POSTs are never re-sent.
+      max-duration: ${DIGITALFORMS_VIPSAPI_RETRY_MAX_DURATION:15000}
       
   client:
     basePath: ${DIGITALFORMS_VIPSORDS_BASEPATH}
@@ -47,7 +60,7 @@ vips:
     
 digitalforms:
   app:
-    version: 1.0.2
+    version: '@project.version@'
     
   basic-auth:
     user: ${DIGITALFORMS_BASICAUTH_USER:}
@@ -55,8 +68,13 @@ digitalforms:
     
 # springdoc publishes the API docs at /v3/api-docs. SPRINGDOC_APIDOCS_ENABLED=false (PROD) turns off the docs and
 # Swagger UI. Setting it explicitly also silences springdoc's "enabled by default" startup warning.
+# The docs use OpenAPI 3.0 to match VI_IRP_V1.yaml. springdoc defaults to 3.1, which deprecates the schema
+# "example" keyword that the generated models use.
 springdoc:
+    default-support-form-data: true
+    show-actuator: true
     api-docs:
       enabled: ${SPRINGDOC_APIDOCS_ENABLED:true}
+      version: openapi_3_0
     swagger-ui:
       enabled: ${DIGITALFORMS_SWAGGER_ENABLED:false}

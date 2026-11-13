@@ -9,6 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockPart;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +35,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.StoreVIPSDocument;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
@@ -67,9 +69,10 @@ public class DocumentsApiControllerTests {
     
     private VipsDocumentOrdsResponse badOrds; //200 but ORDS sent 1 which indicates failure. 
     
-    private StoreVIPSDocument goodStoreVIPSDocument;
-    
-    private StoreVIPSDocument badStoreVIPSDocument;
+    private MockMultipartFile pdfFile;
+
+    @Mock
+    private HttpServletRequest request;
     
     private VipsGetDocumentByIdResponse vipsDocumentResponse;
     
@@ -95,7 +98,7 @@ public class DocumentsApiControllerTests {
     ConfigProperties properties;
 
     @BeforeEach
-	public void init() {
+	public void init() throws Exception {
     	
 		MockitoAnnotations.openMocks(this);
 
@@ -109,19 +112,9 @@ public class DocumentsApiControllerTests {
 		badOrds = new VipsDocumentOrdsResponse();
 		badOrds.setStatusCode(DigitalFormsConstants.VIPSORDS_GENERAL_FAILURE_CD); 
 		
-		//Mock delegate request type - good case
-		goodStoreVIPSDocument = new StoreVIPSDocument();
-		goodStoreVIPSDocument.setFileObject(new String("abc").getBytes());
-		goodStoreVIPSDocument.setMimeSubType("pdf");
-		goodStoreVIPSDocument.setMimeType("application");
-		goodStoreVIPSDocument.setTypeCode("MV2702A");
-		
-		//Mock delegate request type - bad case (missing Mime Type)
-		badStoreVIPSDocument = new StoreVIPSDocument();
-		badStoreVIPSDocument.setFileObject(new String("abc").getBytes());
-		badStoreVIPSDocument.setMimeSubType(null);
-		badStoreVIPSDocument.setMimeType("application");
-		badStoreVIPSDocument.setTypeCode("MV2702A");
+		byte[] pdf = UnitTestUtilities.samplePdf();
+		pdfFile = new MockMultipartFile("file", "notice.pdf", "application/pdf", pdf);
+		when(request.getParts()).thenReturn(List.of(new MockPart("file", "notice.pdf", pdf)));
 		
 		// Mock VIPS WS GET document response. 
 		vipsDocumentResponse = new VipsGetDocumentByIdResponse();
@@ -187,7 +180,8 @@ public class DocumentsApiControllerTests {
 		.thenReturn("guid");
 		
 		// Create successful call and validate response 
-        ResponseEntity<VipsDocumentResponse> controllerResponse = controller.storeDocument(goodStoreVIPSDocument, null);
+        ResponseEntity<VipsDocumentResponse> controllerResponse =
+                controller.storeDocument("MV2702A", pdfFile, null, null, null);
         VipsDocumentResponse result = controllerResponse.getBody();
         Assertions.assertEquals("567", result.getDocumentId());
         
@@ -205,7 +199,7 @@ public class DocumentsApiControllerTests {
 		
 		// Ensure Digital Form Exception type is thrown in this case
 		assertThrows(DigitalFormsException.class, () -> {
-			controller.storeDocument(goodStoreVIPSDocument, null);
+			controller.storeDocument("MV2702A", pdfFile, null, null, null);
 		});
 	    
     }
@@ -214,12 +208,10 @@ public class DocumentsApiControllerTests {
     @Test
     public void testStoreDocumentBadRequest() throws Exception {
         
-	    mvc.perform( MockMvcRequestBuilders
-	    	      .post("/documents")
-	    	      .content(UnitTestUtilities.asJsonString(badStoreVIPSDocument))
-	    	      .contentType(MediaType.APPLICATION_JSON)
-	    	      .accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest());
+        mvc.perform(MockMvcRequestBuilders.multipart("/documents")
+                .file(pdfFile)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
 
     }
     

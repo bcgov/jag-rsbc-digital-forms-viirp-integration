@@ -26,5 +26,7 @@ class ApiDocsDisabledHttpTests extends HttpApiTestSupport {
     void apiRemainsAvailableAndSecured() throws Exception {
         assertEquals("UP", responseJson(request("GET", "/actuator/health", null, null), 200).path("status").asString());
         responseJson(request("GET", "/codetables", null, null), 401);
+        responseJson(request("GET", "/actuator/info", null, null), 401);
+        responseJson(request("GET", "/actuator/info", null, AUTH), 200);
     }
 }

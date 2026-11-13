@@ -33,7 +33,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         String createPath = "/impoundments";
         String getPath = "/impoundments/" + NOTICE;
         responseJson(request("POST", createPath, BODY, null), 401);
-        responseJson(request("GET", getPath, null, basicAuth("route-test", "wrong")), 401);
+        responseJson(request("GET", getPath, null, UNLISTED_CLIENT_AUTH), 401);
         assertTrue(vips.requests.isEmpty(), "Unauthorized requests must not reach VIPS");
 
         availableNotice();

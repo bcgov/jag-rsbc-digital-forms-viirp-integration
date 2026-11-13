@@ -25,8 +25,7 @@ These values must be set as environmental variables if running the API locally (
 | DIGITALFORMS_VIPSORDS_BASEPATH  | http://localhost:8080/api/  |                  |
 | DIGITALFORMS_VIPSORDS_USER      | user                        |                  |
 | DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |                  |
-| DIGITALFORMS_BASICAUTH_USER          | user					|                  |
-| DIGITALFORMS_BASICAUTH_PASSWORD      | password				|                  |
+| DIGITALFORMS_OAUTH2_ALLOWED_CLIENT_IDS | vips-vi-irp-dev         | DIAM client IDs allowed to call the API (comma-separated); startup fails if empty. See *Security* |
 | SPLUNK_URL					  | url							| 'splunk' profile only|
 | SPLUNK_TOKEN_VIPS				  | splunk token				| 'splunk' profile only|   
 
@@ -42,6 +41,8 @@ These values can be set as environmental variables to overwrite the default valu
 | DIGITALFORMS_VIPSAPI_RETRY_MAX_DURATION | 15000 (ms; total time for a GET including retries, 0 = no limit) |
 | DIGITALFORMS_SWAGGER_ENABLED    | false (Swagger UI off)      |
 | SPRINGDOC_APIDOCS_ENABLED       | true (`false` turns off the API docs and Swagger UI) |
+| DIGITALFORMS_OAUTH2_AUDIENCE    | empty (audience not checked); see *Security* |
+| DIGITALFORMS_OAUTH2_ISSUER_URI  | https://common-sso.justice.gov.bc.ca/auth/realms/Services |
 
 ## API Services
 
@@ -52,7 +53,7 @@ After running the `digitalforms-api` from the directory `/digitalforms-api/`, th
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/ 						| The root URL for the API service endpoints
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/swagger-ui/index.html | The Swagger-UI tool to query the API
 | digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/actuator/health		| Public health status; no component details
-| digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/actuator/info | Application build and running Java versions; Basic authentication required
+| digitalforms-api      | http://localhost:8082/digitalforms-viirp/v1/actuator/info | Application build and running Java versions; OAuth2 bearer token required
 
 ### Actuator health and version information
 
@@ -63,7 +64,7 @@ Springdoc's standard `springdoc.show-actuator=true` setting adds the exposed `he
 `info` and actuator-discovery (`/actuator`) operations to the runtime `/v3/api-docs`
 document and Swagger UI. Postman can import the runtime document at
 `/digitalforms-viirp/v1/v3/api-docs`. The health operation is public; info and
-discovery require Basic authentication, which the OpenAPI document advertises.
+discovery require an OAuth2 bearer token, which the OpenAPI document advertises.
 Disabled Actuator operations are not added. The canonical `VI_IRP_V1.yaml` remains
 the business API contract and intentionally contains no Actuator paths; import the
 runtime document when you want an operational Postman collection.
@@ -72,7 +73,7 @@ runtime document when you want an operational Postman collection.
   `components` or `details`, even for authenticated requests. Spring Boot may also
   include probe group names such as `liveness` and `readiness`. No disk-space values,
   filesystem paths, or other component details are returned.
-- **`GET /actuator/info` requires the existing API Basic credentials.** The relevant fields are:
+- **`GET /actuator/info` requires the same OAuth2 bearer token as the business API.** The relevant fields are:
 
   | Field | Source |
   |---|---|
@@ -82,9 +83,8 @@ runtime document when you want an operational Postman collection.
   | `java.runtime.version`, `java.runtime.name` | Hosted JRE build/version and runtime name. |
   | `java.jvm.version`, `java.jvm.name`, `java.jvm.vendor` | Running JVM build, implementation and vendor. |
 
-  In Postman, use **GET**, select **Authorization > Basic Auth**, and enter the same
-  credentials used for the business API. Missing/invalid credentials return 401 with
-  a Basic challenge. Java information comes from the live JVM, not the compiler
+  In Postman, use **GET** with the OAuth 2.0 authorization described under *Security*.
+  Missing/invalid tokens return 401 with a Bearer challenge. Java information comes from the live JVM, not the compiler
   target, Maven build JDK or a hard-coded Docker image version.
 - **`/actuator` discovery and health subpaths also require authentication.**
   Other endpoints, including `env`, `beans`, `metrics`, `configprops` and `heapdump`,
@@ -120,8 +120,10 @@ springdoc publishes API docs built from the generated controllers at `/v3/api-do
 `http://localhost:8082/digitalforms-viirp/v1/v3/api-docs`. `/digitalforms-viirp/v1`
 is the context path, which carries the API version; `v3` is springdoc's default
 path and refers to OpenAPI 3. The generator also produces springdoc's title,
-description, version and `basicAuth` scheme from the YAML, so nothing in the docs
-is handwritten. The docs describe the same API as the YAML but are springdoc's
+description, version and `oauth2` scheme from the YAML. The generator emits only
+the scheme's type, so `MultipartOpenApiConfig` adds its description and
+client-credentials token URL (from `DIGITALFORMS_OAUTH2_ISSUER_URI`); a test keeps
+them equal to the YAML. The docs describe the same API as the YAML but are springdoc's
 rendering of it: OpenAPI 3.0.1 like the YAML, with an absolute server URL taken
 from the request, and without the `X-Correlation-ID` response header (the
 generator's annotations omit response headers). `springdoc.api-docs.version` is
@@ -141,13 +143,13 @@ today it drops them. Share the YAML itself with API consumers.
 | 200 | Successful GET; an existing notice with no documents returns `{"results":[]}`. |
 | 201 | Successful prohibition, impoundment, document or document-association POST; includes saved-with-warning codes 11 and 29. |
 | 400 | Missing/malformed JSON or multipart data, invalid parameter types or failed request constraints. |
-| 401 | Missing/invalid authentication, with a `WWW-Authenticate` Basic challenge. |
+| 401 | Missing, invalid or expired bearer token, with a `WWW-Authenticate: Bearer` challenge. |
 | 404 | Unknown route or missing requested notice/document. |
 | 405 | Unsupported method, with an `Allow` header. |
 | 406 / 415 | Unsupported response/request media type. |
 | 409 | Confirmed duplicate prohibition or impoundment notice number. |
 | 413 | Document exceeds 10 MiB or the multipart request exceeds 11 MiB. |
-| 500 | Internal/downstream failure, with a safe generic message. |
+| 500 | Internal/downstream failure, including DIAM's signing keys being unreachable, with a safe generic message. |
 
 Errors use `{"status_message":"..."}`. Validation errors identify fields without
 exposing controller signatures; unexpected failures return `Internal Server Error`
@@ -158,7 +160,7 @@ and retain diagnostic details in server logs.
 `POST /documents` accepts **multipart/form-data only**, with exactly one PDF file.
 In Postman, choose **Body > form-data**, set `file` to **File**, and use **Text**
 for the other parts. Let Postman set the Content-Type header and multipart boundary.
-Basic authentication and the optional `X-Correlation-ID` header are unchanged.
+Send the OAuth2 bearer token and the optional `X-Correlation-ID` header as for other operations.
 
 | Part | Required | Value |
 |---|---|---|
@@ -265,14 +267,21 @@ mvn -B -ntp clean verify
 The HTTP regression suites in [src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller](src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller)
 start the application on a random port with the real security filters, controllers,
 JSON codecs, and VIPS WebClient/ORDS client. A loopback HTTP stub replaces the remote
-VIPS WS and ORDS services; no real credentials, database writes, or Docker daemon are required.
+VIPS WS and ORDS services, and a loopback identity provider replaces DIAM: it serves a
+signing key set and mints RS256 tokens shaped like DIAM's client-credentials tokens.
+No real credentials, database writes, or Docker daemon are required.
 They cover:
 
 - All four retired `/dfpayloads/*` operations returning 404
   after authentication, and their absence from the canonical OpenAPI contract.
 - Authenticated prohibition/impoundment creation followed by search and retrieval,
   including forwarded authentication/audit headers and JSON field preservation.
-- Missing/invalid credentials, missing notices, VIPS failures, and licence validation.
+- Missing/invalid tokens, missing notices, VIPS failures, and licence validation.
+- OAuth2: expired, other-realm, unlisted or missing `azp`, ID (`typ`) and untyped,
+  forged, unknown-key, unsigned and malformed tokens, and Basic credentials, all
+  rejected with a Bearer challenge before reaching VIPS; the optional audience check;
+  a 500 when DIAM's keys cannot be downloaded; the protected-resource metadata; the
+  client allow-list parsing; and the published `oauth2` scheme matching the YAML.
 - Null or absent search pagination metadata, which must not break Jackson 3 decoding.
 - All ten public operations, including document upload/retrieval/association/listing,
   code tables and ORDS ping.
@@ -318,9 +327,67 @@ rules or change that downstream write path.
 
 ### Security
 
-API is protected by basic auth which must be configured using environmental variables. 
+The API is an OAuth 2.0 resource server. Callers use the client credentials grant to
+get an access token from DIAM (the Keycloak `Services` realm on
+`common-sso.justice.gov.bc.ca`) and send it on every request as
+`Authorization: Bearer <access_token>`. Basic authentication is no longer accepted.
 
-See *Environmental Variables*
+The API validates each token itself; it does not call DIAM per request. Spring
+Security checks:
+
+- the RS256 signature against DIAM's published signing keys (JWKS). The keys are
+  downloaded on first use and cached; a token signed with an unknown key ID triggers
+  a refresh, so DIAM key rotation needs no restart;
+- the issuer (`iss`) equals `DIGITALFORMS_OAUTH2_ISSUER_URI`;
+- expiry and not-before times, allowing 60 seconds of clock skew;
+- the authorized party (`azp`, the calling client) is in
+  `DIGITALFORMS_OAUTH2_ALLOWED_CLIENT_IDS`. The realm issues tokens to many unrelated
+  applications, so a valid realm token is not enough;
+- the `typ` claim is `Bearer`, which rejects Keycloak ID tokens;
+- the audience (`aud`) contains `DIGITALFORMS_OAUTH2_AUDIENCE`, when that is set.
+
+`/actuator/health`, the API docs, Swagger UI and the RFC 9728 metadata at
+`/.well-known/oauth-protected-resource` are public; every other path needs a token.
+DIAM issues no API-specific scopes for this client, so every allowed client may call
+every operation.
+
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `DIGITALFORMS_OAUTH2_ALLOWED_CLIENT_IDS` | Yes | none | Comma-separated DIAM client IDs, e.g. `vips-vi-irp-dev`. Startup fails if empty. Not a secret. |
+| `DIGITALFORMS_OAUTH2_AUDIENCE` | Recommended | empty (not checked) | Identifies this API as an intended token recipient; it need not equal the calling client ID. DEV is explicitly set to `vips-irp-dev`, which DIAM currently issues. After DIAM corrects the stale audience and a fresh token is verified, change this to `vips-vi-irp-dev`. Do not disable validation during the cutover. |
+| `DIGITALFORMS_OAUTH2_ISSUER_URI` | No | `https://common-sso.justice.gov.bc.ca/auth/realms/Services` | Keys are read from `<issuer>/protocol/openid-connect/certs`; the published OpenAPI token URL is `<issuer>/protocol/openid-connect/token`. |
+
+The API holds no client secret; only callers do. It needs outbound HTTPS to
+`common-sso.justice.gov.bc.ca`. For a local run (for example in Eclipse) set at least
+`DIGITALFORMS_OAUTH2_ALLOWED_CLIENT_IDS=vips-vi-irp-dev` and
+`DIGITALFORMS_OAUTH2_AUDIENCE=vips-irp-dev` while DIAM still issues the old audience.
+After DIAM confirms the correction and a fresh token contains `vips-vi-irp-dev` in
+`aud`, change the audience setting to `vips-vi-irp-dev` and restart the API.
+Coordinate the change: a token without the configured audience returns 401.
+
+#### Getting and using a token
+
+```
+curl -X POST https://common-sso.justice.gov.bc.ca/auth/realms/Services/protocol/openid-connect/token \
+  -d grant_type=client_credentials -d client_id=vips-vi-irp-dev -d client_secret=<secret>
+```
+
+DIAM tokens are valid for 5 minutes and come without a refresh token; request a new
+one when the API answers 401 with `error="invalid_token"` and a `Jwt expired` description.
+
+In Postman, set the collection's **Authorization** to **OAuth 2.0** with grant type
+**Client Credentials**, the token URL above, the client ID and the client secret, then
+choose **Get New Access Token** and **Use Token**. A collection imported from the
+runtime `/v3/api-docs` already carries the token URL from the `oauth2` scheme. Keep the
+secret in a Postman secret variable or the Postman Vault, not in a shared collection.
+
+| Situation | Response |
+|---|---|
+| No token, or non-Bearer (e.g. Basic) credentials | 401, `WWW-Authenticate: Bearer realm="DigitalForms - VI IRP API", resource_metadata="..."` |
+| Invalid, expired, other-client or other-realm token | 401, the challenge adds `error="invalid_token"` and an `error_description` naming the failed check |
+| DIAM's signing keys cannot be downloaded | 500 `Internal Server Error`, logged as an error |
+
+Rejected tokens are logged at WARN with the failed check; tokens are never logged.
 
 ### Files and Directories
 

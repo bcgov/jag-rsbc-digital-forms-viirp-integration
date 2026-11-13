@@ -58,9 +58,10 @@ Note: This API uses submodules which should be updated before running the API:
 
 ### Security
 
-API is protected by basic auth which must be configured using environmental variables. 
+API requests need a DIAM (Keycloak) OAuth 2.0 client-credentials access token, sent as
+`Authorization: Bearer <access_token>`. Basic authentication is no longer accepted.
 
-See digitalforms-api README.md, *Environmental Variables*
+See digitalforms-api README.md, *Security*
 
 ### Actuator
 

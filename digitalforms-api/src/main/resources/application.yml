@@ -32,6 +32,17 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 11MB
+  # Callers authenticate with a DIAM (Keycloak) client-credentials access token: Authorization: Bearer <token>.
+  # Tokens are validated locally (signature, issuer, expiry, typ and the azp allow-list below); DIAM is only
+  # contacted to download its public signing keys, which are fetched on first use and cached.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${DIGITALFORMS_OAUTH2_ISSUER_URI:https://common-sso.justice.gov.bc.ca/auth/realms/Services}
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+          # Optional comma-separated values; when set, the token aud claim must contain at least one of them.
+          audiences: ${DIGITALFORMS_OAUTH2_AUDIENCE:}
     
 # VIPS ORDS CLIENT properties
 vips:
@@ -62,9 +73,10 @@ digitalforms:
   app:
     version: '@project.version@'
     
-  basic-auth:
-    user: ${DIGITALFORMS_BASICAUTH_USER:}
-    password: ${DIGITALFORMS_BASICAUTH_PASSWORD:}
+  oauth2:
+    # Required comma-separated DIAM client IDs (token azp claim) allowed to call the API. The DIAM realm is shared
+    # with other applications and environments, so a valid signature alone is not enough. Startup fails when empty.
+    allowed-client-ids: ${DIGITALFORMS_OAUTH2_ALLOWED_CLIENT_IDS:}
     
 # springdoc publishes the API docs at /v3/api-docs. SPRINGDOC_APIDOCS_ENABLED=false (PROD) turns off the docs and
 # Swagger UI. Setting it explicitly also silences springdoc's "enabled by default" startup warning.

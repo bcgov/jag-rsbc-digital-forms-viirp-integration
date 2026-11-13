@@ -36,6 +36,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -48,8 +49,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "server.servlet.context-path=/digitalforms-viirp/v1",
-        "digitalforms.basic-auth.user=route-test",
-        "digitalforms.basic-auth.password=route-test-password",
+        "digitalforms.oauth2.allowed-client-ids=" + TestIdentityProvider.CLIENT_ID,
         "vips.rest-api.username=vips-test",
         "vips.rest-api.password=vips-test-password",
         "vips.rest-api.credentials.guid=route-test-guid",
@@ -68,7 +68,10 @@ abstract class HttpApiTestSupport {
             OpenApiInteractionValidator.createForInlineApiSpecification(CONTRACT).build();
     protected static final JsonNode CONTRACT_JSON = JsonMapper.builder().build()
             .valueToTree(new Yaml(new SafeConstructor(new LoaderOptions())).load(CONTRACT));
-    protected static final String AUTH = basicAuth("route-test", "route-test-password");
+    protected static final String AUTH = TestIdentityProvider.bearer(TestIdentityProvider.accessTokenClaims());
+    /** A validly signed DIAM token for a client that is not in the allow-list. */
+    protected static final String UNLISTED_CLIENT_AUTH =
+            TestIdentityProvider.bearer(TestIdentityProvider.accessTokenClaims().claim("azp", "unlisted-client"));
     protected final JsonMapper json = JsonMapper.builder().build();
     protected String correlationId;
 
@@ -77,6 +80,9 @@ abstract class HttpApiTestSupport {
 
     @Autowired
     protected VipsStub vips;
+
+    @Autowired
+    protected TestIdentityProvider identityProvider;
 
     private HttpClient client;
 
@@ -229,16 +235,24 @@ abstract class HttpApiTestSupport {
             return new VipsStub();
         }
 
+        /** {@code test.oauth2.jwks-status} simulates a DIAM outage for the context that sets it. */
+        @Bean(destroyMethod = "close")
+        TestIdentityProvider testIdentityProvider(@Value("${test.oauth2.jwks-status:200}") int jwksStatus)
+                throws IOException {
+            return new TestIdentityProvider(jwksStatus);
+        }
+
         @Bean
-        DynamicPropertyRegistrar downstreamProperties(VipsStub stub) {
+        DynamicPropertyRegistrar downstreamProperties(VipsStub stub, TestIdentityProvider identityProvider) {
             return registry -> {
                 registry.add("vips.rest-api.url", stub::baseUrl);
                 registry.add("vips.client.basePath", () -> stub.baseUrl() + "/ords");
+                registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri", identityProvider::jwkSetUri);
             };
         }
     }
 
-    // Only the remote VIPS boundary is stubbed; security, MVC, delegates and WebClient remain real.
+    // Only the remote VIPS and DIAM boundaries are stubbed; security, MVC, delegates and WebClient remain real.
     static class VipsStub implements AutoCloseable {
         final BlockingQueue<RecordedRequest> requests = new LinkedBlockingQueue<>();
         final BlockingQueue<StubResponse> responses = new LinkedBlockingQueue<>();

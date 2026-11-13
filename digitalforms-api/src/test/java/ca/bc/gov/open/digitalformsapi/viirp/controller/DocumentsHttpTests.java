@@ -2,24 +2,137 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayOutputStream;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
+import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
 
 class DocumentsHttpTests extends HttpApiTestSupport {
 
-    private static final String DOCUMENT = """
-            {"type_code":"MV2702A","mime_type":"application","mime_sub_type":"pdf","file_object":"YWJj"}
-            """;
+    private static final int MAX_FILE_BYTES = 10 * 1024 * 1024;
     private static final String NOTICE = "{\"noticeNo\":\"81000029\",\"noticeTypeCd\":\"IRP\"}";
 
     @Test
     void storesDocumentWith201() throws Exception {
+        byte[] pdf = UnitTestUtilities.samplePdf();
         vips.enqueue(200, "{\"status_code\":\"0\",\"status_message\":\"success\",\"document_id\":\"123\"}");
-        assertEquals("123", responseJson(request("POST", "/documents", DOCUMENT, AUTH), 201)
+        assertEquals("123", responseJson(upload(pdf), 201)
                 .path("document_id").asString());
-        ords("POST", "/ords/storeDocument");
+        var stored = ords("POST", "/ords/storeDocument");
+        assertEquals("application/pdf", stored.headers().getFirst("Content-Type"));
+        assertArrayEquals(pdf, stored.bodyBytes());
+        assertEquals("type_code=MV2702A&mime_type=application&mime_sub_type=pdf&auth_guid=route-test-guid"
+                + "&page_count=1", stored.uri().getRawQuery());
+    }
+
+    @Test
+    void forwardsNoticeMetadataAndPageCountReadFromPdfWithoutAssociating() throws Exception {
+        vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+        responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf(3))),
+                Map.of("type_code", "MV2723", "notice_type_code", "IRP",
+                        "notice_subject_code", "PERS", "pageCount", "abc")), 201);
+        var stored = ords("POST", "/ords/storeDocument");
+        assertEquals("type_code=MV2723&mime_type=application&mime_sub_type=pdf&auth_guid=route-test-guid"
+                + "&notice_type_code=IRP&notice_subject_code=PERS&page_count=3", stored.uri().getRawQuery());
+    }
+
+    @Test
+    void acceptsVipsMaximumPageCountAndRejectsOnePageMore() throws Exception {
+        vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+        responseJson(upload(UnitTestUtilities.samplePdf(99_999)), 201);
+        assertTrue(ords("POST", "/ords/storeDocument").uri().getRawQuery().endsWith("&page_count=99999"));
+        responseJson(upload(UnitTestUtilities.samplePdf(100_000)), 400);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"file", "anotherFile"})
+    void rejectsMultipleFileParts(String secondName) throws Exception {
+        byte[] pdf = UnitTestUtilities.samplePdf();
+        responseJson(upload(List.of(pdfPart(pdf),
+                new UploadPart(secondName, "second.pdf", "application/pdf", pdf)),
+                Map.of("type_code", "MV2723")), 400);
+    }
+
+    @Test
+    void rejectsMissingOrEmptyFile() throws Exception {
+        responseJson(upload(List.of(), Map.of("type_code", "MV2723")), 400);
+        responseJson(upload(new byte[0]), 400);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"not a PDF", "%PDF-1.7\nnot a real document\n%%EOF"})
+    void rejectsNonPdfOrMalformedPdfDespitePdfFilenameAndType(String content) throws Exception {
+        responseJson(upload(content.getBytes(StandardCharsets.UTF_8)), 400);
+    }
+
+    @Test
+    void rejectsPasswordProtectedPdfAndPdfWithoutPages() throws Exception {
+        try (var document = new PDDocument(); var output = new ByteArrayOutputStream()) {
+            document.save(output);
+            responseJson(upload(output.toByteArray()), 400);
+            output.reset();
+            document.addPage(new PDPage());
+            document.protect(new StandardProtectionPolicy("owner-password", "user-password",
+                    new AccessPermission()));
+            document.save(output);
+            responseJson(upload(output.toByteArray()), 400);
+        }
+    }
+
+    @Test
+    void identifiesPdfFromContentRatherThanTrustingFilenameOrMime() throws Exception {
+        vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+        responseJson(upload(List.of(new UploadPart("file", "upload.bin", "application/octet-stream",
+                UnitTestUtilities.samplePdf())), Map.of("type_code", "MV2723")), 201);
+        assertEquals("application/pdf", ords("POST", "/ords/storeDocument").headers().getFirst("Content-Type"));
+    }
+
+    @Test
+    void rejectsInvalidMultipartMetadata() throws Exception {
+        var file = List.of(pdfPart(UnitTestUtilities.samplePdf()));
+        for (var fields : List.of(Map.<String, String>of(), Map.of("type_code", " "),
+                Map.of("type_code", "x".repeat(11)),
+                Map.of("type_code", "MV2723", "notice_type_code", "LONG"),
+                Map.of("type_code", "MV2723", "notice_subject_code", "LONGER"))) {
+            responseJson(upload(file, fields), 400);
+        }
+    }
+
+    @Test
+    void acceptsExactlyTenMiBAndRejectsOneByteMore() throws Exception {
+        byte[] pdf = pdfOfSize(MAX_FILE_BYTES);
+        vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+        responseJson(upload(pdf), 201);
+        assertArrayEquals(pdf, ords("POST", "/ords/storeDocument").bodyBytes());
+        responseJson(upload(pdfOfSize(MAX_FILE_BYTES + 1)), 413);
+    }
+
+    @Test
+    void rejectsOversizedMultipartRequestAndMalformedMultipart() throws Exception {
+        responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf())),
+                Map.of("type_code", "x".repeat(11 * 1024 * 1024))), 413);
+        responseJson(requestBytes("POST", "/documents", new byte[0], AUTH, "multipart/form-data"), 400);
+    }
+
+    @Test
+    void rejectsLegacyJsonAndRawBinaryUploads() throws Exception {
+        responseJson(request("POST", "/documents", """
+                {"type_code":"MV2723","mime_type":"application","mime_sub_type":"pdf","file_object":"YWJj"}
+                """, AUTH), 415);
+        responseJson(requestBytes("POST", "/documents", UnitTestUtilities.samplePdf(), AUTH,
+                "application/pdf"), 415);
     }
 
     @ParameterizedTest
@@ -27,7 +140,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     void unsuccessfulOrdsStatusIs500(String status) throws Exception {
         vips.enqueue(200, "{\"status_code\":\"" + status + "\",\"status_message\":\"internal detail\"}");
         assertEquals("Internal Server Error",
-                responseJson(request("POST", "/documents", DOCUMENT, AUTH), 500)
+                responseJson(upload(UnitTestUtilities.samplePdf()), 500)
                         .path("status_message").asString());
         ords("POST", "/ords/storeDocument");
     }
@@ -35,7 +148,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @Test
     void uploadWithoutReturnedDocumentIdIsNot201() throws Exception {
         vips.enqueue(200, "{\"status_code\":\"0\"}");
-        responseJson(request("POST", "/documents", DOCUMENT, AUTH), 500);
+        responseJson(upload(UnitTestUtilities.samplePdf()), 500);
         ords("POST", "/ords/storeDocument");
     }
 
@@ -138,11 +251,53 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
     }
 
-    private void ords(String method, String path) throws Exception {
+    private RecordedRequest ords(String method, String path) throws Exception {
         var request = vips.requests.poll(2, TimeUnit.SECONDS);
         assertNotNull(request);
         assertEquals(method, request.method());
         assertEquals(path, request.uri().getPath());
         assertEquals(basicAuth("ords-test", "ords-test-password"), request.headers().getFirst("Authorization"));
+        return request;
+    }
+
+    private record UploadPart(String name, String filename, String contentType, byte[] bytes) { }
+
+    private static UploadPart pdfPart(byte[] pdf) {
+        return new UploadPart("file", "notice.pdf", "application/pdf", pdf);
+    }
+
+    private HttpResponse<String> upload(byte[] pdf) throws Exception {
+        return upload(List.of(pdfPart(pdf)), Map.of("type_code", "MV2702A"));
+    }
+
+    private HttpResponse<String> upload(List<UploadPart> files, Map<String, String> fields) throws Exception {
+        String boundary = "test-" + correlationId;
+        List<UploadPart> parts = new ArrayList<>();
+        fields.forEach((name, value) -> parts.add(
+                new UploadPart(name, null, "text/plain", value.getBytes(StandardCharsets.UTF_8))));
+        parts.addAll(files);
+        var body = new ByteArrayOutputStream();
+        for (var part : parts) {
+            String disposition = "Content-Disposition: form-data; name=\"" + part.name() + "\""
+                    + (part.filename() == null ? "" : "; filename=\"" + part.filename() + "\"");
+            body.write(("--" + boundary + "\r\n" + disposition + "\r\nContent-Type: "
+                    + part.contentType() + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+            body.write(part.bytes());
+            body.write("\r\n".getBytes(StandardCharsets.UTF_8));
+        }
+        body.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+        return requestBytes("POST", "/documents", body.toByteArray(), AUTH,
+                "multipart/form-data; boundary=" + boundary);
+    }
+
+    private static byte[] pdfOfSize(int size) throws Exception {
+        byte[] pdf = UnitTestUtilities.samplePdf();
+        int marker = new String(pdf, StandardCharsets.ISO_8859_1).lastIndexOf("startxref");
+        int padding = size - pdf.length;
+        byte[] result = new byte[size];
+        System.arraycopy(pdf, 0, result, 0, marker);
+        Arrays.fill(result, marker, marker + padding, (byte) ' ');
+        System.arraycopy(pdf, marker, result, marker + padding, pdf.length - marker);
+        return result;
     }
 }

@@ -49,7 +49,7 @@ class SecurityConfiguration {
                                 , "/swagger-ui/**"
                                 , "/webjars/**"
                                 , "/swagger-config/**"
-                                , "/actuator/**"
+                                , "/actuator/health"
                         ).permitAll().anyRequest().authenticated()
                 );
 

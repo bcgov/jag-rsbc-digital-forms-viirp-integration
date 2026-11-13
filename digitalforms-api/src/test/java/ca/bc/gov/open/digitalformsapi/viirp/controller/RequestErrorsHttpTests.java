@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class RequestErrorsHttpTests extends HttpApiTestSupport {
 
     @ParameterizedTest
-    @ValueSource(strings = {"prohibitions", "impoundments", "documents", "documents/association/notice/123"})
+    @ValueSource(strings = {"prohibitions", "impoundments", "documents/association/notice/123"})
     void missingAndMalformedBodiesReturnSafe400(String route) throws Exception {
         String path = "/" + route;
         for (String body : new String[] {null, "", "null", "{", "{}", "[]"}) {

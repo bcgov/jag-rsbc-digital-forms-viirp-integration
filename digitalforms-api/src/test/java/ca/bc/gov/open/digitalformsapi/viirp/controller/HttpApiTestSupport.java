@@ -119,6 +119,21 @@ abstract class HttpApiTestSupport {
     /** Sends one {@value CorrelationIdFilter#HEADER} request header per supplied value (none if empty). */
     protected HttpResponse<String> requestWithCorrelationIds(String method, String path, String body, String auth,
             String contentType, String accept, List<String> correlationIds) throws IOException, InterruptedException {
+        return sendRequest(method, path, body == null ? HttpRequest.BodyPublishers.noBody()
+                : HttpRequest.BodyPublishers.ofString(body), auth, contentType, accept, correlationIds);
+    }
+
+    protected HttpResponse<String> requestBytes(String method, String path, byte[] body, String auth,
+            String contentType) throws IOException, InterruptedException {
+        var response = sendRequest(method, path, HttpRequest.BodyPublishers.ofByteArray(body), auth,
+                contentType, "application/json", List.of(correlationId));
+        assertEquals(List.of(correlationId), response.headers().allValues(CorrelationIdFilter.HEADER));
+        return response;
+    }
+
+    private HttpResponse<String> sendRequest(String method, String path, HttpRequest.BodyPublisher body,
+            String auth, String contentType, String accept, List<String> correlationIds)
+            throws IOException, InterruptedException {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(apiBaseUrl() + path))
                 .timeout(Duration.ofSeconds(10))
@@ -132,9 +147,8 @@ abstract class HttpApiTestSupport {
         for (String id : correlationIds) {
             builder.header(CorrelationIdFilter.HEADER, id);
         }
-        HttpResponse<String> response = client.send(builder.method(method, body == null
-                ? HttpRequest.BodyPublishers.noBody()
-                : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(builder.method(method, body).build(),
+                HttpResponse.BodyHandlers.ofString());
         // Unknown routes/methods have no OpenAPI operation; dedicated tests assert their 404/405 responses.
         if (hasOperation(method, path)) {
             assertConforms(method, path, response.statusCode(), response.body(), response.headers().map());
@@ -200,7 +214,11 @@ abstract class HttpApiTestSupport {
                 .encodeToString((user + ":" + password).getBytes(StandardCharsets.UTF_8));
     }
 
-    record RecordedRequest(String method, URI uri, Headers headers, String body) { }
+    record RecordedRequest(String method, URI uri, Headers headers, byte[] bodyBytes) {
+        String body() {
+            return new String(bodyBytes, StandardCharsets.UTF_8);
+        }
+    }
 
     record StubResponse(int status, String body) { }
 
@@ -249,7 +267,7 @@ abstract class HttpApiTestSupport {
             try (exchange) {
                 requests.add(new RecordedRequest(exchange.getRequestMethod(), exchange.getRequestURI(),
                         exchange.getRequestHeaders(),
-                        new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+                        exchange.getRequestBody().readAllBytes()));
                 StubResponse response = responses.poll();
                 if (response == null) {
                     response = new StubResponse(500, "{\"error\":\"Unexpected downstream request\"}");

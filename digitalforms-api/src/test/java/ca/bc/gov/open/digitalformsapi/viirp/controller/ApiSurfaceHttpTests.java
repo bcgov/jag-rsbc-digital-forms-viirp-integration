@@ -75,9 +75,11 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals(CONTRACT_JSON.at("/components/securitySchemes"), api.at("/components/securitySchemes"),
                 "Clients such as Postman read the token URL from the published OAuth2 scheme");
         assertFalse(paths.has("/actuator/health/{*path}"), "Health component subpaths are not exposed");
+        assertFalse(paths.has("/exception/{exception_id}"), "Test-only exception routes must not be published");
         assertFalse(api.toString().contains("{correlationId}"), "Correlation ID is a header, not a path variable");
         assertFalse(api.toString().toLowerCase(Locale.ROOT).contains("dfpayload"));
         responseJson(request("GET", "/unknown", null, AUTH), 404);
+        responseJson(request("GET", "/exception/forbidden", null, AUTH), 404);
     }
 
     @Test

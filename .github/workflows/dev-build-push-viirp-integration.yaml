@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches: [devops]
   workflow_dispatch:
 
 env:
@@ -40,6 +40,13 @@ jobs:
         working-directory: ${{env.WORKING_DIRECTORY}}
         run: |
           docker build -t artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev
+      
+      - name: Get Image SHA
+        run: |
+          IMAGE_SHA=$(docker images --no-trunc --quiet artifacts.developer.gov.bc.ca/${{ env.REPO_KEY }}-digitalforms/${{ env.IMAGE_NAME }}:dev)
+
+          echo "IMAGE_SHA=$IMAGE_SHA" >> $GITHUB_ENV
+          echo "Image SHA: $IMAGE_SHA"
       
       - name: Docker Push to Artifactory
         run: |
@@ -86,9 +93,9 @@ jobs:
             
           # Update the Helm values file with the new image tag and version
           DATETIME=$(date +'%Y-%m-%d %H:%M:%S')  # Get current date and time
-          echo "Updating tag viirpversion: to ${{ steps.short_sha.outputs.SHORT_SHA }}"
+          echo "Updating tag viirpversion: to ${IMAGE_SHA}"
   
-          sed -i "s/viirpversion: .*/viirpversion: ${{ steps.short_sha.outputs.SHORT_SHA }} # Image Updated on $DATETIME/" ../deploy/${{ env.VALUES_FILE }}_values.yaml
+          sed -i "s/viirpversion: .*/viirpversion: ${IMAGE_SHA} # Image Updated on $DATETIME/" ../deploy/${{ env.VALUES_FILE }}_values.yaml
 
           git add .
             

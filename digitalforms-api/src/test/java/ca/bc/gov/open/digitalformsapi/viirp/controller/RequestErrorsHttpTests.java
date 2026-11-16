@@ -45,11 +45,12 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void unauthorizedResponseIncludesBasicChallenge() throws Exception {
+    void unauthorizedResponseIncludesBearerChallenge() throws Exception {
         var response = request("GET", "/codetables", null, null);
         var body = responseJson(response, 401);
         assertEquals("401 - Unauthorized entry, please authenticate", body.path("status_message").asString());
-        assertTrue(response.headers().firstValue("WWW-Authenticate").orElse("").startsWith("Basic "));
+        assertTrue(response.headers().firstValue("WWW-Authenticate").orElse("")
+                .startsWith("Bearer realm=\"DigitalForms - VI IRP API\""));
     }
 
     @Test

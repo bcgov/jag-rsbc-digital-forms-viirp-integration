@@ -70,8 +70,10 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         for (String path : List.of("/actuator", "/actuator/info")) {
             var security = paths.path(path).path("get").path("security");
             assertEquals(1, security.size(), path + " must advertise authentication");
-            assertTrue(security.get(0).has("basicAuth"), path + " must use the existing Basic scheme");
+            assertTrue(security.get(0).has("oauth2"), path + " must use the API's OAuth2 scheme");
         }
+        assertEquals(CONTRACT_JSON.at("/components/securitySchemes"), api.at("/components/securitySchemes"),
+                "Clients such as Postman read the token URL from the published OAuth2 scheme");
         assertFalse(paths.has("/actuator/health/{*path}"), "Health component subpaths are not exposed");
         assertFalse(api.toString().contains("{correlationId}"), "Correlation ID is a header, not a path variable");
         assertFalse(api.toString().toLowerCase(Locale.ROOT).contains("dfpayload"));
@@ -91,10 +93,10 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     @Test
     void actuatorInformationAndDiscoveryRequireAuthentication() throws Exception {
         for (String path : List.of("/actuator/info", "/actuator")) {
-            for (String authorization : new String[] {null, basicAuth("route-test", "wrong-password")}) {
+            for (String authorization : new String[] {null, UNLISTED_CLIENT_AUTH}) {
                 var response = request("GET", path, null, authorization);
                 responseJson(response, 401);
-                assertTrue(response.headers().firstValue("WWW-Authenticate").orElse("").startsWith("Basic "));
+                assertTrue(response.headers().firstValue("WWW-Authenticate").orElse("").startsWith("Bearer "));
                 assertFalse(response.body().contains("\"build\""));
                 assertFalse(response.body().contains("\"java\""));
             }

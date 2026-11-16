@@ -14,7 +14,7 @@ paths:
       - Impoundments
       operationId: createImpoundment
       security:
-        - basicAuth: []
+        - oauth2: []
       summary: Create impoundment
       parameters:
       - $ref: '#/components/parameters/CorrelationId'
@@ -53,7 +53,7 @@ paths:
       - Impoundments
       operationId: getImpoundment
       security:
-        - basicAuth: []
+        - oauth2: []
       summary: Retrieve impoundment
       parameters:
       - name: noticeNo
@@ -90,7 +90,7 @@ paths:
       - Prohibitions
       operationId: createProhibition
       security:
-        - basicAuth: []
+        - oauth2: []
       summary: Create Prohibition
       parameters:
       - $ref: '#/components/parameters/CorrelationId'
@@ -131,7 +131,7 @@ paths:
       - Prohibitions
       operationId: getProhibition
       security:
-        - basicAuth: []
+        - oauth2: []
       summary: Retrieve prohibition
       parameters:
       - name: noticeNo
@@ -165,7 +165,7 @@ paths:
   /documents:
     post:
       security:
-        - basicAuth: []
+        - oauth2: []
       tags:
       - Documents
       operationId: storeDocument
@@ -224,7 +224,7 @@ paths:
   /documents/{documentId}:
     get:
       security:
-        - basicAuth: []
+        - oauth2: []
       tags:
       - Documents
       operationId: getDocument
@@ -263,7 +263,7 @@ paths:
   /documents/list/{noticeNo}:
     get:
       security:
-        - basicAuth: []
+        - oauth2: []
       tags:
       - Documents  
       operationId: listNoticeDocuments
@@ -302,7 +302,7 @@ paths:
       - Documents
       operationId: associateDocumentToNotice
       security:
-        - basicAuth: []
+        - oauth2: []
       summary: Create document notice association
       parameters:
       - name: documentId
@@ -350,7 +350,7 @@ paths:
       - Codetables
       operationId: getCodeTables
       security:
-        - basicAuth: []
+        - oauth2: []
       summary: Get code table values
       parameters:
       - $ref: '#/components/parameters/CorrelationId'
@@ -378,7 +378,7 @@ paths:
       - Utility
       operationId: pingOrds
       security:
-        - basicAuth: []
+        - oauth2: []
       summary: ORDS Health Check Ping
       parameters:
       - $ref: '#/components/parameters/CorrelationId'
@@ -406,9 +406,16 @@ paths:
           $ref: '#/components/responses/500ServerError'
 components:
   securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
+    oauth2:
+      type: oauth2
+      description: >-
+        DIAM (Keycloak) OAuth 2.0 client credentials. Request an access token from the token URL with the
+        client ID and secret issued for your environment, then send it in the Authorization header as
+        "Bearer <access_token>". Tokens are short-lived; request a new token when the current one expires.
+      flows:
+        clientCredentials:
+          tokenUrl: https://common-sso.justice.gov.bc.ca/auth/realms/Services/protocol/openid-connect/token
+          scopes: {}
   parameters:
     CorrelationId:
       name: X-Correlation-ID
@@ -447,10 +454,20 @@ components:
           schema:
             $ref: '#/components/schemas/errorMessage'
     401NotAuthorized:
-      description: The requester is unauthorized.
+      description: >-
+        The access token is missing, invalid or expired. The WWW-Authenticate header gives the reason.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
+        WWW-Authenticate:
+          description: >-
+            RFC 6750 Bearer challenge, for example: Bearer realm="DigitalForms - VI IRP API",
+            error="invalid_token", error_description="Jwt expired at 2026-01-01T00:00:00Z". The
+            error attributes are omitted when no token was sent.
+          required: true
+          schema:
+            type: string
+            pattern: '^Bearer( |$)'
       content:
         application/json:
           schema:

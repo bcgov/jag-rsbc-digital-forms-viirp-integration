@@ -39,7 +39,7 @@ jobs:
       - name: Build Image
         working-directory: ${{env.WORKING_DIRECTORY}}
         run: |
-          docker build -t artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev
+          docker build -t artifacts.developer.gov.bc.ca/${{env.REPO_KEY}}-digitalforms/${{env.IMAGE_NAME}}:dev .
       
       - name: Get Image SHA
         run: |

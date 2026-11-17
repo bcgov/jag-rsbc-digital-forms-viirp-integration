@@ -35,8 +35,8 @@ class NoticeConflictsHttpTests extends HttpApiTestSupport {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"ORA-sensitive detail\"}");
         availableNotice();
-        var response = responseJson(request("POST", "/" + type + "s", body(type), AUTH), 500);
-        assertEquals("Internal Server Error", response.path("detail").asString());
+        var response = responseJson(request("POST", "/" + type + "s", body(type), AUTH), 502);
+        assertEquals("Invalid response from VIPS.", response.path("detail").asString());
         checkedNotice(type, notice(type));
         downstream("POST", "/cases/" + type + "s");
         checkedNotice(type, notice(type));
@@ -46,17 +46,17 @@ class NoticeConflictsHttpTests extends HttpApiTestSupport {
     @ValueSource(strings = {"prohibition", "impoundment"})
     void failedSearchMustNotAllowCreate(String type) throws Exception {
         vips.enqueue(200, "{\"respCd\":99,\"respMsg\":\"unavailable\"}");
-        responseJson(request("POST", "/" + type + "s", body(type), AUTH), 500);
+        responseJson(request("POST", "/" + type + "s", body(type), AUTH), 502);
         checkedNotice(type, notice(type));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"prohibition", "impoundment"})
-    void failedRecheckIs500NotAnUnconfirmedConflict(String type) throws Exception {
+    void failedRecheckIs502NotAnUnconfirmedConflict(String type) throws Exception {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":1}");
         vips.enqueue(200, "{\"respCd\":99}");
-        responseJson(request("POST", "/" + type + "s", body(type), AUTH), 500);
+        responseJson(request("POST", "/" + type + "s", body(type), AUTH), 502);
         checkedNotice(type, notice(type));
         downstream("POST", "/cases/" + type + "s");
         checkedNotice(type, notice(type));
@@ -66,7 +66,7 @@ class NoticeConflictsHttpTests extends HttpApiTestSupport {
     @ValueSource(strings = {"prohibition", "impoundment"})
     void missingSearchResultMustNotAllowCreate(String type) throws Exception {
         vips.enqueue(200, "{\"respCd\":0,\"result\":null}");
-        responseJson(request("POST", "/" + type + "s", body(type), AUTH), 500);
+        responseJson(request("POST", "/" + type + "s", body(type), AUTH), 502);
         checkedNotice(type, notice(type));
     }
 
@@ -86,14 +86,30 @@ class NoticeConflictsHttpTests extends HttpApiTestSupport {
     void unexpectedReadCodesAreNot200(String type) throws Exception {
         String path = "/" + type + "s/" + notice(type);
         vips.enqueue(200, "{\"respCd\":21}");
-        responseJson(request("GET", path, null, AUTH), 500);
+        responseJson(request("GET", path, null, AUTH), 502);
         checkedNotice(type, notice(type));
 
         vips.enqueue(200, found(type, notice(type)));
         vips.enqueue(200, "{\"respCd\":21}");
-        responseJson(request("GET", path, null, AUTH), 500);
+        responseJson(request("GET", path, null, AUTH), 502);
         checkedNotice(type, notice(type));
         downstream("GET", "/cases/" + type + "s/123");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{\"respCd\":null,\"result\":[]}", "{\"respCd\":0,\"result\":[null]}",
+            "{\"respCd\":0,\"result\":[{}]}"})
+    void malformedSearchResultsAre502RatherThanLocalErrors(String body) throws Exception {
+        for (String type : new String[] {"prohibition", "impoundment"}) {
+            for (String suffix : new String[] {"", "/documents"}) {
+                vips.enqueue(200, body);
+                responseJson(request("GET", "/" + type + "s/" + notice(type) + suffix, null, AUTH), 502);
+                checkedNotice(type, notice(type));
+            }
+            vips.enqueue(200, body);
+            responseJson(request("POST", "/" + type + "s", body(type), AUTH), 502);
+            checkedNotice(type, notice(type));
+        }
     }
 
     private String body(String type) {

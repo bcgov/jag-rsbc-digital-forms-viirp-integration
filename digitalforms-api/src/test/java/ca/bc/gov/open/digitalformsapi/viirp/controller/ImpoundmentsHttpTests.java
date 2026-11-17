@@ -78,8 +78,8 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     void vipsCreateFailureIsNotReportedAsSuccess() throws Exception {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":99,\"respMsg\":\"Rejected\"}");
-        JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("detail").asString());
+        JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 502);
+        assertEquals("Invalid response from VIPS.", error.path("detail").asString());
         assertFalse(error.has("respMsg"));
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
@@ -89,8 +89,8 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     void missingVipsImpoundmentIdIsNotReportedAsSuccess() throws Exception {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":0,\"respMsg\":\"created\"}");
-        JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("detail").asString());
+        JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 502);
+        assertEquals("Invalid response from VIPS.", error.path("detail").asString());
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
     }
@@ -119,8 +119,8 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     void unexpectedVipsCreateCodeIsNotReportedAsSuccess() throws Exception {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":21,\"respMsg\":\"Unexpected\"}");
-        JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("detail").asString());
+        JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 502);
+        assertEquals("Invalid response from VIPS.", error.path("detail").asString());
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
     }

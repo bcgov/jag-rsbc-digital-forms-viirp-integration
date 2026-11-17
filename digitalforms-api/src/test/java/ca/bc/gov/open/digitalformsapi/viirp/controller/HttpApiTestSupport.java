@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -269,7 +271,12 @@ abstract class HttpApiTestSupport {
         }
     }
 
-    record StubResponse(int status, byte[] body, String contentType) { }
+    record StubResponse(int status, byte[] body, String contentType, Map<String, String> headers,
+            int headerDelayMs, int bodyDelayMs) {
+        StubResponse(int status, byte[] body, String contentType) {
+            this(status, body, contentType, Map.of(), 0, 0);
+        }
+    }
 
     @TestConfiguration(proxyBeanMethods = false)
     static class DownstreamConfiguration {
@@ -300,9 +307,11 @@ abstract class HttpApiTestSupport {
         final BlockingQueue<RecordedRequest> requests = new LinkedBlockingQueue<>();
         final BlockingQueue<StubResponse> responses = new LinkedBlockingQueue<>();
         private final HttpServer server;
+        private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
         VipsStub() throws IOException {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+            server.setExecutor(executor);
             server.createContext("/", this::handle);
             server.start();
         }
@@ -317,6 +326,11 @@ abstract class HttpApiTestSupport {
 
         void enqueue(int status, byte[] body, String contentType) {
             responses.add(new StubResponse(status, body, contentType));
+        }
+
+        void enqueue(int status, String body, Map<String, String> headers) {
+            responses.add(new StubResponse(status, body.getBytes(StandardCharsets.UTF_8),
+                    "application/json", headers, 0, 0));
         }
 
         void reset() {
@@ -335,19 +349,26 @@ abstract class HttpApiTestSupport {
                             "{\"error\":\"Unexpected downstream request\"}".getBytes(StandardCharsets.UTF_8),
                             "application/json");
                 }
+                Thread.sleep(response.headerDelayMs());
                 exchange.getResponseHeaders().set("Content-Type", response.contentType());
+                response.headers().forEach(exchange.getResponseHeaders()::set);
                 if (response.status() == 204) {
                     exchange.sendResponseHeaders(response.status(), -1);
                 } else {
                     exchange.sendResponseHeaders(response.status(), response.body().length);
+                    exchange.getResponseBody().flush();
+                    Thread.sleep(response.bodyDelayMs());
                     exchange.getResponseBody().write(response.body());
                 }
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
             }
         }
 
         @Override
         public void close() {
             server.stop(0);
+            executor.shutdownNow();
         }
     }
 }

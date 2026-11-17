@@ -8,17 +8,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import java.io.IOException;
+
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
@@ -31,16 +30,15 @@ import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 @ActiveProfiles(value = "test")
 @AutoConfigureMockMvc(addFilters = false)
 //@RunWith(MockitoJUnitRunner.class)
-@ExtendWith(MockitoExtension.class)
 class CodeTablesApiControllerTests {
 	
 	@Autowired
 	private MockMvc mvc;
 	
-	@Mock
+	@MockitoBean
     private VipsRestService service;
 
-    @InjectMocks
+    @Autowired
     private CodeTablesApiDelegateImpl controller;
     
     @Autowired
@@ -61,11 +59,13 @@ class CodeTablesApiControllerTests {
     }
 	
 	@Test
-	public void testCodeTablesApiGetError500WithNoBasicAuth() throws Exception {
+	public void localProcessingFailureRemains500WithNoDiagnosticLeak() throws Exception {
+		Mockito.when(service.getCodeTableValues()).thenThrow(
+				new DigitalFormsException("Internal file failure", new IOException("sensitive local path")));
 		
 	    mvc.perform(get("/codetables")
             		.contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().is5xxServerError())
+            .andExpect(status().isInternalServerError())
 			.andExpect(content().contentType("application/problem+json"))
 	    	.andExpect(result -> assertTrue(result.getResolvedException() instanceof DigitalFormsException))
 			.andExpect(jsonPath("$.status").value(500))

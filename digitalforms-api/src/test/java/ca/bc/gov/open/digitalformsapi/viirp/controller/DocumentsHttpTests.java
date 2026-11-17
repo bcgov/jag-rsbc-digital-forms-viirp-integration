@@ -13,15 +13,26 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
+import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
+import ca.bc.gov.open.jag.ordsvipsclient.api.handler.ApiClient;
 
 class DocumentsHttpTests extends HttpApiTestSupport {
 
     private static final int MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+    @Autowired
+    private ApiClient ordsClient;
+
+    @Autowired
+    private ConfigProperties properties;
+
     @Test
     void storesDocumentWith201() throws Exception {
         byte[] pdf = UnitTestUtilities.samplePdf();
@@ -138,10 +149,10 @@ class DocumentsHttpTests extends HttpApiTestSupport {
 
     @ParameterizedTest
     @ValueSource(strings = {"1", "99", "unexpected"})
-    void unsuccessfulOrdsStatusIs500(String status) throws Exception {
+    void unsuccessfulOrdsStatusIs502(String status) throws Exception {
         vips.enqueue(200, "{\"status_code\":\"" + status + "\",\"status_message\":\"internal detail\"}");
-        assertEquals("Internal Server Error",
-                responseJson(upload(UnitTestUtilities.samplePdf()), 500)
+        assertEquals("Invalid response from VIPS.",
+                responseJson(upload(UnitTestUtilities.samplePdf()), 502)
                         .path("detail").asString());
         ords("POST", "/ords/storeDocument");
     }
@@ -149,8 +160,76 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @Test
     void uploadWithoutReturnedDocumentIdIsNot201() throws Exception {
         vips.enqueue(200, "{\"status_code\":\"0\"}");
-        responseJson(upload(UnitTestUtilities.samplePdf()), 500);
+        responseJson(upload(UnitTestUtilities.samplePdf()), 502);
         ords("POST", "/ords/storeDocument");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "null", "{", "[]", "{}", "{\"status_code\":{}}"})
+    void malformedOrdsUploadResponseIs502(String body) throws Exception {
+        vips.enqueue(200, body);
+        responseJson(upload(UnitTestUtilities.samplePdf()), 502);
+        ords("POST", "/ords/storeDocument");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"500,502", "503,503", "504,504"})
+    void ordsUploadHttpFailureUsesTheUpstreamStatusContract(int upstreamStatus, int expectedStatus) throws Exception {
+        vips.enqueue(upstreamStatus, "{\"error\":\"sensitive upstream information\"}");
+        var response = upload(UnitTestUtilities.samplePdf());
+        responseJson(response, expectedStatus);
+        assertFalse(response.body().contains("sensitive upstream information"));
+        assertEquals(expectedStatus == 503 ? List.of("30") : List.of(),
+                response.headers().allValues("Retry-After"));
+        ords("POST", "/ords/storeDocument");
+    }
+
+    @Test
+    void ordsReadTimeoutIs504WithoutResendingTheDocument() throws Exception {
+        int readTimeout = ordsClient.getReadTimeout();
+        try {
+            ordsClient.setReadTimeout(200);
+            vips.responses.add(new StubResponse(200,
+                    "{\"status_code\":\"0\",\"document_id\":\"123\"}".getBytes(StandardCharsets.UTF_8),
+                    "application/json", Map.of(), 1000, 0));
+            responseJson(upload(UnitTestUtilities.samplePdf()), 504);
+            ords("POST", "/ords/storeDocument");
+        } finally {
+            ordsClient.setReadTimeout(readTimeout);
+        }
+    }
+
+    @Test
+    void missingLocalOrdsAuditGuidRemains500WithoutUploading() throws Exception {
+        String authGuid = properties.getVipsRestApiCredentialsGuid();
+        try {
+            properties.setVipsRestApiCredentialsGuid(null);
+            var response = upload(UnitTestUtilities.samplePdf());
+            assertEquals("Internal Server Error", responseJson(response, 500).path("detail").asString());
+            assertTrue(response.headers().allValues("Retry-After").isEmpty());
+        } finally {
+            properties.setVipsRestApiCredentialsGuid(authGuid);
+        }
+    }
+
+    @Test
+    void nonPdfUpstreamBodyIs502BeforeTheDownloadCommits() throws Exception {
+        vips.enqueue(200, "<html>upstream error details</html>".getBytes(StandardCharsets.UTF_8), "text/html");
+        var response = request("GET", "/documents/123", null, AUTH, null, "application/pdf");
+        responseJson(response, 502);
+        assertFalse(response.body().contains("upstream error details"));
+        assertTrue(response.headers().allValues("Content-Disposition").isEmpty());
+        downstream("GET", "/documents/123?b64=false&url=false");
+    }
+
+    @Test
+    void stalledPdfBodyIs504BeforeTheDownloadCommits() throws Exception {
+        vips.responses.add(new StubResponse(200, UnitTestUtilities.samplePdf(),
+                "application/x-download", Map.of(), 0, 3000));
+        var response = request("GET", "/documents/123", null, AUTH, null, "application/pdf");
+        responseJson(response, 504);
+        assertTrue(response.headers().allValues("Content-Disposition").isEmpty());
+        downstream("GET", "/documents/123?b64=false&url=false");
     }
 
     @ParameterizedTest
@@ -191,12 +270,12 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void missingTypedNoticeIs404AndFailedSearchIs500() throws Exception {
+    void missingTypedNoticeIs404AndFailedSearchIs502() throws Exception {
         vips.enqueue(200, "{\"respCd\":0,\"result\":[]}");
         responseJson(request("GET", documentListPath("prohibition"), null, AUTH), 404);
         checkedNotice("prohibition", "81000029");
         vips.enqueue(200, "{\"respCd\":21}");
-        responseJson(request("GET", documentListPath("impoundment"), null, AUTH), 500);
+        responseJson(request("GET", documentListPath("impoundment"), null, AUTH), 502);
         checkedNotice("impoundment", "81000029");
     }
 
@@ -212,7 +291,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
 
         vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":123}]}");
         vips.enqueue(200, "{\"respCd\":21}");
-        responseJson(request("GET", documentListPath(type), null, AUTH), 500);
+        responseJson(request("GET", documentListPath(type), null, AUTH), 502);
         checkedNotice(type, "81000029");
         downstream("GET", "/documents?" + type + "Id=123");
     }
@@ -258,7 +337,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":0,\"result\":{\"noticeTypeCd\":\"IMP\"}}");
         vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"association failed\"}");
         vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
-        responseJson(request("PUT", "/impoundments/81000029/documents/123", null, AUTH), 500);
+        responseJson(request("PUT", "/impoundments/81000029/documents/123", null, AUTH), 502);
         checkedNotice("impoundment", "81000029");
         downstream("GET", "/documents?impoundmentId=321");
         downstream("GET", "/cases/impoundments/321");
@@ -277,7 +356,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         responseJson(request("GET", "/utility/ords/ping", null, AUTH), 200);
         ords("GET", "/ords/health");
         vips.enqueue(500, "{\"internal\":\"details\"}");
-        responseJson(request("GET", "/utility/ords/ping", null, AUTH), 500);
+        responseJson(request("GET", "/utility/ords/ping", null, AUTH), 502);
         ords("GET", "/ords/health");
 
         vips.enqueue(200, "{\"configuration\":{},\"respMsg\":\"Success\"}");
@@ -286,7 +365,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         assertNotNull(codeTablesRequest);
         assertEquals("/configuration", codeTablesRequest.uri().getPath());
         vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"Failure\"}");
-        responseJson(request("GET", "/codetables", null, AUTH), 500);
+        responseJson(request("GET", "/codetables", null, AUTH), 502);
         assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
     }
 

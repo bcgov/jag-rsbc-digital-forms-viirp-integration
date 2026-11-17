@@ -15,6 +15,8 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.ApiUtil;
+import io.swagger.v3.oas.models.headers.Header;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.security.OAuthFlow;
 import io.swagger.v3.oas.models.security.OAuthFlows;
 import io.swagger.v3.oas.models.security.Scopes;
@@ -84,6 +86,13 @@ public class MultipartOpenApiConfig implements WebMvcRegistrations {
             }
             // The generator repeats the operation's combined media types on every response annotation.
             operation.getResponses().forEach((status, response) -> {
+                if ("503".equals(status) && handler.getBeanType().getPackageName().equals(ApiUtil.class.getPackageName())) {
+                    // Response-header annotations are also omitted by the generator.
+                    response.addHeaderObject("Retry-After", new Header().required(true)
+                            .description("Delay in seconds or an HTTP date. A valid upstream Retry-After is retained; "
+                                    + "otherwise the API advises 30 seconds. This is not a recovery guarantee.")
+                            .schema(new StringSchema()).example("30"));
+                }
                 var content = response.getContent();
                 if (content == null || !content.containsKey(MediaType.APPLICATION_PROBLEM_JSON_VALUE)) {
                     return;

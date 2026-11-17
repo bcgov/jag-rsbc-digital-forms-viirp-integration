@@ -37,6 +37,12 @@ paths:
                 $ref: '#/components/schemas/CreateImpoundmentServiceResponse'
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '401':
           $ref: '#/components/responses/401NotAuthorized'
         '400':
@@ -75,7 +81,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetImpoundmentServiceResponse'
         '500':
-          $ref: '#/components/responses/500ServerError'        
+          $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '401':
           $ref: '#/components/responses/401NotAuthorized'
         '404':
@@ -116,7 +128,13 @@ paths:
         '403':
           $ref: '#/components/responses/403Forbidden'
         '500':
-          $ref: '#/components/responses/500ServerError'  
+          $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '400':
           $ref: '#/components/responses/400BadRequest'
         '406':
@@ -153,7 +171,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetProhibitionServiceResponse'
         '500':
-          $ref: '#/components/responses/500ServerError'        
+          $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '401':
           $ref: '#/components/responses/401NotAuthorized'
         '404':
@@ -216,7 +240,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '500':
-          $ref: '#/components/responses/500ServerError'  
+          $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
         '415':
@@ -253,6 +283,12 @@ paths:
                 format: binary
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '400':
           $ref: '#/components/responses/400BadRequest'
         '401':
@@ -295,6 +331,12 @@ paths:
           $ref: '#/components/responses/404NotFound'
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '400':
           $ref: '#/components/responses/400BadRequest'
         '406':
@@ -334,6 +376,12 @@ paths:
           $ref: '#/components/responses/404NotFound'
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '400':
           $ref: '#/components/responses/400BadRequest'
         '406':
@@ -382,6 +430,12 @@ paths:
           $ref: '#/components/responses/406NotAcceptable'
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
   /impoundments/{noticeNo}/documents/{documentId}:
     put:
       tags:
@@ -426,6 +480,12 @@ paths:
           $ref: '#/components/responses/406NotAcceptable'
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
   /codetables:
     get:
       tags:
@@ -450,6 +510,12 @@ paths:
           $ref: '#/components/responses/401NotAuthorized'
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
         '400':
           $ref: '#/components/responses/400BadRequest'
         '406':
@@ -486,6 +552,12 @@ paths:
           $ref: '#/components/responses/406NotAcceptable'
         '500':
           $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
 components:
   securitySchemes:
     oauth2:
@@ -573,7 +645,46 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     500ServerError:
-      description: Internal Server Error.
+      description: Internal VI/IRP processing or authentication-infrastructure error. Details are not exposed.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    502BadGateway:
+      description: VIPS WS/ORDS returned an invalid or failed response. Upstream details are not exposed.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    503ServiceUnavailable:
+      description: >-
+        VIPS WS/ORDS is unreachable or temporarily unavailable, including upstream HTTP 429/503.
+        Retry-After advises when to try again, not whether a write is safe to repeat.
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+        Retry-After:
+          description: >-
+            Delay in seconds or an HTTP date. A valid upstream Retry-After is retained;
+            otherwise the API advises 30 seconds. This is not a recovery guarantee.
+          required: true
+          schema:
+            type: string
+          example: "30"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    504GatewayTimeout:
+      description: >-
+        VIPS WS/ORDS timed out, including the VIPS GET retry time budget or upstream HTTP 408/504.
+        A timed-out write may already have committed; do not blindly repeat it.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'

@@ -6,11 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClientException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.ProhibitionsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetProhibitionServiceResponse;
@@ -40,12 +40,9 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 		
 		CreateProhibitionServiceResponse resp = new CreateProhibitionServiceResponse();
 		
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse _resp = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse();
-		try {
-			_resp = digitalformsApiService.createProhibition(createProhibition);
-		} catch (WebClientException e) {
-			logger.error("VIPS Internal Server Error: " + e.getMessage());
-			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to create prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
+		var _resp = digitalformsApiService.createProhibition(createProhibition);
+		if (_resp == null) {
+			throw UpstreamServiceException.invalidResponse("VIPS returned an empty prohibition create response.");
 		}
 		
 		// Depending on the result code from VIPS, we set the response Entity accordingly. 
@@ -61,16 +58,16 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 			// A concurrent create can win after the availability check; only a confirmed duplicate is a 409.
 			noticeConflicts.checkProhibition(createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			throw new DigitalFormsException("Failed to created prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
+			throw UpstreamServiceException.invalidResponse("Failed to create prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to created prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
+			throw UpstreamServiceException.invalidResponse("Internal Java error at VIPS WS. Failed to create prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		} else {
 			logger.error("Unexpected VIPS response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			throw new DigitalFormsException("Unexpected VIPS WS response code " + _resp.getRespCd() + ". Failed to create prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
+			throw UpstreamServiceException.invalidResponse("Unexpected VIPS WS response code " + _resp.getRespCd() + ". Failed to create prohibition for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		}
 		if (_resp.getProhibitionId() == null) {
-			throw new DigitalFormsException("VIPS WS did not return a prohibition ID for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
+			throw UpstreamServiceException.invalidResponse("VIPS WS did not return a prohibition ID for Notice Number : " + createProhibition.getVipsProhibitionCreate().getProhibitionNoticeNo());
 		}
 		resp.setProhibitionId(_resp.getProhibitionId());
 		
@@ -86,12 +83,9 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 		GetProhibitionServiceResponse resp = new GetProhibitionServiceResponse();
 		
 		// Start cascade by fetching prohibitionId for notice number. 
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse _resp = new SearchProhibitionsServiceResponse();
-		try {
-			_resp = digitalformsApiService.searchProhibition(noticeNo);
-		} catch (WebClientException e) {
-			logger.error("VIPS Internal Server Error: " + e.getMessage());
-			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search prohibition for Notice Number : " + noticeNo);
+		SearchProhibitionsServiceResponse _resp = digitalformsApiService.searchProhibition(noticeNo);
+		if (_resp == null) {
+			throw UpstreamServiceException.invalidResponse("VIPS returned an empty prohibition search response.");
 		}
 		
 		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
@@ -101,19 +95,17 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 			} 
 			
 			// This shouldn't happen - but if it does, we're ready. 
-			if (_resp.getResult().size() > 1) {
-					throw new DigitalFormsException("Unexpected prohibition search results received from VIPS WS. Results > 1 for Notice No: " + noticeNo);
+			if (_resp.getResult().size() > 1 || _resp.getResult().getFirst() == null
+					|| _resp.getResult().getFirst().getProhibitionId() == null) {
+					throw UpstreamServiceException.invalidResponse("Invalid prohibition search results received from VIPS WS for Notice No: " + noticeNo);
 			}
 			 
 			Long prohibitionId = _resp.getResult().get(0).getProhibitionId();
 				
 			// Continue cascade to fetch prohibition object for prohibition id. 
-			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse _resp2;
-			try {
-				_resp2 = digitalformsApiService.getProhibition(prohibitionId);
-			} catch (WebClientException e) {
-				logger.error("VIPS Internal Server Error: " + e.getMessage());
-				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get prohibition for prohibitionId : " + prohibitionId);
+			var _resp2 = digitalformsApiService.getProhibition(prohibitionId);
+			if (_resp2 == null) {
+				throw UpstreamServiceException.invalidResponse("VIPS returned an empty prohibition response.");
 			}
 			
 			// Depending on the result code from VIPS, we set the response Entity accordingly. 
@@ -132,22 +124,22 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 				
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
 				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
-				throw new DigitalFormsException("Failed to get prohibition for prohibitionId : " + prohibitionId);
+				throw UpstreamServiceException.invalidResponse("Failed to get prohibition for prohibitionId : " + prohibitionId);
 			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
 				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
-				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get prohibition for prohibition Id : " + prohibitionId);
+				throw UpstreamServiceException.invalidResponse("Internal Java error at VIPS WS. Failed to get prohibition for prohibition Id : " + prohibitionId);
 			} else {
-				throw new DigitalFormsException("Unexpected VIPS response code: " + _resp2.getRespCd());
+				throw UpstreamServiceException.invalidResponse("Unexpected VIPS response code: " + _resp2.getRespCd());
 			}	
 			
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			throw new DigitalFormsException("Failed to get prohibition for Notice Number : " + noticeNo);
+			throw UpstreamServiceException.invalidResponse("Failed to get prohibition for Notice Number : " + noticeNo);
 		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get prohibition for Notice Number : " + noticeNo);
+			throw UpstreamServiceException.invalidResponse("Internal Java error at VIPS WS. Failed to get prohibition for Notice Number : " + noticeNo);
 		} else {
-			throw new DigitalFormsException("Unexpected VIPS response code: " + _resp.getRespCd());
+			throw UpstreamServiceException.invalidResponse("Unexpected VIPS response code: " + _resp.getRespCd());
 		}
 		
 		

@@ -102,6 +102,7 @@ public class VipsRestServiceTest {
 		when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.retrieve()).thenReturn(this.responseMock);
+		when(this.responseMock.onStatus(any(), any())).thenReturn(this.responseMock);
 		when(this.responseMock.toEntityFlux(DataBuffer.class)).thenReturn(Mono.just(expected));
 
 		var result = service.getDocument(documentId);

@@ -13,7 +13,7 @@ RUN git submodule update --init --recursive
 ##############################################################################################
 #### Stage where the maven dependencies are cached                                         ###
 ##############################################################################################
-FROM maven:3.9.16-eclipse-temurin-21 as dependencies-cache
+FROM maven:3.9-eclipse-temurin-26 as dependencies-cache
 
 WORKDIR /build
 

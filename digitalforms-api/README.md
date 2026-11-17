@@ -184,7 +184,8 @@ page can be rendered.
 
 The page count is read from the PDF and forwarded to ORDS as `page_count`; VIPS stores
 it in `VIPS_DOCUMENTS.PAGE_COUNT_QTY` (`NUMBER(5)`, hence the 99,999-page limit) and
-shows it in document lists, including `pageCount` in `GET /documents/list/{noticeNo}`.
+shows it in the document collections returned by `GET /prohibitions/{noticeNo}/documents`
+and `GET /impoundments/{noticeNo}/documents`.
 Clients do not send a page count; a `pageCount` text part is ignored.
 
 The API forwards the original bytes unchanged to the existing ORDS client as
@@ -204,8 +205,13 @@ the JSON 413 response; much larger rejected uploads may have their connection cl
 Deployment overrides must not lower these limits unintentionally.
 
 Uploading still **only stores a document**: the notice classifications do not associate
-it with a notice. The association endpoint, create-request `vipsDocumentIdArray`
-properties, and Base64 document retrieval are unchanged.
+it with a notice. The association endpoint and create-request `vipsDocumentIdArray`
+properties are unchanged.
+
+`GET /documents/{documentId}` downloads the original document as `application/pdf`
+with an attachment filename. VI/IRP requests the raw PDF from VIPS and forwards its
+data buffers as a streaming resource; it does not create an expanded Base64 string or
+hold a second full-document copy in memory.
 
 #### Correlation ID
 

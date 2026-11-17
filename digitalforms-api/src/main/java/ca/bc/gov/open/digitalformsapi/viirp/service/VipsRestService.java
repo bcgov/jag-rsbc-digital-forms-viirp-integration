@@ -1,14 +1,16 @@
 package ca.bc.gov.open.digitalformsapi.viirp.service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsNoticeObj;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.ResponseEntity;
+import reactor.core.publisher.Flux;
 
 /**
  * 
@@ -83,12 +85,12 @@ public interface VipsRestService {
 	
 	/**
 	 * 
-	 * Returns a {@link VipsGetDocumentByIdResponse} by calling VIPS WS to return a document Base64 for a given document Id.
+	 * Streams a PDF response from VIPS WS for the given document Id.
 	 * 
 	 * @param documentId
 	 * @return
 	 */
-	public VipsGetDocumentByIdResponse getDocumentAsBase64(Long documentId);
+	public ResponseEntity<Flux<DataBuffer>> getDocument(Long documentId);
 	
 	/**
 	 * 

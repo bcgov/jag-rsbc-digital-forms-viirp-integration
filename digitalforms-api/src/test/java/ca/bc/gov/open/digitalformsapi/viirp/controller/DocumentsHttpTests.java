@@ -22,8 +22,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
 class DocumentsHttpTests extends HttpApiTestSupport {
 
     private static final int MAX_FILE_BYTES = 10 * 1024 * 1024;
-    private static final String NOTICE = "{\"noticeNo\":\"81000029\",\"noticeTypeCd\":\"IRP\"}";
-
     @Test
     void storesDocumentWith201() throws Exception {
         byte[] pdf = UnitTestUtilities.samplePdf();
@@ -153,83 +151,120 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void associatesDocumentWith201AndMissingNoticeIs404() throws Exception {
-        vips.enqueue(200, "{\"respCd\":0}");
-        responseJson(request("POST", "/documents/association/notice/123", NOTICE, AUTH), 201);
-        downstream("POST", "/document-association/notice/123");
-        vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"Notice not found\"}");
-        responseJson(request("POST", "/documents/association/notice/123", NOTICE, AUTH), 404);
-        downstream("POST", "/document-association/notice/123");
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {1, 21, 99})
-    void associationFailuresAreNeverSuccess(int code) throws Exception {
-        vips.enqueue(200, "{\"respCd\":" + code + "}");
-        responseJson(request("POST", "/documents/association/notice/123", NOTICE, AUTH), 500);
-        downstream("POST", "/document-association/notice/123");
+    void streamsPdfWithDownloadHeadersWithoutBase64Encoding() throws Exception {
+        byte[] pdf = UnitTestUtilities.samplePdf();
+        vips.enqueue(200, pdf, "application/x-download");
+        var response = requestBinary("GET", "/documents/123", AUTH, "application/pdf");
+        assertEquals(200, response.statusCode());
+        assertArrayEquals(pdf, response.body());
+        assertEquals("application/pdf", response.headers().firstValue("Content-Type").orElseThrow());
+        assertEquals("attachment; filename=\"document-123.pdf\"",
+                response.headers().firstValue("Content-Disposition").orElseThrow());
+        assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+        assertEquals(pdf.length, Long.parseLong(response.headers().firstValue("Content-Length").orElseThrow()));
+        downstream("GET", "/documents/123?b64=false&url=false");
     }
 
     @Test
-    void retrievesDocumentAndPreservesUpstream404() throws Exception {
-        vips.enqueue(200, "YWJj");
-        responseJson(request("GET", "/documents/123", null, AUTH), 200);
-        downstream("GET", "/documents/123?b64=true&url=false");
+    void missingDocumentIs404ForHttp404AndEmptyVipsResponses() throws Exception {
         vips.enqueue(404, "{\"message\":\"not found\"}");
         responseJson(request("GET", "/documents/123", null, AUTH), 404);
-        downstream("GET", "/documents/123?b64=true&url=false");
-        vips.enqueue(200, "");
+        downstream("GET", "/documents/123?b64=false&url=false");
+        vips.enqueue(204, new byte[0], "application/x-download");
         responseJson(request("GET", "/documents/123", null, AUTH), 404);
-        downstream("GET", "/documents/123?b64=true&url=false");
-        vips.enqueue(200, "%%%");
-        responseJson(request("GET", "/documents/123", null, AUTH), 500);
-        downstream("GET", "/documents/123?b64=true&url=false");
+        downstream("GET", "/documents/123?b64=false&url=false");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"impoundment", "prohibition"})
-    void existingNoticeWithNoDocumentsReturnsEmptyCollection(String type) throws Exception {
-        if (type.equals("prohibition")) {
-            availableNotice();
-        }
+    void typedDocumentListsReturnEmptyCollectionsWithoutSearchingOtherNoticeType(String type) throws Exception {
         vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":123}]}");
         vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
-        var response = responseJson(request("GET", "/documents/list/81000029", null, AUTH), 200);
+        var response = responseJson(request("GET", documentListPath(type), null, AUTH), 200);
         assertEquals(json.readTree("[]"), response.path("results"));
-        checkedNotice("impoundment", "81000029");
-        if (type.equals("prohibition")) {
-            checkedNotice("prohibition", "81000029");
-        }
+        checkedNotice(type, "81000029");
         downstream("GET", "/documents?" + type + "Id=123");
     }
 
     @Test
-    void missingNoticeListIs404ButFailedSearchIs500() throws Exception {
-        availableNotice();
-        availableNotice();
-        responseJson(request("GET", "/documents/list/81000029", null, AUTH), 404);
-        checkedNotice("impoundment", "81000029");
+    void missingTypedNoticeIs404AndFailedSearchIs500() throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[]}");
+        responseJson(request("GET", documentListPath("prohibition"), null, AUTH), 404);
         checkedNotice("prohibition", "81000029");
-
         vips.enqueue(200, "{\"respCd\":21}");
-        responseJson(request("GET", "/documents/list/81000029", null, AUTH), 500);
+        responseJson(request("GET", documentListPath("impoundment"), null, AUTH), 500);
         checkedNotice("impoundment", "81000029");
     }
 
-    @Test
-    void populatedDocumentListAndListFailureHaveDistinctResponses() throws Exception {
-        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"impoundmentId\":123}]}");
+    @ParameterizedTest
+    @ValueSource(strings = {"impoundment", "prohibition"})
+    void typedDocumentListReturnsItemsAndSurfacesDownstreamFailure(String type) throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":123}]}");
         vips.enqueue(200, "{\"respCd\":0,\"results\":[{\"documentId\":456,\"documentTypeCd\":\"MV2702A\"}]}");
-        var response = responseJson(request("GET", "/documents/list/81000029", null, AUTH), 200);
+        var response = responseJson(request("GET", documentListPath(type), null, AUTH), 200);
         assertEquals(456, response.at("/results/0/documentId").asInt());
-        checkedNotice("impoundment", "81000029");
-        downstream("GET", "/documents?impoundmentId=123");
+        checkedNotice(type, "81000029");
+        downstream("GET", "/documents?" + type + "Id=123");
 
-        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"impoundmentId\":123}]}");
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":123}]}");
         vips.enqueue(200, "{\"respCd\":21}");
-        responseJson(request("GET", "/documents/list/81000029", null, AUTH), 500);
+        responseJson(request("GET", documentListPath(type), null, AUTH), 500);
+        checkedNotice(type, "81000029");
+        downstream("GET", "/documents?" + type + "Id=123");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"impoundment", "prohibition"})
+    void putAssociationIsIdempotentAndUsesNoticeTypeFromVips(String type) throws Exception {
+        String path = documentListPath(type) + "/123";
+        String noticeType = type.equals("impoundment") ? "IMP" : "IRP";
+
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":321}]}");
+        vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
+        vips.enqueue(200, "{\"respCd\":0,\"result\":{\"noticeTypeCd\":\"" + noticeType + "\"}}");
+        vips.enqueue(200, "{\"respCd\":0}");
+        var created = request("PUT", path, null, AUTH);
+        assertEquals(204, created.statusCode(), created.body());
+        assertTrue(created.body().isEmpty());
+        checkedNotice(type, "81000029");
+        downstream("GET", "/documents?" + type + "Id=321");
+        downstream("GET", "/cases/" + type + "s/321");
+        var association = downstream("POST", "/document-association/notice/123");
+        var body = json.readTree(new String(association.bodyBytes(), StandardCharsets.UTF_8));
+        assertEquals("81000029", body.path("noticeNo").asString());
+        assertEquals(noticeType, body.path("noticeTypeCd").asString());
+
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":321}]}");
+        vips.enqueue(200, "{\"respCd\":0,\"results\":[{\"documentId\":123}]}");
+        var repeated = request("PUT", path, null, AUTH);
+        assertEquals(204, repeated.statusCode(), repeated.body());
+        assertTrue(repeated.body().isEmpty());
+        checkedNotice(type, "81000029");
+        downstream("GET", "/documents?" + type + "Id=321");
+    }
+
+    @Test
+    void associationWithMissingNoticeIs404AndFailuresAreNotSuccess() throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[]}");
+        responseJson(request("PUT", "/prohibitions/81000029/documents/123", null, AUTH), 404);
+        checkedNotice("prohibition", "81000029");
+
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"impoundmentId\":321}]}");
+        vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
+        vips.enqueue(200, "{\"respCd\":0,\"result\":{\"noticeTypeCd\":\"IMP\"}}");
+        vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"association failed\"}");
+        vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
+        responseJson(request("PUT", "/impoundments/81000029/documents/123", null, AUTH), 500);
         checkedNotice("impoundment", "81000029");
-        downstream("GET", "/documents?impoundmentId=123");
+        downstream("GET", "/documents?impoundmentId=321");
+        downstream("GET", "/cases/impoundments/321");
+        downstream("POST", "/document-association/notice/123");
+        downstream("GET", "/documents?impoundmentId=321");
+    }
+
+    private static String documentListPath(String type) {
+        String resource = type.equals("impoundment") ? "impoundments" : "prohibitions";
+        return "/" + resource + "/81000029/documents";
     }
 
     @Test

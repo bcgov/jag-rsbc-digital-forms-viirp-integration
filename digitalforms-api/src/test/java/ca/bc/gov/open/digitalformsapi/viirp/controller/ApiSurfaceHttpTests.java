@@ -45,10 +45,10 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals(CONTRACT_JSON.path("info"), api.path("info"), "API metadata must come from the contract");
         assertEquals(apiBaseUrl(), api.path("servers").path(0).path("url").asString(),
                 "The server URL must be absolute so that clients such as Postman resolve it correctly");
-        assertEquals(10, CONTRACT_JSON.path("paths").size(),
+        assertEquals(12, CONTRACT_JSON.path("paths").size(),
                 "The canonical YAML remains the business API contract and excludes Actuator");
         JsonNode paths = api.path("paths");
-        assertEquals(13, paths.size(),
+        assertEquals(15, paths.size(),
                 "Runtime docs should include the exposed Actuator endpoints and authenticated discovery: "
                         + paths.propertyNames());
         for (String route : new String[] {"prohibitions", "impoundments"}) {
@@ -57,8 +57,16 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         }
         assertTrue(paths.path("/documents").has("post"));
         assertTrue(paths.path("/documents/{documentId}").has("get"));
-        assertTrue(paths.path("/documents/list/{noticeNo}").has("get"));
-        assertTrue(paths.path("/documents/association/notice/{documentId}").has("post"));
+        var downloadResponse = paths.path("/documents/{documentId}").path("get")
+                .path("responses").path("200").path("content").path("application/pdf").path("schema");
+        assertEquals("string", downloadResponse.path("type").asString());
+        assertEquals("binary", downloadResponse.path("format").asString());
+        assertTrue(paths.path("/prohibitions/{noticeNo}/documents").has("get"));
+        assertTrue(paths.path("/impoundments/{noticeNo}/documents").has("get"));
+        assertTrue(paths.path("/prohibitions/{noticeNo}/documents/{documentId}").has("put"));
+        assertTrue(paths.path("/impoundments/{noticeNo}/documents/{documentId}").has("put"));
+        assertFalse(paths.has("/documents/list/{noticeNo}"));
+        assertFalse(paths.has("/documents/association/notice/{documentId}"));
         assertTrue(paths.path("/codetables").has("get"));
         assertTrue(paths.path("/utility/ords/ping").has("get"));
         assertTrue(paths.path("/actuator/health").has("get"));
@@ -75,9 +83,14 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals(CONTRACT_JSON.at("/components/securitySchemes"), api.at("/components/securitySchemes"),
                 "Clients such as Postman read the token URL from the published OAuth2 scheme");
         assertFalse(paths.has("/actuator/health/{*path}"), "Health component subpaths are not exposed");
+        assertFalse(paths.has("/exception/{exception_id}"), "Test-only exception routes must not be published");
         assertFalse(api.toString().contains("{correlationId}"), "Correlation ID is a header, not a path variable");
         assertFalse(api.toString().toLowerCase(Locale.ROOT).contains("dfpayload"));
+        responseJson(request("GET", "/documents/list/81000029", null, AUTH), 404);
+        responseJson(request("POST", "/documents/association/notice/123",
+                "{\"noticeNo\":\"81000029\",\"noticeTypeCd\":\"IRP\"}", AUTH), 404);
         responseJson(request("GET", "/unknown", null, AUTH), 404);
+        responseJson(request("GET", "/exception/forbidden", null, AUTH), 404);
     }
 
     @Test

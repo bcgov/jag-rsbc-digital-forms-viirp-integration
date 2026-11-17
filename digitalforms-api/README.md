@@ -123,7 +123,15 @@ path and refers to OpenAPI 3. The generator also produces springdoc's title,
 description, version and `oauth2` scheme from the YAML. The generator emits only
 the scheme's type, so `MultipartOpenApiConfig` adds its description and
 client-credentials token URL (from `DIGITALFORMS_OAUTH2_ISSUER_URI`); a test keeps
-them equal to the YAML. The docs describe the same API as the YAML but are springdoc's
+them equal to the YAML. This configuration also corrects the generator's response
+annotations, which repeat an operation's combined media types on every status:
+Problem Details errors advertise only `application/problem+json`, and successful
+responses do not advertise that error media type. For the generated controllers,
+the configuration also removes the error media type from MVC route negotiation:
+successful JSON/PDF responses keep their own content type even when a caller
+prefers Problem Details, and bodyless 204 responses do not require a particular
+Accept header. Exception handlers still explicitly select `application/problem+json`.
+The docs describe the same API as the YAML but are springdoc's
 rendering of it: OpenAPI 3.0.1 like the YAML, with an absolute server URL taken
 from the request, and without the `X-Correlation-ID` response header (the
 generator's annotations omit response headers). `springdoc.api-docs.version` is
@@ -151,9 +159,42 @@ today it drops them. Share the YAML itself with API consumers.
 | 413 | Document exceeds 10 MiB or the multipart request exceeds 11 MiB. |
 | 500 | Internal/downstream failure, including DIAM's signing keys being unreachable, with a safe generic message. |
 
-Errors use `{"status_message":"..."}`. Validation errors identify fields without
-exposing controller signatures; unexpected failures return `Internal Server Error`
-and retain diagnostic details in server logs.
+Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457),
+rendered with Spring `ProblemDetail` and `Content-Type: application/problem+json`:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Request validation failed.",
+  "instance": "/digitalforms-viirp/v1/prohibitions",
+  "errors": [
+    {
+      "field": "vipsProhibitionCreate.prohibitionNoticeNo",
+      "message": "must not be null"
+    }
+  ]
+}
+```
+
+`type: about:blank` uses the HTTP status meaning; `title` is its reason phrase and
+`status` matches the response status. `instance` is the original request path, without
+the host or query parameters. Validation failures add an `errors` array instead of a
+joined message: fields use JSON paths with array indexes, public parameter/header/part
+names, or `body` for an unreadable or invalid whole request. Validation feedback does not
+include rejected values or controller signatures. Unexpected failures return `Internal Server Error` and
+retain diagnostic details only in server logs.
+
+**Caller migration:** the legacy `{"status_message":"..."}` error envelope is removed.
+Read `detail` for the summary and `errors[].field` / `errors[].message` for validation
+feedback. Accept the success media type and `application/problem+json` (for example,
+`Accept: application/json, application/problem+json`, or
+`Accept: application/pdf, application/problem+json` for downloads).
+Errors can return Problem Details even when the caller only accepts the success media
+type. The `X-Correlation-ID` echo, Bearer `WWW-Authenticate` challenge, `Allow` header,
+HTTP statuses, JSON success bodies and binary PDF downloads are unchanged. Actuator
+health retains its standard health payload, including `{"status":"DOWN"}` with 503.
 
 #### Uploading a document
 

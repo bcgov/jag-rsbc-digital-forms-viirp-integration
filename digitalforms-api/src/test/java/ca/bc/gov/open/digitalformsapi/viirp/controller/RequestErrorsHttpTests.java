@@ -2,11 +2,63 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class RequestErrorsHttpTests extends HttpApiTestSupport {
+
+    @Test
+    void preferringProblemDetailsDoesNotMislabelSuccessfulJson() throws Exception {
+        vips.enqueue(200, "{\"status\":\"UP\"}");
+        responseJson(request("GET", "/utility/ords/ping", null, AUTH, null,
+                "application/problem+json, application/json;q=0.5"), 200);
+        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void validationFailuresUseProblemDetailsWithSeparateFieldErrors() throws Exception {
+        var response = request("POST", "/prohibitions", "{}", AUTH);
+        assertEquals(400, response.statusCode());
+        assertEquals("application/problem+json", response.headers().firstValue("Content-Type").orElseThrow());
+        var problem = json.readTree(response.body());
+        assertEquals("about:blank", problem.path("type").asString());
+        assertEquals("Bad Request", problem.path("title").asString());
+        assertEquals(400, problem.path("status").asInt());
+        assertEquals("Request validation failed.", problem.path("detail").asString());
+        assertEquals(response.uri().getRawPath(), problem.path("instance").asString());
+        assertFalse(problem.has("status_message"));
+        Set<String> fields = new HashSet<>();
+        for (var error : problem.path("errors")) {
+            assertEquals(Set.of("field", "message"), error.propertyNames());
+            assertFalse(error.path("message").asString().isBlank());
+            fields.add(error.path("field").asString());
+        }
+        assertEquals(Set.of("vipsDocumentIdArray", "vipsProhibitionCreate", "vipsRegistrationCreate"), fields);
+    }
+
+    @Test
+    void unexpectedFailuresUseSafeProblemDetailsWithoutQueryParameters() throws Exception {
+        vips.enqueue(500, "{\"error\":\"ORA-20011: hidden-database-details\"}");
+        var response = request("GET", "/utility/ords/ping?diagnostic=not-for-response", null, AUTH);
+        assertEquals(500, response.statusCode());
+        assertEquals("application/problem+json", response.headers().firstValue("Content-Type").orElseThrow());
+        var problem = json.readTree(response.body());
+        assertEquals(Set.of("type", "title", "status", "detail", "instance"), problem.propertyNames());
+        assertEquals("Internal Server Error", problem.path("title").asString());
+        assertEquals("Internal Server Error", problem.path("detail").asString());
+        assertEquals(500, problem.path("status").asInt());
+        assertEquals(response.uri().getRawPath(), problem.path("instance").asString());
+        assertFalse(response.body().contains("hidden-database-details"));
+        assertFalse(response.body().contains("not-for-response"));
+        var upstream = vips.requests.poll(2, TimeUnit.SECONDS);
+        assertNotNull(upstream);
+        assertEquals("/ords/health", upstream.uri().getPath());
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {"prohibitions", "impoundments"})
@@ -14,7 +66,7 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
         String path = "/" + route;
         for (String body : new String[] {null, "", "null", "{", "{}", "[]"}) {
             var error = responseJson(request("POST", path, body, AUTH, "application/json", "application/json"), 400);
-            assertTrue(error.hasNonNull("status_message"));
+            assertFalse(error.path("errors").isEmpty());
             assertFalse(error.toString().contains("org.springframework"));
             assertFalse(error.toString().contains("public "));
             assertFalse(error.toString().contains("java."));
@@ -24,9 +76,14 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
     @ParameterizedTest
     @ValueSource(strings = {"abc", "0", "-1", "9223372036854775808"})
     void invalidDocumentIdsReturn400(String id) throws Exception {
-        responseJson(request("GET", "/documents/" + id, null, AUTH), 400);
-        responseJson(request("PUT", "/prohibitions/81000029/documents/" + id, null, AUTH), 400);
-        responseJson(request("PUT", "/impoundments/81000029/documents/" + id, null, AUTH), 400);
+        for (String path : new String[] {"/documents/" + id, "/prohibitions/81000029/documents/" + id,
+                "/impoundments/81000029/documents/" + id}) {
+            boolean download = path.startsWith("/documents/");
+            var error = responseJson(request(download ? "GET" : "PUT", path, null, AUTH, null,
+                    download ? "application/pdf, application/problem+json" : "application/json"), 400);
+            assertEquals("documentId", error.at("/errors/0/field").asString(), error.toString());
+            assertFalse(error.path("errors").toString().contains("getDocument"));
+        }
     }
 
     @Test
@@ -40,15 +97,15 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
     void mediaTypeFailuresAreNotInternalErrors() throws Exception {
         responseJson(request("POST", "/prohibitions", "{}", AUTH,
                 "text/plain", "application/json"), 415);
-        assertEquals(406, request("GET", "/codetables", null, AUTH,
-                null, "application/xml").statusCode());
+        responseJson(request("GET", "/codetables", null, AUTH, null, "application/xml"), 406);
+        responseJson(request("GET", "/codetables", null, AUTH, null, "application/problem+json"), 406);
     }
 
     @Test
     void unauthorizedResponseIncludesBearerChallenge() throws Exception {
         var response = request("GET", "/codetables", null, null);
         var body = responseJson(response, 401);
-        assertEquals("401 - Unauthorized entry, please authenticate", body.path("status_message").asString());
+        assertEquals("401 - Unauthorized entry, please authenticate", body.path("detail").asString());
         assertTrue(response.headers().firstValue("WWW-Authenticate").orElse("")
                 .startsWith("Bearer realm=\"DigitalForms - VI IRP API\""));
     }

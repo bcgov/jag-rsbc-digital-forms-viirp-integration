@@ -13,7 +13,10 @@ class ActuatorHealthDownHttpTests extends HttpApiTestSupport {
     @Test
     void failedDiskSpaceCheckStillReturns503WithoutExposingDetails() throws Exception {
         for (String authorization : new String[] {null, AUTH}) {
-            var health = responseJson(request("GET", "/actuator/health", null, authorization), 503);
+            var response = request("GET", "/actuator/health", null, authorization);
+            assertEquals(503, response.statusCode());
+            assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+            var health = json.readTree(response.body());
             assertEquals("DOWN", health.path("status").asString());
             assertTrue(Set.of("status", "groups").containsAll(health.propertyNames()), health.toString());
         }

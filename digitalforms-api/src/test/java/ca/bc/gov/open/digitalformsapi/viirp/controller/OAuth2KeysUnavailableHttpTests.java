@@ -13,7 +13,7 @@ class OAuth2KeysUnavailableHttpTests extends HttpApiTestSupport {
     @Test
     void unverifiableTokensReturn500WithoutReachingVips() throws Exception {
         var error = responseJson(request("GET", "/codetables", null, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("status_message").asString());
+        assertEquals("Internal Server Error", error.path("detail").asString());
         assertTrue(identityProvider.jwksRequests.get() > 0, "The API must try to download DIAM's keys");
 
         responseJson(request("GET", "/codetables", null, null), 401);

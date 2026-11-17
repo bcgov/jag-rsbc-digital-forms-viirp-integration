@@ -2,32 +2,37 @@ package ca.bc.gov.open.digitalformsapi.viirp.exception;
 
 import java.io.IOException;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.stereotype.Component;
 
-import ca.bc.gov.open.digitalformsapi.viirp.model.ErrorMessage;
-import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Authentication failure response handler: adds the RFC 6750 Bearer challenge and writes the API's JSON error body.
+ * Security failure response handler: preserves RFC 6750 Bearer challenges and writes RFC 9457 Problem Details.
  * 
  * @author 237563
  *
  */
 @Component
-public class DigitalFormsAuthenticationFailureHandler implements AuthenticationEntryPoint, AuthenticationFailureHandler {
+public class DigitalFormsAuthenticationFailureHandler
+		implements AuthenticationEntryPoint, AuthenticationFailureHandler, AccessDeniedHandler {
 
 	public static final String REALM = "DigitalForms - VI IRP API";
 	public static final String UNAUTHORIZED_MESSAGE = "401 - Unauthorized entry, please authenticate";
@@ -35,10 +40,13 @@ public class DigitalFormsAuthenticationFailureHandler implements AuthenticationE
 	private final Logger logger = LoggerFactory.getLogger(DigitalFormsAuthenticationFailureHandler.class);
 	private final JsonMapper jsonMapper;
 	private final BearerTokenAuthenticationEntryPoint bearerEntryPoint = new BearerTokenAuthenticationEntryPoint();
+	private final BearerTokenAccessDeniedHandler bearerAccessDeniedHandler = new BearerTokenAccessDeniedHandler();
+	private final AccessDeniedHandler csrfAccessDeniedHandler = new AccessDeniedHandlerImpl();
 
 	public DigitalFormsAuthenticationFailureHandler(JsonMapper jsonMapper) {
 		this.jsonMapper = jsonMapper;
 		bearerEntryPoint.setRealmName(REALM);
+		bearerAccessDeniedHandler.setRealmName(REALM);
 	}
 
 	/** Missing, malformed or rejected bearer token. */
@@ -53,7 +61,7 @@ public class DigitalFormsAuthenticationFailureHandler implements AuthenticationE
 		}
 		bearerEntryPoint.commence(request, response, authException);
 		int status = response.getStatus();
-		writeError(response, status == HttpServletResponse.SC_UNAUTHORIZED ? UNAUTHORIZED_MESSAGE
+		writeError(request, response, status == HttpServletResponse.SC_UNAUTHORIZED ? UNAUTHORIZED_MESSAGE
 				: HttpStatus.valueOf(status).getReasonPhrase());
 	}
 
@@ -64,16 +72,28 @@ public class DigitalFormsAuthenticationFailureHandler implements AuthenticationE
 		if (exception instanceof AuthenticationServiceException) {
 			logger.error("API bearer token could not be validated: {}", exception.getMessage(), exception);
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			writeError(response, "Internal Server Error");
+			writeError(request, response, "Internal Server Error");
 			return;
 		}
 		commence(request, response, exception);
 	}
 
-	private void writeError(HttpServletResponse response, String message) throws IOException {
-		response.setContentType(DigitalFormsConstants.JSON_CONTENT);
-		response.setCharacterEncoding("UTF-8");
-		jsonMapper.writeValue(response.getOutputStream(), new ErrorMessage(message));
+	@Override
+	public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException exception)
+			throws IOException, ServletException {
+		if (exception instanceof CsrfException) {
+			// Preserve the existing non-bearer CSRF rejection and container error-dispatch authentication.
+			csrfAccessDeniedHandler.handle(request, response, exception);
+			return;
+		}
+		logger.warn("API bearer access denied");
+		bearerAccessDeniedHandler.handle(request, response, exception);
+		writeError(request, response, "Forbidden");
+	}
+
+	private void writeError(HttpServletRequest request, HttpServletResponse response, String message) throws IOException {
+		ApiProblemDetails.write(jsonMapper, response,
+				ApiProblemDetails.create(request, HttpStatus.valueOf(response.getStatus()), message));
 	}
 
 }

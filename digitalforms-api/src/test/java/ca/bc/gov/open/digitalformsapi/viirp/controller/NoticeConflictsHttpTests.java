@@ -13,7 +13,7 @@ class NoticeConflictsHttpTests extends HttpApiTestSupport {
         String notice = notice(type);
         vips.enqueue(200, found(type, notice));
         var response = responseJson(request("POST", "/" + type + "s", body(type), AUTH), 409);
-        assertTrue(response.path("status_message").asString().contains(notice));
+        assertTrue(response.path("detail").asString().contains(notice));
         checkedNotice(type, notice);
     }
 
@@ -36,7 +36,7 @@ class NoticeConflictsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"ORA-sensitive detail\"}");
         availableNotice();
         var response = responseJson(request("POST", "/" + type + "s", body(type), AUTH), 500);
-        assertEquals("Internal Server Error", response.path("status_message").asString());
+        assertEquals("Internal Server Error", response.path("detail").asString());
         checkedNotice(type, notice(type));
         downstream("POST", "/cases/" + type + "s");
         checkedNotice(type, notice(type));

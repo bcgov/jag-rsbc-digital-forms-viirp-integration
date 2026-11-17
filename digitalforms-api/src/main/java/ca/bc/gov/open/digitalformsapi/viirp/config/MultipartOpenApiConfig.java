@@ -1,21 +1,27 @@
 package ca.bc.gov.open.digitalformsapi.viirp.config;
 
+import java.lang.reflect.Method;
+
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ValueConstants;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import ca.bc.gov.open.digitalformsapi.viirp.api.ApiUtil;
 import io.swagger.v3.oas.models.security.OAuthFlow;
 import io.swagger.v3.oas.models.security.OAuthFlows;
 import io.swagger.v3.oas.models.security.Scopes;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 
 @Configuration(proxyBeanMethods = false)
-public class MultipartOpenApiConfig {
+public class MultipartOpenApiConfig implements WebMvcRegistrations {
 
     /** Security scheme name used by VI_IRP_V1.yaml. */
     public static final String SECURITY_SCHEME = "oauth2";
@@ -23,6 +29,28 @@ public class MultipartOpenApiConfig {
             + " token from the token URL with the client ID and secret issued for your environment, then send it in the"
             + " Authorization header as \"Bearer <access_token>\". Tokens are short-lived; request a new token when the"
             + " current one expires.";
+
+    @Override
+    public RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
+        return new RequestMappingHandlerMapping() {
+            @Override
+            protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
+                var mapping = super.getMappingForMethod(method, handlerType);
+                if (mapping == null || !handlerType.getPackageName().equals(ApiUtil.class.getPackageName())) {
+                    return mapping;
+                }
+                var mediaTypes = mapping.getProducesCondition().getProducibleMediaTypes();
+                if (!mediaTypes.contains(MediaType.APPLICATION_PROBLEM_JSON)) {
+                    return mapping;
+                }
+                // Generated produces lists include errors; only success types belong in route negotiation.
+                String[] successTypes = mediaTypes.stream()
+                        .filter(media -> !MediaType.APPLICATION_PROBLEM_JSON.equals(media))
+                        .map(MediaType::toString).toArray(String[]::new);
+                return mapping.mutate().produces(successTypes).build();
+            }
+        };
+    }
 
     @Bean
     OperationCustomizer requiredMultipartFields() {
@@ -44,6 +72,31 @@ public class MultipartOpenApiConfig {
                     media.getSchema().addRequiredItem(annotation.value());
                 }
             }
+            return operation;
+        };
+    }
+
+    @Bean
+    OperationCustomizer responseMediaTypes() {
+        return (operation, handler) -> {
+            if (operation.getResponses() == null) {
+                return operation;
+            }
+            // The generator repeats the operation's combined media types on every response annotation.
+            operation.getResponses().forEach((status, response) -> {
+                var content = response.getContent();
+                if (content == null || !content.containsKey(MediaType.APPLICATION_PROBLEM_JSON_VALUE)) {
+                    return;
+                }
+                if (status.startsWith("4") || status.startsWith("5")) {
+                    var schema = content.get(MediaType.APPLICATION_PROBLEM_JSON_VALUE).getSchema();
+                    if (schema != null && "#/components/schemas/Problem".equals(schema.get$ref())) {
+                        content.keySet().removeIf(media -> !MediaType.APPLICATION_PROBLEM_JSON_VALUE.equals(media));
+                    }
+                } else if (status.startsWith("2")) {
+                    content.remove(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+                }
+            });
             return operation;
         };
     }

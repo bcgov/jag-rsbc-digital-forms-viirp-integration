@@ -77,7 +77,9 @@ class CorrelationIdHttpTests extends HttpApiTestSupport {
             var response = requestWithCorrelationIds("POST", "/prohibitions", ProhibitionsHttpTests.BODY, auth,
                     "application/json", "application/json", ids);
             JsonNode error = responseJson(response, 400);
-            assertEquals(CorrelationIdFilter.INVALID_MESSAGE, error.path("status_message").asString());
+            assertEquals(HEADER, error.at("/errors/0/field").asString());
+            assertEquals(CorrelationIdFilter.INVALID_MESSAGE, error.at("/errors/0/message").asString());
+            assertEquals(1, error.path("errors").size());
             String generated = generatedId(response);
             assertFalse(ids.contains(generated));
             assertLogged("Request rejected (400): invalid " + HEADER + " header", generated);

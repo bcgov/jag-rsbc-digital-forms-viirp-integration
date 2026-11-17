@@ -33,7 +33,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         String body = method.equals("POST") || method.equals("PUT") ? "{}" : null;
         responseJson(request(method, path, body, null), 401);
         JsonNode error = responseJson(request(method, path, body, AUTH), 404);
-        assertEquals("Not Found", error.path("status_message").asString());
+        assertEquals("Not Found", error.path("detail").asString());
     }
 
     @Test
@@ -175,6 +175,40 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     }
 
     @Test
+    void publishedErrorResponsesIncludeTheStructuredProblemContract() throws Exception {
+        var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
+        for (var path : CONTRACT_JSON.path("paths").properties()) {
+            for (var operation : path.getValue().properties()) {
+                for (String status : operation.getValue().path("responses").propertyNames()) {
+                    var content = api.path("paths").path(path.getKey()).path(operation.getKey())
+                            .path("responses").path(status).path("content");
+                    if (Integer.parseInt(status) < 400) {
+                        assertFalse(content.has("application/problem+json"),
+                                "Successful responses must not advertise the error media type");
+                        continue;
+                    }
+                    assertEquals(Set.of("application/problem+json"), content.propertyNames(),
+                            operation.getKey() + " " + path.getKey() + " " + status);
+                    assertEquals("#/components/schemas/Problem",
+                            content.at("/application~1problem+json/schema/$ref").asString());
+                }
+            }
+        }
+        for (String name : List.of("Problem", "ValidationError")) {
+            var schema = api.path("components").path("schemas").path(name);
+            var canonical = CONTRACT_JSON.path("components").path("schemas").path(name);
+            assertEquals(canonical.path("properties").propertyNames(), schema.path("properties").propertyNames());
+            for (var required : canonical.path("required")) {
+                assertTrue(schema.path("required").toString().contains(required.toString()),
+                        name + " must require " + required);
+            }
+        }
+        assertEquals("#/components/schemas/ValidationError",
+                api.at("/components/schemas/Problem/properties/errors/items/$ref").asString());
+        assertFalse(api.toString().contains("status_message"));
+    }
+
+    @Test
     void contractGuardRejectsWrongStatusSchemaContentTypeAndCorrelationHeader() {
         String path = "/prohibitions";
         String ok = "{\"respMsg\":\"success\",\"prohibitionId\":123456789012345}";
@@ -188,13 +222,27 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertThrows(AssertionError.class,
                 () -> assertConforms("POST", path, 201, "{}", headers("application/json", correlationId)));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 500, "{}", headers("application/json", correlationId)));
+                () -> assertConforms("POST", path, 500, "{}", headers("application/problem+json", correlationId)));
         assertThrows(AssertionError.class,
                 () -> assertConforms("POST", path, 201, ok, headers("text/plain", correlationId)));
         assertThrows(AssertionError.class,
                 () -> assertConforms("POST", path, 201, ok, headers("application/json", null)));
         assertThrows(AssertionError.class,
                 () -> assertConforms("POST", path, 201, ok, headers("application/json", "not valid")));
+        String problem = """
+                {"type":"about:blank","title":"Bad Request","status":400,"detail":"Request validation failed.",
+                 "instance":"/digitalforms-viirp/v1/prohibitions",
+                 "errors":[{"field":"vipsProhibitionCreate","message":"must not be null"}]}
+                """;
+        assertConforms("POST", path, 400, problem, headers("application/problem+json", correlationId));
+        assertThrows(AssertionError.class,
+                () -> assertConforms("POST", path, 400, problem, headers("application/json", correlationId)));
+        assertThrows(AssertionError.class,
+                () -> assertConforms("POST", path, 400, "{\"status_message\":\"Bad Request\"}",
+                        headers("application/problem+json", correlationId)));
+        assertThrows(AssertionError.class,
+                () -> assertConforms("POST", path, 400, problem.replace("\"field\":\"vipsProhibitionCreate\",", ""),
+                        headers("application/problem+json", correlationId)));
     }
 
     private static Map<String, List<String>> headers(String contentType, String correlationId) {

@@ -70,7 +70,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":0,\"result\":[]}");
         JsonNode error = responseJson(
                 request("GET", "/impoundments/" + NOTICE, null, AUTH), 404);
-        assertEquals("Not Found", error.path("status_message").asString());
+        assertEquals("Not Found", error.path("detail").asString());
         downstream("GET", "/cases/impoundments/search?impoundmentNoticeNo=" + NOTICE);
     }
 
@@ -79,7 +79,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":99,\"respMsg\":\"Rejected\"}");
         JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("status_message").asString());
+        assertEquals("Internal Server Error", error.path("detail").asString());
         assertFalse(error.has("respMsg"));
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
@@ -90,7 +90,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":0,\"respMsg\":\"created\"}");
         JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("status_message").asString());
+        assertEquals("Internal Server Error", error.path("detail").asString());
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
     }
@@ -120,7 +120,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":21,\"respMsg\":\"Unexpected\"}");
         JsonNode error = responseJson(request("POST", "/impoundments", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("status_message").asString());
+        assertEquals("Internal Server Error", error.path("detail").asString());
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
     }
@@ -129,6 +129,8 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     void missingDriverLicenceIsRejectedBeforeCallingVips() throws Exception {
         JsonNode error = responseJson(request("POST", "/impoundments",
                 BODY.replace("\"00001234\"", "\"\""), AUTH), 400);
-        assertEquals("Invalid license object - DL is a required field.", error.path("status_message").asString());
+        assertEquals("vipsRegistrationCreateArray[0].vipsLicenceObj.driverLicenceNo",
+                error.at("/errors/0/field").asString());
+        assertEquals("Invalid license object - DL is a required field.", error.at("/errors/0/message").asString());
     }
 }

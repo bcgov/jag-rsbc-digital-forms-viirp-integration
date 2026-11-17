@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class RequestErrorsHttpTests extends HttpApiTestSupport {
 
     @ParameterizedTest
-    @ValueSource(strings = {"prohibitions", "impoundments", "documents/association/notice/123"})
+    @ValueSource(strings = {"prohibitions", "impoundments"})
     void missingAndMalformedBodiesReturnSafe400(String route) throws Exception {
         String path = "/" + route;
         for (String body : new String[] {null, "", "null", "{", "{}", "[]"}) {
@@ -25,8 +25,8 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
     @ValueSource(strings = {"abc", "0", "-1", "9223372036854775808"})
     void invalidDocumentIdsReturn400(String id) throws Exception {
         responseJson(request("GET", "/documents/" + id, null, AUTH), 400);
-        responseJson(request("POST", "/documents/association/notice/" + id,
-                "{\"noticeNo\":\"81000029\",\"noticeTypeCd\":\"IRP\"}", AUTH), 400);
+        responseJson(request("PUT", "/prohibitions/81000029/documents/" + id, null, AUTH), 400);
+        responseJson(request("PUT", "/impoundments/81000029/documents/" + id, null, AUTH), 400);
     }
 
     @Test

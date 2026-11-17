@@ -1,35 +1,46 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
-import java.util.List;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.pdfbox.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.DocumentsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.BadRequestException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
-import ca.bc.gov.open.digitalformsapi.viirp.model.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.jag.ordsvipsclient.api.DocumentApi;
@@ -57,207 +68,163 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	@Autowired
 	private VipsRestService digitalformsApiService;
 	
-	/**
-	 * GET Documents Meta Data (From VIPS WS) 
-	 * 
-	 * Response from this method is a cascade of two calls: 
-	 * 	1.) Call to VIPS WS to locate the impoundmentId or prohibitionId associated with the given notice number. 
-	 * 	2.) Call VIPS WS with the impoudnmentId or prohibitionId to get the list of documents meta data object (if the above provides an id).  
-	 * 
-	 * Possible Response codes:
-	 * 	200. Success. Documents meta data found and returned. 
-	 * 	401. unauth (digital forms basic auth failure)
-	 *  404. Not found (Initial search call failed to find impoundment or prohibition for given notice number)
-	 * 	500. from the SSG if VIPS WS is unavailable or responds with any code other than 200. 
-	 */
 	@Override
-	public ResponseEntity<GetDocumentsListServiceResponse> listNoticeDocuments(String noticeNo, String xCorrelationID) {
-		
-		logger.info("Heard a call to the endpoint 'listNoticeDocuments' with noticeNo " + noticeNo);
-		
-		GetDocumentsListServiceResponse documentsListByImpoundmentResp = new GetDocumentsListServiceResponse();
-		
-		// Start cascade by fetching impoundmentId for notice number. 
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse impoundmentSearchResp = new SearchImpoundmentsServiceResponse();
-		try {
-			impoundmentSearchResp = digitalformsApiService.searchImpoundment(noticeNo);
-		} catch (WebClientException e) {
-			logger.error("VIPS Internal Server Error: " + e.getMessage());
-			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search impoundment with noticeNo : " + noticeNo);
-		}
-		
-		if (impoundmentSearchResp.getRespCd() != DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
-			throw new DigitalFormsException("Impoundment document search failed: " + impoundmentSearchResp.getRespCd());
-		}
-		if (!(null == impoundmentSearchResp.getResult() || impoundmentSearchResp.getResult().isEmpty())) {
-			
-			// This shouldn't happen - but if it does, we're ready. 
-			if (impoundmentSearchResp.getResult().size() > 1) {
-					throw new DigitalFormsException("Unexpected impoundment search results received from VIPS WS. Results > 1 for Notice No: " + noticeNo);
-			}
-			 
-			Long impoundmentId = impoundmentSearchResp.getResult().get(0).getImpoundmentId();
-			
-			logger.info("Attempting to retrieve the documents by impoundment id: " + impoundmentId);
-				
-			// Continue cascade to fetch List of Documents for impoundment id. 
-			ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
-			try {
-				_resp2 = digitalformsApiService.getDocumentsMetaList(impoundmentId, null);
-			} catch (WebClientException e) {
-				logger.error("VIPS Internal Server Error: " + e.getMessage());
-				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get documents list with impoundmentId : " + impoundmentId);
-			}
-				
-			// Depending on the result code from VIPS, we set the response Entity accordingly. 
-			if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
-				
-				// Make sure response has the expected documents detail. If this fails we have a bigger problem in VIPS
-				// as the prior VIPS search said that there was an impoundment for the id returned above. 
-				if (null != _resp2.getResults() && impoundmentSearchResp.getResult().size() > 0) {
-				
-					// Populate response object from VIPS response object (This removes the VIPS WS resultCd, resultMsg, etc.) 
-					documentsListByImpoundmentResp.setResults(_resp2.getResults());
-					
-				} else {
-					documentsListByImpoundmentResp.setResults(List.of());
-				}
-				
-			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
-				throw new DigitalFormsException("Failed to get documents for impoundmentId : " + impoundmentId);
-			} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-				logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
-				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for impoundment Id : " + impoundmentId);
-			} else {
-				throw new DigitalFormsException("Unexpected VIPS document-list response code: " + _resp2.getRespCd());
-			}
-			
-			return new ResponseEntity<>(documentsListByImpoundmentResp, HttpStatus.OK);
-			
-		} else {
-			
-			GetDocumentsListServiceResponse documentsListByProhibitionResp = new GetDocumentsListServiceResponse();
-			
-			// Start cascade by fetching prohibitionId for notice number. 
-			ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse prohibitionSearchResp = new SearchProhibitionsServiceResponse();
-			try {
-				prohibitionSearchResp = digitalformsApiService.searchProhibition(noticeNo);
-			} catch (WebClientException e) {
-				logger.error("VIPS Internal Server Error: " + e.getMessage());
-				throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to search prohibition with noticeNo : " + noticeNo);
-			}
-			
-			if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
-			
-				if (null == prohibitionSearchResp.getResult() || prohibitionSearchResp.getResult().isEmpty()) {
-					throw new ResourceNotFoundException("Not Found"); 
-				} 
-				
-				// This shouldn't happen - but if it does, we're ready. 
-				if (prohibitionSearchResp.getResult().size() > 1) {
-						throw new DigitalFormsException("Unexpected prohibition search results received from VIPS WS. Results > 1 for Notice No: " + noticeNo);
-				}
-				 
-				Long prohibitionId = prohibitionSearchResp.getResult().get(0).getProhibitionId();
-				
-				logger.info("Attempting to retrieve the documents by prohibition id: " + prohibitionId);
-					
-				// Continue cascade to fetch List of Documents for prohibition id. 
-				ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse _resp2 = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
-				try {
-					_resp2 = digitalformsApiService.getDocumentsMetaList(null, prohibitionId);
-				} catch (WebClientException e) {
-					logger.error("VIPS Internal Server Error: " + e.getMessage());
-					throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get documents list with prohibitionId : " + prohibitionId);
-				}
-				
-				// Depending on the result code from VIPS, we set the response Entity accordingly. 
-				if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
-					
-					// Make sure response has the expected documents detail. If this fails we have a bigger problem in VIPS
-					// as the prior VIPS search said that there was an prohibition for the id returned above. 
-					if (null != _resp2.getResults() && prohibitionSearchResp.getResult().size() > 0) {
-					
-						// Populate response object from VIPS response object (This removes the VIPS WS resultCd, resultMsg, etc.) 
-						documentsListByProhibitionResp.setResults(_resp2.getResults());
-						
-					} else {
-						documentsListByProhibitionResp.setResults(List.of());
-					}
-					
-				} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-					logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
-					throw new DigitalFormsException("Failed to get documents for prohibitionId : " + prohibitionId);
-				} else if (_resp2.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-					logger.error("VIPS error response code: " + _resp2.getRespCd() + ", response msg:  " + _resp2.getRespMsg());
-					throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for prohibition Id : " + prohibitionId);
-				} else {
-					throw new DigitalFormsException("Unexpected VIPS document-list response code: " + _resp2.getRespCd());
-				}	
-				
-			} else if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-				logger.error("VIPS error response code: " + prohibitionSearchResp.getRespCd() + ", response msg:  " + prohibitionSearchResp.getRespMsg());
-				throw new DigitalFormsException("Failed to get documents for Notice Number : " + noticeNo);
-			} else if (prohibitionSearchResp.getRespCd() == DigitalFormsConstants.VIPSWS_JAVA_EX) {
-				logger.error("VIPS error response code: " + prohibitionSearchResp.getRespCd() + ", response msg:  " + prohibitionSearchResp.getRespMsg());
-				throw new DigitalFormsException("Internal Java error at VIPS WS. Failed to get documents for Notice Number : " + noticeNo);
-			} else {
-				throw new DigitalFormsException("Unexpected VIPS prohibition search code: " + prohibitionSearchResp.getRespCd());
-			}
-			
-			return new ResponseEntity<>(documentsListByProhibitionResp, HttpStatus.OK);
-		}
-		
-		
+	public ResponseEntity<GetDocumentsListServiceResponse> listProhibitionDocuments(
+	        String noticeNo, String xCorrelationID) {
+		Long prohibitionId = findProhibitionId(noticeNo);
+		return getNoticeDocuments(noticeNo, null, prohibitionId);
 	}
-	
-	/**
-	 * Create Document / Notice Number Association 
-	 * 
-	 * Possible Response codes:
-	 * 	201. Created.
-	 *  404. Not Found 
-	 * 	401. Unauth (digital forms basic auth failure)
-	 * 	500. Expected from the SSG if VIPS WS is unavailable or responds with any code other than 200. 
-	 * @throws ApiException 
-	 */
+
 	@Override
-	public ResponseEntity<AssociateDocumentToNoticeServiceResponse> associateDocumentToNotice(
-	        Long documentId,
-	        VipsNoticeObj body,
-	        String xCorrelationID) {
-		
-		logger.info("Heard a call to the endpoint 'associateDocumentToNotice' with documentId " + documentId);
-		
-		AssociateDocumentToNoticeServiceResponse resp = new AssociateDocumentToNoticeServiceResponse();
-		
-		ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse _resp = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse();
+	public ResponseEntity<GetDocumentsListServiceResponse> listImpoundmentDocuments(
+	        String noticeNo, String xCorrelationID) {
+		Long impoundmentId = findImpoundmentId(noticeNo);
+		return getNoticeDocuments(noticeNo, impoundmentId, null);
+	}
+
+	@Override
+	public ResponseEntity<Void> associateDocumentToProhibition(
+	        String noticeNo, Long documentId, String xCorrelationID) {
+		Long prohibitionId = findProhibitionId(noticeNo);
+		return associateDocument(noticeNo, documentId, null, prohibitionId);
+	}
+
+	@Override
+	public ResponseEntity<Void> associateDocumentToImpoundment(
+	        String noticeNo, Long documentId, String xCorrelationID) {
+		Long impoundmentId = findImpoundmentId(noticeNo);
+		return associateDocument(noticeNo, documentId, impoundmentId, null);
+	}
+
+	private Long findImpoundmentId(String noticeNo) {
+		SearchImpoundmentsServiceResponse search;
 		try {
-			_resp = digitalformsApiService.createDocumentAsociationPost(
-															documentId, 
-															body);
+			search = digitalformsApiService.searchImpoundment(noticeNo);
 		} catch (WebClientException e) {
-			logger.error("VIPS Internal Server Error: " + e.getMessage());
-			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to create document association with documentId : " + documentId);
+			throw new DigitalFormsException("Failed to search for impoundment notice " + noticeNo, e);
 		}
-		
-		// Depending on the result code from the VIPS store document call, set the response entity accordingly. 
-		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
-			resp.setStatusMessage(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
-		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD && 
-				DigitalFormsConstants.VIPS_NOTICE_NOT_FOUND.equalsIgnoreCase(_resp.getRespMsg())) {
-			throw new ResourceNotFoundException("Notice " + body.getNoticeNo() + " and notice type: " + 
-				body.getNoticeTypeCd() + " not found in VIPS.");
-		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
-			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			throw new DigitalFormsException("Failed to create document association between document id: " + documentId + 
-					" and notice number " + body.getNoticeNo() + " and notice type: " + body.getNoticeTypeCd()); 
-		} else {
-			throw new DigitalFormsException("Unexpected VIPS association response code: " + _resp.getRespCd());
+		if (search == null || search.getRespCd() != DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+			throw new DigitalFormsException("VIPS impoundment search failed for notice " + noticeNo);
 		}
-		
-		return new ResponseEntity<>(resp, HttpStatus.CREATED);
+		if (search.getResult() == null || search.getResult().isEmpty()) {
+			throw new ResourceNotFoundException("Impoundment notice " + noticeNo + " not found.");
+		}
+		if (search.getResult().size() != 1 || search.getResult().get(0).getImpoundmentId() == null) {
+			throw new DigitalFormsException("VIPS returned an invalid impoundment search result for notice " + noticeNo);
+		}
+		return search.getResult().get(0).getImpoundmentId();
+	}
+
+	private Long findProhibitionId(String noticeNo) {
+		SearchProhibitionsServiceResponse search;
+		try {
+			search = digitalformsApiService.searchProhibition(noticeNo);
+		} catch (WebClientException e) {
+			throw new DigitalFormsException("Failed to search for prohibition notice " + noticeNo, e);
+		}
+		if (search == null || search.getRespCd() != DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+			throw new DigitalFormsException("VIPS prohibition search failed for notice " + noticeNo);
+		}
+		if (search.getResult() == null || search.getResult().isEmpty()) {
+			throw new ResourceNotFoundException("Prohibition notice " + noticeNo + " not found.");
+		}
+		if (search.getResult().size() != 1 || search.getResult().get(0).getProhibitionId() == null) {
+			throw new DigitalFormsException("VIPS returned an invalid prohibition search result for notice " + noticeNo);
+		}
+		return search.getResult().get(0).getProhibitionId();
+	}
+
+	private ResponseEntity<GetDocumentsListServiceResponse> getNoticeDocuments(
+	        String noticeNo, Long impoundmentId, Long prohibitionId) {
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse upstream;
+		try {
+			upstream = digitalformsApiService.getDocumentsMetaList(impoundmentId, prohibitionId);
+		} catch (WebClientException e) {
+			throw new DigitalFormsException("Failed to get documents for notice " + noticeNo, e);
+		}
+		if (upstream == null || upstream.getRespCd() != DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+			logger.error("VIPS document lookup failed for notice {}", noticeNo);
+			throw new DigitalFormsException("Failed to get documents for notice " + noticeNo);
+		}
+		GetDocumentsListServiceResponse response = new GetDocumentsListServiceResponse();
+		response.setResults(upstream.getResults() == null ? List.of() : upstream.getResults());
+		return ResponseEntity.ok(response);
+	}
+
+	private ResponseEntity<Void> associateDocument(
+	        String noticeNo, Long documentId, Long impoundmentId, Long prohibitionId) {
+		if (containsDocument(getNoticeDocuments(noticeNo, impoundmentId, prohibitionId).getBody(), documentId)) {
+			return ResponseEntity.noContent().build();
+		}
+
+		String noticeTypeCd = impoundmentId != null
+				? findImpoundmentNoticeType(impoundmentId)
+				: findProhibitionNoticeType(prohibitionId);
+		VipsNoticeObj notice = new VipsNoticeObj();
+		notice.setNoticeNo(noticeNo);
+		notice.setNoticeTypeCd(noticeTypeCd);
+
+		ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse result;
+		try {
+			result = digitalformsApiService.createDocumentAsociationPost(documentId, notice);
+		} catch (WebClientException e) {
+			throw new DigitalFormsException("Failed to associate document " + documentId
+					+ " with notice " + noticeNo, e);
+		}
+		if (result == null) {
+			throw new DigitalFormsException("VIPS returned an empty document-association response.");
+		}
+		if (result.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
+			return ResponseEntity.noContent().build();
+		}
+		if (result.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD
+				&& DigitalFormsConstants.VIPS_NOTICE_NOT_FOUND.equalsIgnoreCase(result.getRespMsg())) {
+			throw new ResourceNotFoundException("Notice " + noticeNo + " not found.");
+		}
+		if (containsDocument(getNoticeDocuments(noticeNo, impoundmentId, prohibitionId).getBody(), documentId)) {
+			return ResponseEntity.noContent().build();
+		}
+		logger.error("VIPS document association failed with response code {} and message {}",
+				result.getRespCd(), result.getRespMsg());
+		throw new DigitalFormsException("Failed to associate document " + documentId
+				+ " with notice " + noticeNo);
+	}
+
+	private String findImpoundmentNoticeType(Long impoundmentId) {
+		GetImpoundmentServiceResponse response;
+		try {
+			response = digitalformsApiService.getImpoundment(impoundmentId);
+		} catch (WebClientException e) {
+			throw new DigitalFormsException("Failed to retrieve impoundment " + impoundmentId, e);
+		}
+		if (response == null || response.getRespCd() != DigitalFormsConstants.VIPSWS_SUCCESS_CD
+				|| response.getResult() == null || response.getResult().getNoticeTypeCd() == null
+				|| response.getResult().getNoticeTypeCd().isBlank()) {
+			throw new DigitalFormsException("VIPS returned no notice type for impoundment " + impoundmentId);
+		}
+		return response.getResult().getNoticeTypeCd();
+	}
+
+	private String findProhibitionNoticeType(Long prohibitionId) {
+		GetProhibitionServiceResponse response;
+		try {
+			response = digitalformsApiService.getProhibition(prohibitionId);
+		} catch (WebClientException e) {
+			throw new DigitalFormsException("Failed to retrieve prohibition " + prohibitionId, e);
+		}
+		if (response == null || response.getRespCd() != DigitalFormsConstants.VIPSWS_SUCCESS_CD
+				|| response.getResult() == null || response.getResult().getNoticeTypeCd() == null
+				|| response.getResult().getNoticeTypeCd().isBlank()) {
+			throw new DigitalFormsException("VIPS returned no notice type for prohibition " + prohibitionId);
+		}
+		return response.getResult().getNoticeTypeCd();
+	}
+
+	private boolean containsDocument(GetDocumentsListServiceResponse documents, Long documentId) {
+		return documents != null && documents.getResults() != null
+				&& documents.getResults().stream()
+						.filter(Objects::nonNull)
+						.anyMatch(document -> Objects.equals(documentId, document.getDocumentId()));
 	}
 	
 	/**
@@ -356,30 +323,68 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	}
 	
 	@Override
-	public ResponseEntity<VipsGetDocumentByIdResponse> getDocument(
+	public ResponseEntity<Resource> getDocument(
 	        Long documentId,
 	        String xCorrelationID) {
 		
 		logger.info("Heard a call to the endpoint 'getDocument' with documentId " + documentId);
 		
-		VipsGetDocumentByIdResponse documentResponse;
+		ResponseEntity<Flux<DataBuffer>> documentResponse;
 		try {
-			documentResponse = digitalformsApiService.getDocumentAsBase64(documentId);
+			documentResponse = digitalformsApiService.getDocument(documentId);
 		} catch (WebClientResponseException.NotFound e) {
 			throw new ResourceNotFoundException("Document Not Found");
 		} catch (WebClientException e) {
 			logger.error("VIPS Internal Server Error: " + e.getMessage());
-			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to get base64 format document with documentId : " + documentId);
+			throw new DigitalFormsException("Internal Server Error at VIPS WS. Failed to retrieve document " + documentId, e);
 		}
-		if (documentResponse == null || documentResponse.getDocument() == null || documentResponse.getDocument().isEmpty()) {
-			logger.error("VIPS Error: No document found for the given documentID: " + documentId);
+		if (documentResponse == null || documentResponse.getBody() == null) {
+			throw new DigitalFormsException("VIPS returned an empty document response for document " + documentId);
+		}
+
+		InputStream stream = DataBufferUtils.subscriberInputStream(documentResponse.getBody(), 1);
+		int firstByte;
+		try {
+			firstByte = stream.read();
+		} catch (IOException e) {
+			try {
+				stream.close();
+			} catch (IOException closeException) {
+				e.addSuppressed(closeException);
+			}
+			throw new DigitalFormsException("Unable to read document " + documentId + " from VIPS.", e);
+		}
+		if (firstByte < 0) {
+			try {
+				stream.close();
+			} catch (IOException e) {
+				throw new DigitalFormsException("Unable to close empty document stream for " + documentId, e);
+			}
 			throw new ResourceNotFoundException("Document Not Found");
-		} else if (!Base64.isBase64(documentResponse.getDocument())) {
-			logger.error("VIPS Error: Invalid base64 format returned for the provided documentID: " + documentId);
-			throw new DigitalFormsException("Invalid base64 string");
 		}
-		
-		return new ResponseEntity<>(documentResponse, HttpStatus.OK);
+
+		long contentLength = documentResponse.getHeaders().getContentLength();
+		InputStreamResource pdf = new InputStreamResource(new SequenceInputStream(
+				new ByteArrayInputStream(new byte[] {(byte) firstByte}), stream)) {
+			@Override
+			public long contentLength() {
+				return contentLength;
+			}
+
+			@Override
+			public String getFilename() {
+				return "document-" + documentId + ".pdf";
+			}
+		};
+		ResponseEntity.BodyBuilder response = ResponseEntity.ok()
+				.contentType(MediaType.APPLICATION_PDF)
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						"attachment; filename=\"document-" + documentId + ".pdf\"")
+				.header(HttpHeaders.CACHE_CONTROL, "no-store");
+		if (contentLength >= 0) {
+			response.contentLength(contentLength);
+		}
+		return response.body(pdf);
 	}
 
 }

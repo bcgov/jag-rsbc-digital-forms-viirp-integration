@@ -1,13 +1,13 @@
 package ca.bc.gov.open.digitalformsapi.viirp.service;
 
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
@@ -15,8 +15,10 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResp
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 /**
  * 
@@ -164,23 +166,17 @@ public class VipsRestServiceImpl implements VipsRestService {
  	 * 
 	 */
 	@Override
-	public VipsGetDocumentByIdResponse getDocumentAsBase64(Long documentId) {
+	public ResponseEntity<Flux<DataBuffer>> getDocument(Long documentId) {
 		
 		return webClient
                 .get()
-                .uri("/documents/" + documentId + "?b64=true&url=false")
+                .uri("/documents/" + documentId + "?b64=false&url=false")
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
         		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .bodyToMono(String.class) // Get the base64 encoded string from the response
-                .map(base64String -> {
-                	// Add base64 string to the response object
-                    VipsGetDocumentByIdResponse response = new VipsGetDocumentByIdResponse();
-                    response.setDocument(base64String);
-                    return response;
-                })
+                .toEntityFlux(DataBuffer.class)
         		.block();
 	}
 

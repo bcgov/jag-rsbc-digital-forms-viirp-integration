@@ -137,6 +137,26 @@ abstract class HttpApiTestSupport {
         return response;
     }
 
+    protected HttpResponse<byte[]> requestBinary(String method, String path, String auth, String accept)
+            throws IOException, InterruptedException {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(apiBaseUrl() + path))
+                .timeout(Duration.ofSeconds(10))
+                .header("Accept", accept)
+                .header(CorrelationIdFilter.HEADER, correlationId);
+        if (auth != null) {
+            builder.header("Authorization", auth);
+        }
+        HttpResponse<byte[]> response = client.send(
+                builder.GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        assertEquals(List.of(correlationId), response.headers().allValues(CorrelationIdFilter.HEADER));
+        if (hasOperation(method, path)) {
+            assertConforms(method, path, response.statusCode(),
+                    new String(response.body(), StandardCharsets.ISO_8859_1), response.headers().map());
+        }
+        return response;
+    }
+
     private HttpResponse<String> sendRequest(String method, String path, HttpRequest.BodyPublisher body,
             String auth, String contentType, String accept, List<String> correlationIds)
             throws IOException, InterruptedException {
@@ -226,7 +246,7 @@ abstract class HttpApiTestSupport {
         }
     }
 
-    record StubResponse(int status, String body) { }
+    record StubResponse(int status, byte[] body, String contentType) { }
 
     @TestConfiguration(proxyBeanMethods = false)
     static class DownstreamConfiguration {
@@ -269,7 +289,11 @@ abstract class HttpApiTestSupport {
         }
 
         void enqueue(int status, String body) {
-            responses.add(new StubResponse(status, body));
+            responses.add(new StubResponse(status, body.getBytes(StandardCharsets.UTF_8), "application/json"));
+        }
+
+        void enqueue(int status, byte[] body, String contentType) {
+            responses.add(new StubResponse(status, body, contentType));
         }
 
         void reset() {
@@ -284,12 +308,17 @@ abstract class HttpApiTestSupport {
                         exchange.getRequestBody().readAllBytes()));
                 StubResponse response = responses.poll();
                 if (response == null) {
-                    response = new StubResponse(500, "{\"error\":\"Unexpected downstream request\"}");
+                    response = new StubResponse(500,
+                            "{\"error\":\"Unexpected downstream request\"}".getBytes(StandardCharsets.UTF_8),
+                            "application/json");
                 }
-                byte[] body = response.body().getBytes(StandardCharsets.UTF_8);
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(response.status(), body.length);
-                exchange.getResponseBody().write(body);
+                exchange.getResponseHeaders().set("Content-Type", response.contentType());
+                if (response.status() == 204) {
+                    exchange.sendResponseHeaders(response.status(), -1);
+                } else {
+                    exchange.sendResponseHeaders(response.status(), response.body().length);
+                    exchange.getResponseBody().write(response.body());
+                }
             }
         }
 

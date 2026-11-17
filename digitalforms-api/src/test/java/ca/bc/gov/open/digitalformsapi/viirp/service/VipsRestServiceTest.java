@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-import java.util.Base64;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.AfterEach;
@@ -13,6 +12,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
@@ -20,8 +23,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsConfigurationObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsGetDocumentByIdResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 //@RunWith(SpringRunner.class)
@@ -84,32 +87,30 @@ public class VipsRestServiceTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void getDocumentAsBase64() {
+	public void getDocumentStreamsPdfBytes() {
 
 		Long documentId = DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID;
-
-		VipsGetDocumentByIdResponse vipsDocumentResponse = new VipsGetDocumentByIdResponse();
-
-		Base64.Encoder enc = Base64.getEncoder();
-		String testStr = "77+9x6s=";
-		// encode data using BASE64
-		String encodedBase64 = enc.encodeToString(testStr.getBytes());
-		vipsDocumentResponse.setDocument(encodedBase64);
+		byte[] pdf = "pdf bytes".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		ResponseEntity<Flux<DataBuffer>> expected = ResponseEntity.ok()
+				.body(Flux.<DataBuffer>just(DefaultDataBufferFactory.sharedInstance.wrap(pdf)));
 
 		when(this.webClient.get()).thenReturn(this.requestHeadersUriMock);
-		when(this.requestHeadersUriMock.uri("/documents/" + documentId + "?b64=true&url=false"))
+		when(this.requestHeadersUriMock.uri("/documents/" + documentId + "?b64=false&url=false"))
 				.thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.headers(any(Consumer.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.retrieve()).thenReturn(this.responseMock);
-		when(this.responseMock.bodyToMono(String.class)).thenReturn(Mono.just(encodedBase64));
+		when(this.responseMock.toEntityFlux(DataBuffer.class)).thenReturn(Mono.just(expected));
 
-		var result = service.getDocumentAsBase64(documentId);
+		var result = service.getDocument(documentId);
 
 		assertThat(result).isNotNull();
-		assertThat(result.getDocument()).isEqualTo(encodedBase64);
-		assertThat(result).usingRecursiveComparison().isEqualTo(vipsDocumentResponse);
+		var buffer = result.getBody().blockFirst();
+		byte[] actual = new byte[buffer.readableByteCount()];
+		buffer.read(actual);
+		DataBufferUtils.release(buffer);
+		assertThat(actual).containsExactly(pdf);
 	}
 }

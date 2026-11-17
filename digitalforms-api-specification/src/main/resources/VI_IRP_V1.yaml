@@ -228,7 +228,7 @@ paths:
       tags:
       - Documents
       operationId: getDocument
-      summary: Retrieve VIPS document (Base64)
+      summary: Download a VIPS document as PDF
       parameters:
       - name: documentId
         in: path
@@ -242,14 +242,15 @@ paths:
       - $ref: '#/components/parameters/CorrelationId'
       responses:
         '200':
-          description: Success
+          description: PDF document
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
           content:
-            application/json:
+            application/pdf:
               schema:
-                $ref: '#/components/schemas/vipsGetDocumentByIdResponse'
+                type: string
+                format: binary
         '500':
           $ref: '#/components/responses/500ServerError'
         '400':
@@ -260,19 +261,21 @@ paths:
           $ref: '#/components/responses/404NotFound'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
-  /documents/list/{noticeNo}:
+  /prohibitions/{noticeNo}/documents:
     get:
       security:
         - oauth2: []
       tags:
-      - Documents  
-      operationId: listNoticeDocuments
-      summary: Retrieve documents meta data (list)
+      - Documents
+      operationId: listProhibitionDocuments
+      summary: List documents associated with a prohibition
       parameters:
       - name: noticeNo
         in: path
         schema:
           type: string
+          minLength: 1
+          pattern: '.*\S.*'
         required: true  
         example: "21900123"
       - $ref: '#/components/parameters/CorrelationId'
@@ -296,18 +299,66 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
-  /documents/association/notice/{documentId}:
-    post:
-      tags:
-      - Documents
-      operationId: associateDocumentToNotice
+  /impoundments/{noticeNo}/documents:
+    get:
       security:
         - oauth2: []
-      summary: Create document notice association
+      tags:
+      - Documents
+      operationId: listImpoundmentDocuments
+      summary: List documents associated with an impoundment
       parameters:
+      - name: noticeNo
+        in: path
+        description: Impoundment notice number
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+        example: "21900123"
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Successful operation; an empty results array means no documents are associated
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentsListServiceResponse'
+        '401':
+          $ref: '#/components/responses/401NotAuthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500ServerError'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+  /prohibitions/{noticeNo}/documents/{documentId}:
+    put:
+      tags:
+      - Documents
+      operationId: associateDocumentToProhibition
+      security:
+        - oauth2: []
+      summary: Associate a document with a prohibition
+      description: Idempotent. Returns 204 whether the document is newly associated or already associated.
+      parameters:
+      - name: noticeNo
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+        example: "21900123"
       - name: documentId
         in: path
-        description: documentId
+        description: ID of the previously uploaded document
         required: true
         schema:
           type: integer
@@ -315,35 +366,66 @@ paths:
           minimum: 1
         example: 102220
       - $ref: '#/components/parameters/CorrelationId'
-      requestBody:
-        description: body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VipsNoticeObj'
-        required: true
       responses:
-        '201':
-          description: Created
+        '204':
+          description: Document is associated with the prohibition, or was already associated
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssociateDocumentToNoticeServiceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
         '401':
           $ref: '#/components/responses/401NotAuthorized'
         '404':
-          $ref: '#/components/responses/404NotFound' 
-        '500':
-          $ref: '#/components/responses/500ServerError'         
-        '400':
-          $ref: '#/components/responses/400BadRequest'
+          $ref: '#/components/responses/404NotFound'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
-        '415':
-          $ref: '#/components/responses/415UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/500ServerError'
+  /impoundments/{noticeNo}/documents/{documentId}:
+    put:
+      tags:
+      - Documents
+      operationId: associateDocumentToImpoundment
+      security:
+        - oauth2: []
+      summary: Associate a document with an impoundment
+      description: Idempotent. Returns 204 whether the document is newly associated or already associated.
+      parameters:
+      - name: noticeNo
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+        example: "21900123"
+      - name: documentId
+        in: path
+        description: ID of the previously uploaded document
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        example: 102220
+      - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: Document is associated with the impoundment, or was already associated
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401NotAuthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+        '500':
+          $ref: '#/components/responses/500ServerError'
   /codetables:
     get:
       tags:
@@ -588,29 +670,6 @@ components:
       properties:
         result:
           $ref: '#/components/schemas/VipsImpoundObj'
-    VipsNoticeObj:
-      type: object
-      required:
-        - noticeNo 
-        - noticeTypeCd
-      properties:
-        noticeNo:
-          type: string
-          pattern: '.*\S.*'
-          minLength: 1
-          example: "21900123"
-        noticeTypeCd:
-          type: string
-          pattern: '.*\S.*'
-          minLength: 1
-          example: "IRP"
-    AssociateDocumentToNoticeServiceResponse:
-      type: object
-      required:
-        - status_message
-      properties:
-        status_message:
-          type: string
     VipsAddressObj:
       type: object
       nullable: true
@@ -1383,14 +1442,6 @@ components:
           type: string
           description: Doc id to be attached to impoundment or prohibition.
           example: "102220"
-    vipsGetDocumentByIdResponse:
-      type: object
-      required:
-        - document
-      properties:
-        document:
-          type: string
-          description: The Document returned as a base64 string for the given documentId.
     errorMessage:
       type: object
       required:

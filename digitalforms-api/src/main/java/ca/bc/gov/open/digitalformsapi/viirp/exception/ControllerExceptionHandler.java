@@ -131,6 +131,16 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(ApiProblemDetails.create(request, HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error"));
     }
 
+    @ExceptionHandler(UpstreamServiceException.class)
+    public ResponseEntity<ProblemDetail> upstreamException(UpstreamServiceException ex, HttpServletRequest request) {
+        log.error("VIPS upstream request failed ({})", ex.getStatus().value(), ex);
+        var response = ResponseEntity.status(ex.getStatus()).contentType(MediaType.APPLICATION_PROBLEM_JSON);
+        if (ex.getStatus() == HttpStatus.SERVICE_UNAVAILABLE) {
+            response.header(HttpHeaders.RETRY_AFTER, ex.getRetryAfter());
+        }
+        return response.body(ApiProblemDetails.create(request, ex.getStatus(), ex.getSafeDetail()));
+    }
+
     private ResponseEntity<ProblemDetail> error(ProblemDetail problem) {
         log.warn("Request rejected ({}): {}", problem.getStatus(), problem.getDetail());
         return ResponseEntity.status(problem.getStatus()).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problem);

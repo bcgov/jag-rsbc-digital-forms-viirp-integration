@@ -180,8 +180,16 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         for (var path : CONTRACT_JSON.path("paths").properties()) {
             for (var operation : path.getValue().properties()) {
                 for (String status : operation.getValue().path("responses").propertyNames()) {
-                    var content = api.path("paths").path(path.getKey()).path(operation.getKey())
-                            .path("responses").path(status).path("content");
+                    var response = api.path("paths").path(path.getKey()).path(operation.getKey())
+                            .path("responses").path(status);
+                    var content = response.path("content");
+                    if ("503".equals(status)) {
+                        var header = response.path("headers").path("Retry-After");
+                        assertTrue(header.path("required").asBoolean());
+                        assertEquals("string", header.path("schema").path("type").asString());
+                        assertEquals(CONTRACT_JSON.at("/components/responses/503ServiceUnavailable/headers/Retry-After"),
+                                header);
+                    }
                     if (Integer.parseInt(status) < 400) {
                         assertFalse(content.has("application/problem+json"),
                                 "Successful responses must not advertise the error media type");

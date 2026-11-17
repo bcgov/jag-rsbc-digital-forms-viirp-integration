@@ -3,6 +3,7 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,7 +33,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetDocumentsListServiceResponse;
@@ -41,10 +41,9 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.ProhibitionSearchResponseType;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
+import ca.bc.gov.open.digitalformsapi.viirp.service.VipsOrdsService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
-import ca.bc.gov.open.jag.ordsvipsclient.api.DocumentApi;
-import ca.bc.gov.open.jag.ordsvipsclient.api.handler.ApiException;
 import ca.bc.gov.open.jag.ordsvipsclient.api.model.VipsDocumentOrdsResponse;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -62,7 +61,7 @@ public class DocumentsApiControllerTests {
     private DocumentsApiDelegateImpl controller;
     
     @Mock
-    private DocumentApi documentApi;
+    private VipsOrdsService vipsOrdsService;
     
     private VipsDocumentOrdsResponse goodOrds; //200
     
@@ -79,9 +78,6 @@ public class DocumentsApiControllerTests {
     
     private ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse vipsDocumentsResponse; 
     
-    @Mock
-    ConfigProperties properties;
-
     @BeforeEach
 	public void init() throws Exception {
     	
@@ -131,13 +127,10 @@ public class DocumentsApiControllerTests {
     
     @DisplayName("POST, Success - Store Document")
     @Test
-    public void testStoreDocumentSuccess() throws ApiException {
+    public void testStoreDocumentSuccess() {
         
-		when(documentApi.storeDocumentPost(any(), any(), any(), any(), any(), any(), any(), any()))
+		when(vipsOrdsService.storeDocument(any(), any(), any(), any(), anyInt()))
 		.thenReturn(goodOrds);
-		
-		when(properties.getVipsRestApiCredentialsGuid())
-		.thenReturn("guid");
 		
 		// Create successful call and validate response 
         ResponseEntity<VipsDocumentResponse> controllerResponse =
@@ -147,15 +140,12 @@ public class DocumentsApiControllerTests {
         
     }
     
-    @DisplayName("POST, Failure - Bad ORDS response, 500 expected")
+    @DisplayName("POST, Failure - Bad ORDS response, 502 expected")
     @Test
-    public void testStoreDocumentOrdsFailure() throws ApiException {
+    public void testStoreDocumentOrdsFailure() {
         
-		when(documentApi.storeDocumentPost(any(), any(), any(), any(), any(), any(), any(), any()))
+		when(vipsOrdsService.storeDocument(any(), any(), any(), any(), anyInt()))
 		.thenReturn(badOrds);
-		
-		when(properties.getVipsRestApiCredentialsGuid())
-		.thenReturn("guid");
 		
 		// Ensure Digital Form Exception type is thrown in this case
 		assertThrows(DigitalFormsException.class, () -> {

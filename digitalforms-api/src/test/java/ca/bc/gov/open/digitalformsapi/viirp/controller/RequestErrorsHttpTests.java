@@ -42,16 +42,16 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void unexpectedFailuresUseSafeProblemDetailsWithoutQueryParameters() throws Exception {
+    void upstreamFailuresUseSafeProblemDetailsWithoutQueryParameters() throws Exception {
         vips.enqueue(500, "{\"error\":\"ORA-20011: hidden-database-details\"}");
         var response = request("GET", "/utility/ords/ping?diagnostic=not-for-response", null, AUTH);
-        assertEquals(500, response.statusCode());
+        assertEquals(502, response.statusCode());
         assertEquals("application/problem+json", response.headers().firstValue("Content-Type").orElseThrow());
         var problem = json.readTree(response.body());
         assertEquals(Set.of("type", "title", "status", "detail", "instance"), problem.propertyNames());
-        assertEquals("Internal Server Error", problem.path("title").asString());
-        assertEquals("Internal Server Error", problem.path("detail").asString());
-        assertEquals(500, problem.path("status").asInt());
+        assertEquals("Bad Gateway", problem.path("title").asString());
+        assertEquals("Invalid response from VIPS.", problem.path("detail").asString());
+        assertEquals(502, problem.path("status").asInt());
         assertEquals(response.uri().getRawPath(), problem.path("instance").asString());
         assertFalse(response.body().contains("hidden-database-details"));
         assertFalse(response.body().contains("not-for-response"));

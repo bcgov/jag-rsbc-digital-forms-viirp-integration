@@ -46,6 +46,7 @@ public class WebClientConfiguration {
                 .baseUrl(properties.getVipsRestApiUrl())
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                .defaultStatusHandler(status -> !status.is2xxSuccessful(), ClientResponse::createException)
                 .filter(retryFilter())
                 .build();
     }

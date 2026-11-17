@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
@@ -41,14 +43,12 @@ public class VipsRestServiceImpl implements VipsRestService {
 
 	@Override
 	public GetCodetablesServiceResponse getCodeTableValues() {
-		return webClient
+		return readResponse(webClient
                 .get()
                 .uri("/configuration")
                 .headers(headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()))
                 .retrieve()
-                .bodyToMono(GetCodetablesServiceResponse.class)
-                //.doOnSuccess(System.out::println)
-                .block();
+                .bodyToMono(GetCodetablesServiceResponse.class));
 	}
 
 	/**
@@ -60,7 +60,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse createImpoundment(ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment impoundment) {
 		
-		return webClient
+		return readResponse(webClient
                 .post()
                 .uri("/cases/impoundments")
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -69,8 +69,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .body(Mono.just(impoundment), ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment.class) // body of request.
                 .retrieve()
-                .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse.class) // body of response (need VIPS class)
-        		.block();
+                .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse.class));
 	}
 
 	/**	  
@@ -82,7 +81,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public SearchImpoundmentsServiceResponse searchImpoundment(String noticeNo) {
 		
-		return webClient
+		return readResponse(webClient
                 .get()
                 .uri("/cases/impoundments/search?impoundmentNoticeNo={noticeNo}", noticeNo)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -90,8 +89,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .bodyToMono(SearchImpoundmentsServiceResponse.class) // body of response (VIPS WS class)
-        		.block();
+                .bodyToMono(SearchImpoundmentsServiceResponse.class));
 	}
 
 	/**	  
@@ -103,7 +101,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public GetImpoundmentServiceResponse getImpoundment(Long impoundmentId) {
 		
-		return webClient
+		return readResponse(webClient
                 .get()
                 .uri("/cases/impoundments/" + impoundmentId)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -111,8 +109,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .bodyToMono(GetImpoundmentServiceResponse.class) // body of response (VIPS WS class)
-        		.block();
+                .bodyToMono(GetImpoundmentServiceResponse.class));
 	}
 	
 	
@@ -125,7 +122,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public SearchProhibitionsServiceResponse searchProhibition(String noticeNo) {
 		
-		return webClient
+		return readResponse(webClient
                 .get()
                 .uri("/cases/prohibitions/search?prohibitionNoticeNo={noticeNo}", noticeNo)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -133,8 +130,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .bodyToMono(SearchProhibitionsServiceResponse.class) // body of response (VIPS WS class)
-        		.block();
+                .bodyToMono(SearchProhibitionsServiceResponse.class));
 	}
 
 	/**	  
@@ -146,7 +142,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public GetProhibitionServiceResponse getProhibition(Long prohibitionId) {
 		
-		return webClient
+		return readResponse(webClient
                 .get()
                 .uri("/cases/prohibitions/" + prohibitionId)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -154,8 +150,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .bodyToMono(GetProhibitionServiceResponse.class) // body of response (VIPS WS class)
-        		.block();
+                .bodyToMono(GetProhibitionServiceResponse.class));
 	}
 	
 	
@@ -168,7 +163,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public ResponseEntity<Flux<DataBuffer>> getDocument(Long documentId) {
 		
-		return webClient
+		return readResponse(webClient
                 .get()
                 .uri("/documents/" + documentId + "?b64=false&url=false")
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -176,8 +171,9 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .toEntityFlux(DataBuffer.class)
-        		.block();
+                .onStatus(status -> status.value() == 404, response -> response.releaseBody()
+                        .then(Mono.error(new ResourceNotFoundException("Document Not Found"))))
+                .toEntityFlux(DataBuffer.class));
 	}
 
 	/**
@@ -193,7 +189,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public AssociateDocumentToNoticeServiceResponse createDocumentAsociationPost(Long documentId, VipsNoticeObj body) {
 		
-		return webClient
+		return readResponse(webClient
                 .post()
                 .uri("/document-association/notice/" + documentId)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -202,8 +198,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
         		.body(Mono.just(body), VipsNoticeObj.class) // body of request.
         		.retrieve()
-                .bodyToMono(AssociateDocumentToNoticeServiceResponse.class) // body of response (VIPS WS class)
-        		.block();
+                .bodyToMono(AssociateDocumentToNoticeServiceResponse.class));
 	}
 
 	/**
@@ -215,7 +210,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 	@Override
 	public CreateProhibitionServiceResponse createProhibition(CreateProhibition prohibition) {
 		
-		return webClient
+		return readResponse(webClient
                 .post()
                 .uri("/cases/prohibitions")
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -224,8 +219,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .body(Mono.just(prohibition), CreateProhibition.class) // body of request.
                 .retrieve()
-                .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse.class) // body of response (need VIPS class)
-        		.block();
+                .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse.class));
 	}
 
 	/**
@@ -246,7 +240,7 @@ public class VipsRestServiceImpl implements VipsRestService {
 			documentsUri = documentsUri + "prohibitionId=" + prohibitionId;
 		}
 		
-		return webClient
+		return readResponse(webClient
                 .get()
                 .uri(documentsUri)
                 .headers (headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()) )
@@ -254,8 +248,14 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .bodyToMono(GetDocumentsListServiceResponse.class)
-        		.block();
+                .bodyToMono(GetDocumentsListServiceResponse.class));
 	}
-	
+
+	private <T> T readResponse(Mono<T> response) {
+		return response
+				.switchIfEmpty(Mono.error(UpstreamServiceException.invalidResponse("VIPS returned an empty response.")))
+				.onErrorMap(UpstreamServiceException::from)
+				.block();
+	}
+
 }

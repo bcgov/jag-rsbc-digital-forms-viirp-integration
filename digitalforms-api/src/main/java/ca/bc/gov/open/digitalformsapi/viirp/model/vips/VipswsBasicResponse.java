@@ -1,5 +1,8 @@
 package ca.bc.gov.open.digitalformsapi.viirp.model.vips;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
+
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
 /**
@@ -19,6 +22,7 @@ public class VipswsBasicResponse {
 	public int getRespCd() {
 		return respCd;
 	}
+	@JsonSetter(nulls = Nulls.FAIL)
 	public void setRespCd(int respCd) {
 		this.respCd = respCd;
 	}

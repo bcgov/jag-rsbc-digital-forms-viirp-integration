@@ -137,7 +137,9 @@ from the request, and without the `X-Correlation-ID` response header (the
 generator's annotations omit response headers). `springdoc.api-docs.version` is
 set to `openapi_3_0` because springdoc's 3.1 default deprecates the schema
 `example` keyword used by the generated models, which editor.swagger.io reports
-as warnings. Moving the contract to 3.1 waits for an OpenAPI Generator release
+as warnings. `MultipartOpenApiConfig` explicitly restores the required `Retry-After`
+header on business-operation 503 responses in the runtime docs.
+Moving the contract to 3.1 waits for an OpenAPI Generator release
 that keeps schema examples ([#24755](https://github.com/OpenAPITools/openapi-generator/issues/24755));
 today it drops them. Share the YAML itself with API consumers.
 
@@ -157,7 +159,10 @@ today it drops them. Share the YAML itself with API consumers.
 | 406 / 415 | Unsupported response/request media type. |
 | 409 | Confirmed duplicate prohibition or impoundment notice number. |
 | 413 | Document exceeds 10 MiB or the multipart request exceeds 11 MiB. |
-| 500 | Internal/downstream failure, including DIAM's signing keys being unreachable, with a safe generic message. |
+| 500 | VI/IRP processing/configuration failure, including unchanged handling when DIAM's signing keys are unreachable. |
+| 502 | Invalid, malformed, empty or failed VIPS WS/ORDS response, including unexpected upstream HTTP errors. |
+| 503 | VIPS WS/ORDS is unreachable or returns HTTP 429/503; includes `Retry-After`. |
+| 504 | VIPS WS/ORDS timeout, exhausted VIPS GET retry time budget, or upstream HTTP 408/504. |
 
 Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457),
 rendered with Spring `ProblemDetail` and `Content-Type: application/problem+json`:
@@ -183,8 +188,9 @@ rendered with Spring `ProblemDetail` and `Content-Type: application/problem+json
 the host or query parameters. Validation failures add an `errors` array instead of a
 joined message: fields use JSON paths with array indexes, public parameter/header/part
 names, or `body` for an unreadable or invalid whole request. Validation feedback does not
-include rejected values or controller signatures. Unexpected failures return `Internal Server Error` and
-retain diagnostic details only in server logs.
+include rejected values or controller signatures. Local failures return `Internal Server Error`.
+Upstream failures use the safe details `Invalid response from VIPS.`, `VIPS is temporarily unavailable.`,
+or `VIPS did not respond in time.`; upstream bodies, URLs and diagnostics stay in server logs.
 
 **Caller migration:** the legacy `{"status_message":"..."}` error envelope is removed.
 Read `detail` for the summary and `errors[].field` / `errors[].message` for validation
@@ -192,9 +198,29 @@ feedback. Accept the success media type and `application/problem+json` (for exam
 `Accept: application/json, application/problem+json`, or
 `Accept: application/pdf, application/problem+json` for downloads).
 Errors can return Problem Details even when the caller only accepts the success media
-type. The `X-Correlation-ID` echo, Bearer `WWW-Authenticate` challenge, `Allow` header,
-HTTP statuses, JSON success bodies and binary PDF downloads are unchanged. Actuator
+type. VIPS WS/ORDS failures previously reported as 500 now use 502/503/504 as above.
+The `X-Correlation-ID` echo, Bearer `WWW-Authenticate` challenge, `Allow` header,
+client-error statuses, JSON success bodies and binary PDF downloads are unchanged. Actuator
 health retains its standard health payload, including `{"status":"DOWN"}` with 503.
+
+#### Upstream failures and retries
+
+All business operations distinguish dependency failures from local VI/IRP errors.
+Classification is confined to the VIPS WS/ORDS call and response-decoding boundaries;
+an arbitrary application exception does not become a gateway error. Failed VIPS
+business response codes are 502 unless an existing rule establishes 404/409, or a
+saved-with-warning create (codes 11/29). Existing empty document lists remain successful.
+
+A business-operation 503 always includes `Retry-After`: a valid upstream delay in
+seconds or HTTP date is retained; missing, invalid or repeated values fall back to
+`30` seconds. This is retry advice, not a guarantee of recovery or proof that a write
+was not committed. No new environment variables are required.
+
+The VIPS WebClient still retries only GET/HEAD, subject to its existing attempt and
+time limits. VIPS POSTs are not re-sent. The shared ORDS client's transport/retry
+policy is unchanged, including its existing handling of HTTP 408; the VI/IRP adapter
+adds no retries. After an ambiguous create failure, retrieve the notice before
+resubmitting. Do not blindly repeat a document upload, which can create a duplicate.
 
 #### Uploading a document
 
@@ -252,7 +278,11 @@ properties are unchanged.
 `GET /documents/{documentId}` downloads the original document as `application/pdf`
 with an attachment filename. VI/IRP requests the raw PDF from VIPS and forwards its
 data buffers as a streaming resource; it does not create an expanded Base64 string or
-hold a second full-document copy in memory.
+hold a second full-document copy in memory. It checks the five-byte PDF signature
+before committing a download, so a non-PDF error page becomes 502 and an initial
+body timeout becomes 504. If the transfer fails after the HTTP response has already
+been committed, the transfer terminates; its status cannot be replaced with Problem
+Details. Callers must treat an interrupted or truncated download as a failure.
 
 #### Correlation ID
 
@@ -268,8 +298,8 @@ authentication. `CorrelationIdFilter` enforces this; its pattern must match the
 
 Creates check for an exact existing notice number before submitting. If VIPS WS
 returns its generic failure code 1, the API checks again for a concurrent create.
-Only a confirmed existing notice becomes 409; an unavailable lookup or unrelated
-failure remains 500. Oracle uniqueness constraints remain the final guard.
+Only a confirmed existing notice becomes 409; failed upstream lookups use 502/503/504
+and unrelated VI/IRP errors remain 500. Oracle uniqueness constraints remain the final guard.
 This is not idempotency: after an ambiguous failure, retrieve by notice number
 before resubmitting. A dedicated downstream duplicate code would remove reliance
 on the follow-up lookup. No database or shared-client changes are required.
@@ -337,6 +367,10 @@ They cover:
   The 10 MiB acceptance boundary and one-byte-over rejection are exercised over HTTP.
 - Missing/malformed bodies, required fields, parameter constraints, media types,
   duplicates/concurrent creates and unexpected downstream response codes.
+- VIPS WS/ORDS 502/503/504 Problem Details, safe `Retry-After` handling, malformed
+  response JSON, unavailable connections, connect/read/write timeout classification,
+  GET retry exhaustion, POST read timeouts and failures before PDF streaming commits.
+  Local processing/configuration errors and DIAM signing-key failures remain 500.
 - Every required field in both create requests, with cases derived from the YAML:
   missing/null values, empty/space/tab/newline-only required strings, empty required
   objects and collections with `minItems`. Multiple registrations and addresses

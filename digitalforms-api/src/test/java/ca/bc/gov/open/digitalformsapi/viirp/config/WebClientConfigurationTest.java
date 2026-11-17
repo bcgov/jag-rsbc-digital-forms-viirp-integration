@@ -2,6 +2,7 @@ package ca.bc.gov.open.digitalformsapi.viirp.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -11,12 +12,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import com.sun.net.httpserver.HttpServer;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
+import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestServiceImpl;
 
 /**
  * Exercises the VIPS WebClient retry filter against a real HTTP server that answers slower
@@ -94,15 +100,45 @@ class WebClientConfigurationTest {
 		assertThat(attempts.get()).isLessThan(21);
 	}
 
+	@ParameterizedTest
+	@CsvSource({"2,5000", "20,700"})
+	void retryExhaustionAndOverallDeadlineRemainUpstreamTimeouts(long retryCount, long maxDurationMs) {
+		var config = configuration(retryCount, maxDurationMs);
+		var service = new VipsRestServiceImpl(config.vipsWebClient(), config.properties);
+		var error = assertThrows(UpstreamServiceException.class, service::getCodeTableValues);
+		assertThat(error.getStatus()).isEqualTo(HttpStatus.GATEWAY_TIMEOUT);
+		if (retryCount == 2) {
+			assertThat(attempts).hasValue(3);
+		} else {
+			assertThat(attempts.get()).isLessThan(21);
+		}
+	}
+
+	@Test
+	void refusedConnectionIsUnavailableAfterRetriesNotALocal500() {
+		var config = configuration(2, 5_000);
+		var service = new VipsRestServiceImpl(config.vipsWebClient(), config.properties);
+		server.stop(0);
+		var error = assertThrows(UpstreamServiceException.class, service::getCodeTableValues);
+		assertThat(error.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+		assertThat(error.getRetryAfter()).isEqualTo("30");
+	}
+
 	private WebClient client(long retryCount, long maxDurationMs) {
+		return configuration(retryCount, maxDurationMs).vipsWebClient();
+	}
+
+	private WebClientConfiguration configuration(long retryCount, long maxDurationMs) {
 		ConfigProperties properties = new ConfigProperties();
 		properties.setVipsRestApiUrl("http://127.0.0.1:" + server.getAddress().getPort());
+		properties.setVipsRestApiUsername("vips-test");
+		properties.setVipsRestApiPassword("vips-test-password");
 		properties.setVipsRestApiTimeout(200);
 		properties.setVipsRestApiRetryCount(retryCount);
 		properties.setVipsRestApiRetryDelay(0);
 		properties.setVipsRestApiRetryMaxDuration(maxDurationMs);
 		WebClientConfiguration configuration = new WebClientConfiguration();
 		configuration.properties = properties;
-		return configuration.vipsWebClient();
+		return configuration;
 	}
 }

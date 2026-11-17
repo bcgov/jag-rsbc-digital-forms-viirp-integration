@@ -9,10 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.UtilityApiDelegate;
-import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PingResponse;
-import ca.bc.gov.open.jag.ordsvipsclient.api.HealthApi;
-import ca.bc.gov.open.jag.ordsvipsclient.api.handler.ApiException;
+import ca.bc.gov.open.digitalformsapi.viirp.service.VipsOrdsService;
 
 /**
  * 
@@ -27,7 +26,7 @@ public class UtilityApiDelegateImpl implements UtilityApiDelegate{
 	private final Logger logger = LoggerFactory.getLogger(UtilityApiDelegateImpl.class);
 	
 	@Autowired
-	private HealthApi vipsHealthApi;
+	private VipsOrdsService vipsOrdsService;
 		
 	@SuppressWarnings("unchecked")
 	@Override
@@ -36,20 +35,13 @@ public class UtilityApiDelegateImpl implements UtilityApiDelegate{
 		logger.info("Heard a call to 'pingOrds'");
 		
 		PingResponse resp = new PingResponse();
-		try {
-			
-			JSONObject jsonResponse = new JSONObject();
-			jsonResponse.put("VIPS ORDS Health Status", vipsHealthApi.health().getStatus());
-			resp.setResponseMessage(jsonResponse);
-			
-			return new ResponseEntity<>(resp, HttpStatus.OK); 
-						
-		} catch (ApiException e) {
-			String msg = "Error encountered while pinging VIPS ORDS Health endpoint: " + e.getMessage();
-			e.printStackTrace();
-			logger.error(msg);
-			throw new DigitalFormsException(msg, e);
-			
+		var health = vipsOrdsService.health();
+		if (health == null || health.getStatus() == null || health.getStatus().isBlank()) {
+			throw UpstreamServiceException.invalidResponse("VIPS ORDS returned no health status.");
 		}
+		JSONObject jsonResponse = new JSONObject();
+		jsonResponse.put("VIPS ORDS Health Status", health.getStatus());
+		resp.setResponseMessage(jsonResponse);
+		return new ResponseEntity<>(resp, HttpStatus.OK);
 	}
 }

@@ -2,14 +2,17 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -175,6 +178,59 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     }
 
     @Test
+    void publishedSuccessResponsesMatchResourcesAndCreatedLocations() throws Exception {
+        var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
+        for (String resource : List.of("prohibitions", "impoundments")) {
+            var path = "/" + resource + "/{noticeNo}";
+            assertEquals(CONTRACT_JSON.path("paths").path(path).path("get")
+                            .at("/responses/200/content/application~1json/schema"),
+                    api.path("paths").path(path).path("get").at("/responses/200/content/application~1json/schema"));
+            var collection = api.path("paths").path(path + "/documents").path("get")
+                    .at("/responses/200/content/application~1json/schema");
+            assertEquals("array", collection.path("type").asString());
+            assertEquals("#/components/schemas/VipsDocumentObj", collection.at("/items/$ref").asString());
+            assertEquals(CONTRACT_JSON.path("paths").path(path + "/documents").path("get")
+                    .at("/responses/200/content/application~1json/schema"), collection);
+        }
+        for (String resource : List.of("prohibitions", "impoundments", "documents")) {
+            var created = api.path("paths").path("/" + resource).path("post").at("/responses/201");
+            assertEquals(CONTRACT_JSON.at("/components/headers/Location"), created.at("/headers/Location"));
+        }
+        for (String model : List.of("CreateProhibitionServiceResponse", "CreateImpoundmentServiceResponse",
+                "GetCodetablesServiceResponse")) {
+            var canonical = CONTRACT_JSON.path("components").path("schemas").path(model);
+            var published = api.path("components").path("schemas").path(model);
+            assertEquals(canonical.path("properties").propertyNames(), published.path("properties").propertyNames());
+            assertEquals(canonical.path("required"), published.path("required"));
+            assertFalse(published.path("properties").has("respMsg"));
+            assertFalse(published.path("properties").has("warnings"));
+            assertFalse(canonical.path("properties").has("warnings"));
+        }
+        for (String removed : List.of("GetProhibitionServiceResponse", "GetImpoundmentServiceResponse",
+                "GetDocumentsListServiceResponse", "Warning")) {
+            assertFalse(api.path("components").path("schemas").has(removed));
+            assertFalse(CONTRACT_JSON.path("components").path("schemas").has(removed));
+        }
+    }
+
+    @Test
+    void codeTablesReturnConfigurationWithoutUpstreamStatusStrings() throws Exception {
+        vips.enqueue(200, """
+                {"configuration":{"countries":[{"objectCd":"CAN","objectDsc":"Canada"}]},
+                 "respMsg":"sensitive upstream status text"}
+                """);
+        var response = responseJson(request("GET", "/codetables", null, AUTH), 200);
+        assertEquals(Set.of("configuration"), response.propertyNames());
+        assertEquals("CAN", response.at("/configuration/countries/0/objectCd").asString());
+        assertEquals("Canada", response.at("/configuration/countries/0/objectDsc").asString());
+        var upstream = vips.requests.poll(2, TimeUnit.SECONDS);
+        assertNotNull(upstream);
+        assertEquals("GET", upstream.method());
+        assertEquals("/configuration", upstream.uri().toString());
+        assertEquals(basicAuth("vips-test", "vips-test-password"), upstream.headers().getFirst("Authorization"));
+    }
+
+    @Test
     void publishedErrorResponsesIncludeTheStructuredProblemContract() throws Exception {
         var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
         for (var path : CONTRACT_JSON.path("paths").properties()) {
@@ -219,24 +275,25 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     @Test
     void contractGuardRejectsWrongStatusSchemaContentTypeAndCorrelationHeader() {
         String path = "/prohibitions";
-        String ok = "{\"respMsg\":\"success\",\"prohibitionId\":123456789012345}";
-        assertConforms("POST", path, 201, ok, headers("application/json", correlationId));
+        String ok = "{\"prohibitionId\":123456789012345}";
+        assertConforms("POST", path, 201, ok, createHeaders("application/json", correlationId));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 200, ok, headers("application/json", correlationId)));
+                () -> assertConforms("POST", path, 200, ok, createHeaders("application/json", correlationId)));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 201, "{\"respMsg\":[]}", headers("application/json", correlationId)));
+                () -> assertConforms("POST", path, 201, "{\"prohibitionId\":\"not-an-id\"}",
+                        createHeaders("application/json", correlationId)));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 201, "{\"respMsg\":\"success\"}", headers("application/json", correlationId)));
-        assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 201, "{}", headers("application/json", correlationId)));
+                () -> assertConforms("POST", path, 201, "{}", createHeaders("application/json", correlationId)));
         assertThrows(AssertionError.class,
                 () -> assertConforms("POST", path, 500, "{}", headers("application/problem+json", correlationId)));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 201, ok, headers("text/plain", correlationId)));
+                () -> assertConforms("POST", path, 201, ok, createHeaders("text/plain", correlationId)));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 201, ok, headers("application/json", null)));
+                () -> assertConforms("POST", path, 201, ok, createHeaders("application/json", null)));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 201, ok, headers("application/json", "not valid")));
+                () -> assertConforms("POST", path, 201, ok, createHeaders("application/json", "not valid")));
+        assertThrows(AssertionError.class,
+                () -> assertConforms("POST", path, 201, ok, headers("application/json", correlationId)));
         String problem = """
                 {"type":"about:blank","title":"Bad Request","status":400,"detail":"Request validation failed.",
                  "instance":"/digitalforms-viirp/v1/prohibitions",
@@ -257,5 +314,11 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         return correlationId == null
                 ? Map.of("Content-Type", List.of(contentType))
                 : Map.of("Content-Type", List.of(contentType), CorrelationIdFilter.HEADER, List.of(correlationId));
+    }
+
+    private static Map<String, List<String>> createHeaders(String contentType, String correlationId) {
+        var headers = new HashMap<>(headers(contentType, correlationId));
+        headers.put("Location", List.of("/digitalforms-viirp/v1/prohibitions/21900601"));
+        return headers;
     }
 }

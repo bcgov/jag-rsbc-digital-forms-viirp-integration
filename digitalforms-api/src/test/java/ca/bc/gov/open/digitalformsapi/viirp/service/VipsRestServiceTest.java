@@ -68,7 +68,6 @@ public class VipsRestServiceTest {
 		GetCodetablesServiceResponse codeTablesServiceResponse = new GetCodetablesServiceResponse();
 		VipsConfigurationObj configuration = new VipsConfigurationObj();
 
-		codeTablesServiceResponse.setRespMsg("Success");
 		codeTablesServiceResponse.setConfiguration(configuration);
 
 		when(this.webClient.get()).thenReturn(this.requestHeadersUriMock);
@@ -81,7 +80,6 @@ public class VipsRestServiceTest {
 		var result = service.getCodeTableValues();
 
 		assertThat(result).isNotNull();
-		assertThat(result.getRespMsg()).isEqualTo("Success");
 		assertThat(result.getConfiguration()).usingRecursiveComparison().isEqualTo(configuration);
 	}
 

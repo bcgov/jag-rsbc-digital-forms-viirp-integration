@@ -33,17 +33,26 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @Autowired
     private ConfigProperties properties;
 
-    @Test
-    void storesDocumentWith201() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "123", "9223372036854775807"})
+    void storesDocumentWith201AndReadsTheLocation(String documentId) throws Exception {
         byte[] pdf = UnitTestUtilities.samplePdf();
-        vips.enqueue(200, "{\"status_code\":\"0\",\"status_message\":\"success\",\"document_id\":\"123\"}");
-        assertEquals("123", responseJson(upload(pdf), 201)
-                .path("document_id").asString());
+        vips.enqueue(200, "{\"status_code\":\"0\",\"status_message\":\"success\",\"document_id\":\"" + documentId + "\"}");
+        var created = upload(pdf);
+        assertEquals(json.readTree("{\"document_id\":\"" + documentId + "\"}"), responseJson(created, 201));
+        String resourcePath = createdResourcePath(created, "/documents/" + documentId);
         var stored = ords("POST", "/ords/storeDocument");
         assertEquals("application/pdf", stored.headers().getFirst("Content-Type"));
         assertArrayEquals(pdf, stored.bodyBytes());
         assertEquals("type_code=MV2702A&mime_type=application&mime_sub_type=pdf&auth_guid=route-test-guid"
                 + "&page_count=1", stored.uri().getRawQuery());
+
+        responseJson(request("GET", resourcePath, null, null, null, "application/pdf"), 401);
+        vips.enqueue(200, stored.bodyBytes(), "application/x-download");
+        var retrieved = requestBinary("GET", resourcePath, AUTH, "application/pdf");
+        assertEquals(200, retrieved.statusCode());
+        assertArrayEquals(pdf, retrieved.body());
+        downstream("GET", "/documents/" + documentId + "?b64=false&url=false");
     }
 
     @Test
@@ -165,6 +174,16 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"0", "-1", "not-an-id", "1/2", "9223372036854775808"})
+    void uploadWithUnusableDocumentIdDoesNotReturnACreatedLocation(String documentId) throws Exception {
+        vips.enqueue(200, "{\"status_code\":\"0\",\"document_id\":\"" + documentId + "\"}");
+        var response = upload(UnitTestUtilities.samplePdf());
+        responseJson(response, 502);
+        assertTrue(response.headers().allValues("Location").isEmpty());
+        ords("POST", "/ords/storeDocument");
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"", "null", "{", "[]", "{}", "{\"status_code\":{}}"})
     void malformedOrdsUploadResponseIs502(String body) throws Exception {
         vips.enqueue(200, body);
@@ -264,7 +283,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":123}]}");
         vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
         var response = responseJson(request("GET", documentListPath(type), null, AUTH), 200);
-        assertEquals(json.readTree("[]"), response.path("results"));
+        assertEquals(json.readTree("[]"), response);
         checkedNotice(type, "81000029");
         downstream("GET", "/documents?" + type + "Id=123");
     }
@@ -285,7 +304,10 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":123}]}");
         vips.enqueue(200, "{\"respCd\":0,\"results\":[{\"documentId\":456,\"documentTypeCd\":\"MV2702A\"}]}");
         var response = responseJson(request("GET", documentListPath(type), null, AUTH), 200);
-        assertEquals(456, response.at("/results/0/documentId").asInt());
+        assertTrue(response.isArray());
+        assertEquals(1, response.size());
+        assertEquals(456, response.at("/0/documentId").asInt());
+        assertEquals("MV2702A", response.at("/0/documentTypeCd").asString());
         checkedNotice(type, "81000029");
         downstream("GET", "/documents?" + type + "Id=123");
 

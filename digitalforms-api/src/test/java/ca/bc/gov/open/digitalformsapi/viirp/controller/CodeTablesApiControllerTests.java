@@ -48,14 +48,13 @@ class CodeTablesApiControllerTests {
     public void testCodeTablesApiGetSuccess() {
         
 		GetCodetablesServiceResponse response = new GetCodetablesServiceResponse();
-		response.setRespMsg("Success");
 		response.setConfiguration(new ca.bc.gov.open.digitalformsapi.viirp.model.VipsConfigurationObj());
 
         Mockito.when(service.getCodeTableValues()).thenReturn(response);
         ResponseEntity<GetCodetablesServiceResponse> controllerResponse = controller.getCodeTables(null);
         GetCodetablesServiceResponse result = controllerResponse.getBody();
         Mockito.verify(service).getCodeTableValues();
-        assertEquals("Success", result.getRespMsg());
+        assertEquals(response.getConfiguration(), result.getConfiguration());
     }
 	
 	@Test

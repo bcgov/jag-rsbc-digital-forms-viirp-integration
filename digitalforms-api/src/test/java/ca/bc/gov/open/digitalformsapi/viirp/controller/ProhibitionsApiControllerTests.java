@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,10 +30,10 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibitionServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsAddressCreateObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsLicenceCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsRegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.ProhibitionSearchResponseType;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
@@ -52,6 +53,9 @@ public class ProhibitionsApiControllerTests {
     @Mock
     private ca.bc.gov.open.digitalformsapi.viirp.service.NoticeConflictService noticeConflicts;
 
+    @Mock
+    private HttpServletRequest request;
+
     @InjectMocks
     private ProhibitionsApiDelegateImpl controller;
     
@@ -68,6 +72,7 @@ public class ProhibitionsApiControllerTests {
 	public void init() {
     	
 		MockitoAnnotations.openMocks(this);
+		Mockito.when(request.getContextPath()).thenReturn("");
 		
 		// Mock POST Prohibition body 
 		createProhibition = new CreateProhibition();
@@ -156,8 +161,8 @@ public class ProhibitionsApiControllerTests {
         ResponseEntity<CreateProhibitionServiceResponse> controllerResponse = controller.createProhibition(createProhibition, null);
         CreateProhibitionServiceResponse result = controllerResponse.getBody();
         Mockito.verify(service).createProhibition(createProhibition);
-        assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getRespMsg());
 		assertEquals(123L, result.getProhibitionId());
+        assertEquals("/prohibitions/21900601", controllerResponse.getHeaders().getLocation().toString());
     }
     
     
@@ -225,9 +230,9 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.getProhibition(prohibitionId)).thenReturn(vipsProhibition);
         
         // Create successful search notice number call with prohibitionId and validate response 
-        ResponseEntity<GetProhibitionServiceResponse> controllerResponse = controller.getProhibition(noticeNo, null);
-        GetProhibitionServiceResponse result = controllerResponse.getBody();
-        assertEquals("VICTORIA", result.getResult().getCityNm());
+        ResponseEntity<VipsProhibitionObj> controllerResponse = controller.getProhibition(noticeNo, null);
+        VipsProhibitionObj result = controllerResponse.getBody();
+        assertEquals("VICTORIA", result.getCityNm());
         
     }
     

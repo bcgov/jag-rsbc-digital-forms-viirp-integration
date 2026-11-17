@@ -29,6 +29,8 @@ paths:
         '201':
           description: Created
           headers:
+            Location:
+              $ref: '#/components/headers/Location'
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
           content:
@@ -79,7 +81,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetImpoundmentServiceResponse'
+                $ref: '#/components/schemas/VipsImpoundObj'
         '500':
           $ref: '#/components/responses/500ServerError'
         '502':
@@ -117,6 +119,8 @@ paths:
         '201':
           description: Created
           headers:
+            Location:
+              $ref: '#/components/headers/Location'
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
           content:
@@ -169,7 +173,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetProhibitionServiceResponse'
+                $ref: '#/components/schemas/VipsProhibitionObj'
         '500':
           $ref: '#/components/responses/500ServerError'
         '502':
@@ -218,6 +222,8 @@ paths:
         '201':
           description: Created
           headers:
+            Location:
+              $ref: '#/components/headers/Location'
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
           content:
@@ -317,14 +323,16 @@ paths:
       - $ref: '#/components/parameters/CorrelationId'
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation; an empty array means no documents are associated
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetDocumentsListServiceResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/VipsDocumentObj'
         '401':
           $ref: '#/components/responses/401NotAuthorized'
         '404':
@@ -362,14 +370,16 @@ paths:
       - $ref: '#/components/parameters/CorrelationId'
       responses:
         '200':
-          description: Successful operation; an empty results array means no documents are associated
+          description: Successful operation; an empty array means no documents are associated
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetDocumentsListServiceResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/VipsDocumentObj'
         '401':
           $ref: '#/components/responses/401NotAuthorized'
         '404':
@@ -587,6 +597,15 @@ components:
         pattern: '^[A-Za-z0-9._-]{1,64}$'
       example: 3f2b8c4e-6a1d-4f7e-9b2a-1c5d8e7f9a01
   headers:
+    Location:
+      description: >-
+        URI reference for retrieving the created resource with GET. Resolve it against the request URL.
+        Notice URLs use the notice number; document URLs use the document ID.
+      required: true
+      schema:
+        type: string
+        format: uri-reference
+        minLength: 1
     X-Correlation-ID:
       description: >-
         Correlation ID for this request: the supplied X-Correlation-ID request header, or a generated
@@ -774,13 +793,6 @@ components:
             $ref: '#/components/schemas/VipsAddressCreateObj'
         vipsLicenceObj:
           $ref: '#/components/schemas/VipsLicenceCreate'
-    GetImpoundmentServiceResponse:
-      type: object
-      required:
-        - result
-      properties:
-        result:
-          $ref: '#/components/schemas/VipsImpoundObj'
     VipsAddressObj:
       type: object
       nullable: true
@@ -899,12 +911,8 @@ components:
     CreateImpoundmentServiceResponse:
       type: object
       required:
-        - respMsg
         - impoundmentId
       properties:
-        respMsg:
-          type: string
-          description: '"success", or a "success - ..." warning when VIPS created the impoundment but ICBC needs follow-up.'
         impoundmentId:
           type: integer
           format: int64
@@ -1310,13 +1318,6 @@ components:
           type: string
           maxLength: 10 
           example: "1234567"
-    GetProhibitionServiceResponse:
-      type: object
-      required:
-        - result
-      properties:
-        result:
-          $ref: '#/components/schemas/VipsProhibitionObj'
     VipsProhibitionObj:
       type: object
       properties:
@@ -1535,12 +1536,8 @@ components:
     CreateProhibitionServiceResponse:
       type: object
       required:
-        - respMsg
         - prohibitionId
       properties:
-        respMsg:
-          type: string
-          description: '"success", or a "success - ..." warning when VIPS created the prohibition but ICBC needs follow-up.'
         prohibitionId:
           type: integer
           format: int64
@@ -1647,18 +1644,6 @@ components:
         properties:
           configuration:
             $ref: '#/components/schemas/VipsConfigurationObj'
-          respMsg:
-            type: string
-            nullable: true
-    GetDocumentsListServiceResponse:
-      type: object
-      required:
-        - results
-      properties:
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/VipsDocumentObj'        
     VipsConfigurationObj:
         type: object
         properties:

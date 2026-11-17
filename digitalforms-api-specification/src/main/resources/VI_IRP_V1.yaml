@@ -212,9 +212,9 @@ paths:
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/errorMessage'
+                $ref: '#/components/schemas/Problem'
         '500':
           $ref: '#/components/responses/500ServerError'  
         '406':
@@ -527,14 +527,14 @@ components:
         pattern: '^[A-Za-z0-9._-]{1,64}$'
   responses:
     400BadRequest:
-      description: Bad Request, including an invalid X-Correlation-ID header.
+      description: Bad Request. Validation failures include structured field errors, including invalid X-Correlation-ID headers.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
     401NotAuthorized:
       description: >-
         The access token is missing, invalid or expired. The WWW-Authenticate header gives the reason.
@@ -551,63 +551,63 @@ components:
             type: string
             pattern: '^Bearer( |$)'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
     403Forbidden:
       description: Forbidden.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
     404NotFound:
       description: Not Found.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
     500ServerError:
       description: Internal Server Error.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
     406NotAcceptable:
       description: The requested response media type is not supported.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
     409Conflict:
       description: A notice with this number already exists. Use the GET endpoint to retrieve it.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
     415UnsupportedMediaType:
-      description: Content-Type must be application/json.
+      description: The request media type is not supported by this operation.
       headers:
         X-Correlation-ID:
           $ref: '#/components/headers/X-Correlation-ID'
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/errorMessage'
+            $ref: '#/components/schemas/Problem'
   schemas:
     VipsRegistrationCreate:
       type: object
@@ -1442,14 +1442,66 @@ components:
           type: string
           description: Doc id to be attached to impoundment or prohibition.
           example: "102220"
-    errorMessage:
+    Problem:
       type: object
+      description: >-
+        RFC 9457 Problem Details. The HTTP status and problem status agree. Diagnostic
+        server details are never returned. Validation failures include the errors extension.
       required:
-      - status_message
+      - type
+      - title
+      - status
+      - detail
+      - instance
       properties:
-        status_message:
+        type:
           type: string
-          description: failure message
+          format: uri
+          description: The problem type. about:blank uses the HTTP status meaning.
+          example: about:blank
+        title:
+          type: string
+          description: The HTTP status reason phrase.
+          example: Bad Request
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          example: 400
+        detail:
+          type: string
+          description: A safe explanation of the failure.
+          example: Request validation failed.
+        instance:
+          type: string
+          format: uri-reference
+          description: The original request path, including the context path but excluding query parameters.
+          example: /digitalforms-viirp/v1/prohibitions
+        errors:
+          type: array
+          minItems: 1
+          description: Present for validation failures; fields use public request names, not Java method signatures.
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      type: object
+      additionalProperties: false
+      required:
+      - field
+      - message
+      properties:
+        field:
+          type: string
+          minLength: 1
+          description: >-
+            A JSON field path with dots and array indexes, a public path/query/header/part name,
+            or body when the failure cannot be attributed to a field.
+          example: vipsRegistrationCreateArray[0].vipsLicenceObj.driverLicenceNo
+        message:
+          type: string
+          minLength: 1
+          description: Validation feedback without the rejected value or server details.
+          example: must not be null
     storeVIPSDocument:
       type: object
       required:

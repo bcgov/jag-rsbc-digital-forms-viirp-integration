@@ -80,7 +80,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":0,\"result\":[]}");
         JsonNode error = responseJson(
                 request("GET", "/prohibitions/" + NOTICE, null, AUTH), 404);
-        assertEquals("Not Found", error.path("status_message").asString());
+        assertEquals("Not Found", error.path("detail").asString());
         downstream("GET", "/cases/prohibitions/search?prohibitionNoticeNo=" + NOTICE);
     }
 
@@ -90,7 +90,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"Rejected\"}");
         availableNotice();
         JsonNode error = responseJson(request("POST", "/prohibitions", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("status_message").asString());
+        assertEquals("Internal Server Error", error.path("detail").asString());
         assertFalse(error.has("respMsg"));
         checkedNotice("prohibition", NOTICE);
         downstream("POST", "/cases/prohibitions");
@@ -102,7 +102,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":0,\"respMsg\":\"created\"}");
         JsonNode error = responseJson(request("POST", "/prohibitions", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("status_message").asString());
+        assertEquals("Internal Server Error", error.path("detail").asString());
         checkedNotice("prohibition", NOTICE);
         downstream("POST", "/cases/prohibitions");
     }
@@ -132,7 +132,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         availableNotice();
         vips.enqueue(200, "{\"respCd\":21,\"respMsg\":\"Unexpected\"}");
         JsonNode error = responseJson(request("POST", "/prohibitions", BODY, AUTH), 500);
-        assertEquals("Internal Server Error", error.path("status_message").asString());
+        assertEquals("Internal Server Error", error.path("detail").asString());
         checkedNotice("prohibition", NOTICE);
         downstream("POST", "/cases/prohibitions");
     }

@@ -72,7 +72,8 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @ParameterizedTest
     @ValueSource(strings = {"not a PDF", "%PDF-1.7\nnot a real document\n%%EOF"})
     void rejectsNonPdfOrMalformedPdfDespitePdfFilenameAndType(String content) throws Exception {
-        responseJson(upload(content.getBytes(StandardCharsets.UTF_8)), 400);
+        var problem = responseJson(upload(content.getBytes(StandardCharsets.UTF_8)), 400);
+        assertEquals("file", problem.at("/errors/0/field").asString());
     }
 
     @Test
@@ -100,11 +101,13 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @Test
     void rejectsInvalidMultipartMetadata() throws Exception {
         var file = List.of(pdfPart(UnitTestUtilities.samplePdf()));
-        for (var fields : List.of(Map.<String, String>of(), Map.of("type_code", " "),
-                Map.of("type_code", "x".repeat(11)),
-                Map.of("type_code", "MV2723", "notice_type_code", "LONG"),
-                Map.of("type_code", "MV2723", "notice_subject_code", "LONGER"))) {
-            responseJson(upload(file, fields), 400);
+        for (var invalid : List.of(Map.entry("type_code", Map.<String, String>of()),
+                Map.entry("type_code", Map.of("type_code", " ")),
+                Map.entry("type_code", Map.of("type_code", "x".repeat(11))),
+                Map.entry("notice_type_code", Map.of("type_code", "MV2723", "notice_type_code", "LONG")),
+                Map.entry("notice_subject_code", Map.of("type_code", "MV2723", "notice_subject_code", "LONGER")))) {
+            var problem = responseJson(upload(file, invalid.getValue()), 400);
+            assertEquals(invalid.getKey(), problem.at("/errors/0/field").asString(), problem.toString());
         }
     }
 
@@ -139,7 +142,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"status_code\":\"" + status + "\",\"status_message\":\"internal detail\"}");
         assertEquals("Internal Server Error",
                 responseJson(upload(UnitTestUtilities.samplePdf()), 500)
-                        .path("status_message").asString());
+                        .path("detail").asString());
         ords("POST", "/ords/storeDocument");
     }
 
@@ -150,11 +153,12 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         ords("POST", "/ords/storeDocument");
     }
 
-    @Test
-    void streamsPdfWithDownloadHeadersWithoutBase64Encoding() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"application/pdf", "application/problem+json, application/pdf;q=0.5"})
+    void streamsPdfWithDownloadHeadersWithoutBase64Encoding(String accept) throws Exception {
         byte[] pdf = UnitTestUtilities.samplePdf();
         vips.enqueue(200, pdf, "application/x-download");
-        var response = requestBinary("GET", "/documents/123", AUTH, "application/pdf");
+        var response = requestBinary("GET", "/documents/123", AUTH, accept);
         assertEquals(200, response.statusCode());
         assertArrayEquals(pdf, response.body());
         assertEquals("application/pdf", response.headers().firstValue("Content-Type").orElseThrow());
@@ -168,10 +172,10 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @Test
     void missingDocumentIs404ForHttp404AndEmptyVipsResponses() throws Exception {
         vips.enqueue(404, "{\"message\":\"not found\"}");
-        responseJson(request("GET", "/documents/123", null, AUTH), 404);
+        responseJson(request("GET", "/documents/123", null, AUTH, null, "application/pdf"), 404);
         downstream("GET", "/documents/123?b64=false&url=false");
         vips.enqueue(204, new byte[0], "application/x-download");
-        responseJson(request("GET", "/documents/123", null, AUTH), 404);
+        responseJson(request("GET", "/documents/123", null, AUTH, null, "application/pdf"), 404);
         downstream("GET", "/documents/123?b64=false&url=false");
     }
 
@@ -223,7 +227,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
         vips.enqueue(200, "{\"respCd\":0,\"result\":{\"noticeTypeCd\":\"" + noticeType + "\"}}");
         vips.enqueue(200, "{\"respCd\":0}");
-        var created = request("PUT", path, null, AUTH);
+        var created = request("PUT", path, null, AUTH, null, "application/json");
         assertEquals(204, created.statusCode(), created.body());
         assertTrue(created.body().isEmpty());
         checkedNotice(type, "81000029");

@@ -288,10 +288,10 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 					.filter(part -> "file".equals(part.getName()) || part.getSubmittedFileName() != null)
 					.count();
 			if (fileParts != 1) {
-				throw new BadRequestException("Exactly one file part named 'file' is required.");
+				throw new BadRequestException("file", "Exactly one file part named 'file' is required.");
 			}
 			if (file.isEmpty()) {
-				throw new BadRequestException("file must not be empty.");
+				throw new BadRequestException("file", "file must not be empty.");
 			}
 			if (file.getSize() > MAX_DOCUMENT_BYTES) {
 				throw new MaxUploadSizeExceededException(MAX_DOCUMENT_BYTES);
@@ -304,20 +304,20 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		}
 
 		if (content.length < 5 || !new String(content, 0, 5, StandardCharsets.US_ASCII).equals("%PDF-")) {
-			throw new BadRequestException("file must contain a readable PDF document.");
+			throw new BadRequestException("file", "file must contain a readable PDF document.");
 		}
 		int pageCount;
 		try (var document = Loader.loadPDF(content)) {
 			pageCount = document.getNumberOfPages();
 		} catch (IOException e) {
 			logger.warn("PDF upload validation failed: {}", e.getMessage());
-			throw new BadRequestException("file must contain a readable PDF that does not require a password.");
+			throw new BadRequestException("file", "file must contain a readable PDF that does not require a password.");
 		}
 		if (pageCount < 1) {
-			throw new BadRequestException("file must contain a PDF with at least one page.");
+			throw new BadRequestException("file", "file must contain a PDF with at least one page.");
 		}
 		if (pageCount > MAX_DOCUMENT_PAGES) {
-			throw new BadRequestException("file must contain a PDF with at most " + MAX_DOCUMENT_PAGES + " pages.");
+			throw new BadRequestException("file", "file must contain a PDF with at most " + MAX_DOCUMENT_PAGES + " pages.");
 		}
 		return new PdfUpload(content, pageCount);
 	}

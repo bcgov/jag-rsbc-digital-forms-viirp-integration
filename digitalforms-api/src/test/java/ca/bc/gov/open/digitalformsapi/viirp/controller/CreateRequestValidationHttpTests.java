@@ -35,8 +35,7 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     void requiredFieldIsRejectedBeforeCallingVips(String route, String pointer, Mutation mutation) throws Exception {
         ObjectNode body = validBody(route);
         mutate(body, pointer, mutation);
-        String field = pointer.substring(1).replaceAll("/(\\d+)", "[$1]").replace('/', '.');
-        assertRejected(route, body, field + (mutation == Mutation.EMPTY_OBJECT ? "." : ":"));
+        assertRejected(route, body, fieldPath(pointer));
     }
 
     static Stream<Arguments> invalidRequiredFields() {
@@ -102,7 +101,7 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
             throws Exception {
         ObjectNode body = validBody("/impoundments");
         mutate(body, pointer, mutation);
-        assertRejected("/impoundments", body, "Invalid license object - DL is a required field.");
+        assertRejected("/impoundments", body, fieldPath(pointer));
     }
 
     static Stream<Arguments> invalidImpoundmentLicences() {
@@ -117,12 +116,20 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     void nullImpoundmentRegistrationIsRejectedAtEveryPosition(int index) throws Exception {
         ObjectNode body = validBody("/impoundments");
         body.withArray("vipsRegistrationCreateArray").set(index, NullNode.getInstance());
-        assertRejected("/impoundments", body, "vipsRegistrationCreateArray must not contain null entries.");
+        assertRejected("/impoundments", body, "vipsRegistrationCreateArray[" + index + "]");
     }
 
-    private void assertRejected(String route, ObjectNode body, String expectedMessage) throws Exception {
+    private static String fieldPath(String pointer) {
+        return pointer.substring(1).replaceAll("/(\\d+)", "[$1]").replace('/', '.');
+    }
+
+    private void assertRejected(String route, ObjectNode body, String expectedField) throws Exception {
         JsonNode error = responseJson(request("POST", route, body.toString(), AUTH), 400);
-        assertTrue(error.path("status_message").asString().contains(expectedMessage), error.toString());
+        assertEquals("Request validation failed.", error.path("detail").asString());
+        List<String> fields = new ArrayList<>();
+        error.path("errors").forEach(validation -> fields.add(validation.path("field").asString()));
+        assertTrue(fields.stream().anyMatch(field -> field.equals(expectedField)
+                || field.startsWith(expectedField + ".")), error.toString());
         assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS, including the notice lookup");
     }
 

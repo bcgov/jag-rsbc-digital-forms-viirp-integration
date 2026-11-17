@@ -23,6 +23,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.BearerTokenErrors;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.FilterChainProxy;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsAuthenticationFailureHandler;
@@ -33,6 +38,9 @@ class OAuth2HttpTests extends HttpApiTestSupport {
 
     @Autowired
     private FilterChainProxy securityFilterChain;
+
+    @Autowired
+    private DigitalFormsAuthenticationFailureHandler failureHandler;
 
     @Test
     void csrfRejectsNonBearerWritesBeforeTheApplication() throws Exception {
@@ -69,7 +77,7 @@ class OAuth2HttpTests extends HttpApiTestSupport {
             throws Exception {
         var response = request("GET", "/codetables", null, authorization);
         assertEquals(DigitalFormsAuthenticationFailureHandler.UNAUTHORIZED_MESSAGE,
-                responseJson(response, 401).path("status_message").asString());
+                responseJson(response, 401).path("detail").asString());
         String challenge = response.headers().firstValue("WWW-Authenticate").orElse("");
         assertTrue(challenge.startsWith(CHALLENGE), challenge);
         assertTrue(challenge.contains("error=\"invalid_token\""), challenge);
@@ -88,6 +96,39 @@ class OAuth2HttpTests extends HttpApiTestSupport {
                         "resource_metadata=\"" + apiBaseUrl() + "/.well-known/oauth-protected-resource\""), challenge);
             }
         }
+    }
+
+    @Test
+    void malformedBearerRequestPreserves400AndChallengeWithProblemDetails() throws Exception {
+        var request = new MockHttpServletRequest("GET", "/digitalforms-viirp/v1/codetables");
+        var response = new MockHttpServletResponse();
+        failureHandler.commence(request, response,
+                new OAuth2AuthenticationException(BearerTokenErrors.invalidRequest("Invalid bearer request")));
+        assertEquals(400, response.getStatus());
+        assertEquals("application/problem+json", response.getContentType());
+        var problem = json.readTree(response.getContentAsString());
+        assertEquals(400, problem.path("status").asInt());
+        assertEquals("Bad Request", problem.path("detail").asString());
+        assertEquals(request.getRequestURI(), problem.path("instance").asString());
+        assertTrue(response.getHeader("WWW-Authenticate").contains("error=\"invalid_request\""));
+    }
+
+    @Test
+    void bearerAccessDeniedPreserves403AndScopeChallengeWithSafeProblemDetails() throws Exception {
+        var request = new MockHttpServletRequest("GET", "/digitalforms-viirp/v1/codetables");
+        request.setUserPrincipal(new JwtAuthenticationToken(Jwt.withTokenValue("not-for-response")
+                .header("alg", "RS256").subject("test-client").build()));
+        var response = new MockHttpServletResponse();
+        failureHandler.handle(request, response, new AccessDeniedException("hidden-access-decision"));
+        assertEquals(403, response.getStatus());
+        assertEquals("application/problem+json", response.getContentType());
+        var problem = json.readTree(response.getContentAsString());
+        assertEquals(403, problem.path("status").asInt());
+        assertEquals("Forbidden", problem.path("detail").asString());
+        assertEquals(request.getRequestURI(), problem.path("instance").asString());
+        assertTrue(response.getHeader("WWW-Authenticate").contains("error=\"insufficient_scope\""));
+        assertFalse(response.getContentAsString().contains("not-for-response"));
+        assertFalse(response.getContentAsString().contains("hidden-access-decision"));
     }
 
     @Test

@@ -20,7 +20,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import ca.bc.gov.open.digitalformsapi.viirp.model.ErrorMessage;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.ApiProblemDetails;
+import ca.bc.gov.open.digitalformsapi.viirp.exception.ApiProblemDetails.ValidationError;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -81,19 +82,17 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
             if (valid) {
                 chain.doFilter(request, response);
             } else {
-                reject(response);
+                reject(request, response);
             }
         } finally {
             MDC.remove(DigitalFormsConstants.REQUEST_CORRELATION_ID);
         }
     }
 
-    private void reject(HttpServletResponse response) throws IOException {
+    private void reject(HttpServletRequest request, HttpServletResponse response) throws IOException {
         // The supplied value is deliberately not logged; it is untrusted input.
         log.warn("Request rejected (400): invalid {} header", HEADER);
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        response.setContentType(DigitalFormsConstants.JSON_CONTENT);
-        response.setCharacterEncoding("UTF-8");
-        jsonMapper.writeValue(response.getOutputStream(), new ErrorMessage(INVALID_MESSAGE));
+        ApiProblemDetails.write(jsonMapper, response,
+                ApiProblemDetails.validation(request, List.of(new ValidationError(HEADER, INVALID_MESSAGE))));
     }
 }

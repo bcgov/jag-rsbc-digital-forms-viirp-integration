@@ -51,12 +51,13 @@ class SecurityConfiguration {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(withDefaults())
                         .authenticationEntryPoint(failureHandler)
+                        .accessDeniedHandler(failureHandler)
                         // RFC 9728 metadata at /.well-known/oauth-protected-resource names DIAM as the token issuer.
                         // Tokens are not certificate-bound because TLS terminates at the OpenShift route.
                         .protectedResourceMetadata(metadata -> metadata.protectedResourceMetadataCustomizer(
                                 resource -> resource.authorizationServer(issuer)
                                         .tlsClientCertificateBoundAccessTokens(false)))
-                        // The default handler rethrows when DIAM's keys cannot be fetched; answer with the API's 500 JSON.
+                        // The default handler rethrows when DIAM's keys cannot be fetched; return a safe 500 problem.
                         .withObjectPostProcessor(new ObjectPostProcessor<BearerTokenAuthenticationFilter>() {
                             @Override
                             public <O extends BearerTokenAuthenticationFilter> O postProcess(O filter) {

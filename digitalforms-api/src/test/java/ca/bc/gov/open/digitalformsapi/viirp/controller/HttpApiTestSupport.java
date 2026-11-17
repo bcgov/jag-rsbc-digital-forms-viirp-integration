@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,6 +31,7 @@ import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.atlassian.oai.validator.model.Request;
 import com.atlassian.oai.validator.model.SimpleResponse;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -110,7 +112,8 @@ abstract class HttpApiTestSupport {
 
     protected HttpResponse<String> request(String method, String path, String body, String auth)
             throws IOException, InterruptedException {
-        return request(method, path, body, auth, body == null ? null : "application/json", "application/json");
+        return request(method, path, body, auth, body == null ? null : "application/json",
+                "application/json, application/problem+json");
     }
 
     protected HttpResponse<String> request(String method, String path, String body, String auth,
@@ -132,7 +135,7 @@ abstract class HttpApiTestSupport {
     protected HttpResponse<String> requestBytes(String method, String path, byte[] body, String auth,
             String contentType) throws IOException, InterruptedException {
         var response = sendRequest(method, path, HttpRequest.BodyPublishers.ofByteArray(body), auth,
-                contentType, "application/json", List.of(correlationId));
+                contentType, "application/json, application/problem+json", List.of(correlationId));
         assertEquals(List.of(correlationId), response.headers().allValues(CorrelationIdFilter.HEADER));
         return response;
     }
@@ -211,8 +214,28 @@ abstract class HttpApiTestSupport {
 
     protected JsonNode responseJson(HttpResponse<String> response, int expectedStatus) {
         assertEquals(expectedStatus, response.statusCode(), response.body());
-        assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
-        return json.readTree(response.body());
+        String contentType = expectedStatus >= 400 ? "application/problem+json" : "application/json";
+        assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith(contentType), response.body());
+        JsonNode body = json.readTree(response.body());
+        if (expectedStatus >= 400) {
+            assertEquals("about:blank", body.path("type").asString());
+            assertEquals(HttpStatus.valueOf(expectedStatus).getReasonPhrase(), body.path("title").asString());
+            assertEquals(expectedStatus, body.path("status").asInt());
+            assertFalse(body.path("detail").asString().isBlank());
+            assertEquals(response.uri().getRawPath(), body.path("instance").asString());
+            assertFalse(body.has("status_message"));
+            assertFalse(body.has("properties"), "Problem extensions must be top-level JSON properties");
+            if (body.has("errors")) {
+                assertTrue(body.path("errors").isArray());
+                assertFalse(body.path("errors").isEmpty());
+                for (JsonNode error : body.path("errors")) {
+                    assertEquals(Set.of("field", "message"), error.propertyNames());
+                    assertFalse(error.path("field").asString().isBlank());
+                    assertFalse(error.path("message").asString().isBlank());
+                }
+            }
+        }
+        return body;
     }
 
     protected void availableNotice() {

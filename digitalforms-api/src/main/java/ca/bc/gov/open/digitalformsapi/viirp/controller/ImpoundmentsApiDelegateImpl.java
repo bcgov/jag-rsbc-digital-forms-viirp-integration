@@ -48,13 +48,16 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		logger.info("Heard a call to the endpoint 'createImpoundment'");
 		
 		// DF-2933: If the "vipsLicenceObj" node present, ensure DL is minimally supplied.
-		for (VipsRegistrationCreate reg : createImpoundment.getVipsRegistrationCreateArray()) {
+		for (int index = 0; index < createImpoundment.getVipsRegistrationCreateArray().size(); index++) {
+			VipsRegistrationCreate reg = createImpoundment.getVipsRegistrationCreateArray().get(index);
+			String field = "vipsRegistrationCreateArray[" + index + "]";
 			if (reg == null) {
-				throw new BadRequestException("vipsRegistrationCreateArray must not contain null entries.");
+				throw new BadRequestException(field, "vipsRegistrationCreateArray must not contain null entries.");
 			}
 			if (null != reg.getVipsLicenceObj()) {
 				if (!StringUtils.hasText(reg.getVipsLicenceObj().getDriverLicenceNo())) {
-					throw new BadRequestException(DigitalFormsConstants.DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL);
+					throw new BadRequestException(field + ".vipsLicenceObj.driverLicenceNo",
+							DigitalFormsConstants.DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL);
 				}
 			}
 		}

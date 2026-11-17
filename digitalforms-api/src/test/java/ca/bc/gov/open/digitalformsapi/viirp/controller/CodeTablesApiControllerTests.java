@@ -66,8 +66,9 @@ class CodeTablesApiControllerTests {
 	    mvc.perform(get("/codetables")
             		.contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is5xxServerError())
-	    	.andExpect(content().contentType("application/json"))
+			.andExpect(content().contentType("application/problem+json"))
 	    	.andExpect(result -> assertTrue(result.getResolvedException() instanceof DigitalFormsException))
-			.andExpect(jsonPath("$.status_message").value("Internal Server Error"));
+			.andExpect(jsonPath("$.status").value(500))
+			.andExpect(jsonPath("$.detail").value("Internal Server Error"));
 	}
 }

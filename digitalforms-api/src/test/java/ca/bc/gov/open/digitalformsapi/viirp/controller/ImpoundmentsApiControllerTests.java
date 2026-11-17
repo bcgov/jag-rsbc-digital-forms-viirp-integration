@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +30,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsAddressCreateObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundmentCreate;
@@ -55,6 +55,9 @@ public class ImpoundmentsApiControllerTests {
     @Mock
     private ca.bc.gov.open.digitalformsapi.viirp.service.NoticeConflictService noticeConflicts;
 
+    @Mock
+    private HttpServletRequest request;
+
     @InjectMocks
     private ImpoundmentsApiDelegateImpl controller;
     
@@ -71,6 +74,7 @@ public class ImpoundmentsApiControllerTests {
 	public void init() {
     	
 		MockitoAnnotations.openMocks(this);
+		Mockito.when(request.getContextPath()).thenReturn("");
 		
 		// Mock POST Impoundment body 
 		createImpoundment = new CreateImpoundment();
@@ -172,8 +176,8 @@ public class ImpoundmentsApiControllerTests {
         ResponseEntity<CreateImpoundmentServiceResponse> controllerResponse = controller.createImpoundment(createImpoundment, null);
         CreateImpoundmentServiceResponse result = controllerResponse.getBody();
         Mockito.verify(service).createImpoundment(createImpoundment);
-        Assertions.assertEquals(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG, result.getRespMsg());
 		Assertions.assertEquals(123L, result.getImpoundmentId());
+        Assertions.assertEquals("/impoundments/12345678", controllerResponse.getHeaders().getLocation().toString());
     }
     
     
@@ -240,9 +244,9 @@ public class ImpoundmentsApiControllerTests {
         Mockito.when(service.getImpoundment(impoundmentId)).thenReturn(vipsImpoundment);
         
         // Create successful search notice number call with impoundmentId and validate response 
-        ResponseEntity<GetImpoundmentServiceResponse> controllerResponse = controller.getImpoundment(noticeNo, null);
-        GetImpoundmentServiceResponse result = controllerResponse.getBody();
-        Assertions.assertEquals("BC", result.getResult().getDlJurisdictionCd());
+        ResponseEntity<VipsImpoundObj> controllerResponse = controller.getImpoundment(noticeNo, null);
+        VipsImpoundObj result = controllerResponse.getBody();
+        Assertions.assertEquals("BC", result.getDlJurisdictionCd());
         
     }
     

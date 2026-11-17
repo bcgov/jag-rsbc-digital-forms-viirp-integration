@@ -38,8 +38,10 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
 
         availableNotice();
         vips.enqueue(200, "{\"respCd\":0,\"respMsg\":\"created\",\"impoundmentId\":123456789012345,\"extraVipsMetadata\":\"ignored\"}");
-        assertEquals(json.readTree("{\"respMsg\":\"success\",\"impoundmentId\":123456789012345}"),
-                responseJson(request("POST", createPath, BODY, AUTH), 201));
+        var created = request("POST", createPath, BODY, AUTH);
+        assertEquals(json.readTree("{\"impoundmentId\":123456789012345}"),
+                responseJson(created, 201));
+        String resourcePath = createdResourcePath(created, getPath);
         checkedNotice("impoundment", NOTICE);
         JsonNode submitted = json.readTree(downstream("POST", "/cases/impoundments").body());
         assertEquals(NOTICE, submitted.at("/vipsImpoundCreate/impoundmentNoticeNo").asString());
@@ -55,12 +57,14 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
                 {"respCd":0,"result":{"impoundmentNoticeNo":"%s","dlJurisdictionCd":"BC",
                  "impoundmentDt":"%s","extraVipsField":"ignored"}}
                 """.formatted(NOTICE, submitted.at("/vipsImpoundCreate/impoundmentDt").asString()));
-        JsonNode result = responseJson(request("GET", getPath, null, AUTH), 200);
-        assertEquals(NOTICE, result.at("/result/impoundmentNoticeNo").asString());
-        assertEquals("BC", result.at("/result/dlJurisdictionCd").asString());
-        assertEquals("2022-10-11T00:00:00.000-07:00", result.at("/result/impoundmentDt").asString());
+        JsonNode result = responseJson(request("GET", resourcePath, null, AUTH), 200);
+        assertEquals(NOTICE, result.path("impoundmentNoticeNo").asString());
+        assertEquals("BC", result.path("dlJurisdictionCd").asString());
+        assertEquals("2022-10-11T00:00:00.000-07:00", result.path("impoundmentDt").asString());
+        assertFalse(result.has("result"));
         assertFalse(result.has("respCd"));
-        assertFalse(result.at("/result").has("extraVipsField"));
+        assertFalse(result.has("respMsg"));
+        assertFalse(result.has("extraVipsField"));
         downstream("GET", "/cases/impoundments/search?impoundmentNoticeNo=" + NOTICE);
         downstream("GET", "/cases/impoundments/123456789012345");
     }
@@ -96,21 +100,23 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void vipsCreateWarningCodesAreReportedAsSuccessWithWarning() throws Exception {
+    void savedNoticesReturnOnlyTheirIdWithoutUpstreamWarnings() throws Exception {
         String createPath = "/impoundments";
         availableNotice();
         vips.enqueue(200, "{\"respCd\":29,\"respMsg\":\"ICBC post execute failed\",\"impoundmentId\":123456789012345}");
-        JsonNode icbcFailure = responseJson(request("POST", createPath, BODY, AUTH), 201);
-        assertEquals("success - ICBC was not updated", icbcFailure.path("respMsg").asString());
-        assertEquals(123456789012345L, icbcFailure.path("impoundmentId").asLong());
+        var icbcFailure = request("POST", createPath, BODY, AUTH);
+        assertEquals(json.readTree("{\"impoundmentId\":123456789012345}"),
+                responseJson(icbcFailure, 201));
+        createdResourcePath(icbcFailure, "/impoundments/" + NOTICE);
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
 
         availableNotice();
         vips.enqueue(200, "{\"respCd\":11,\"respMsg\":\"Update Drivers manually\",\"impoundmentId\":123456789012345}");
-        JsonNode manualUpdate = responseJson(request("POST", createPath, BODY, AUTH), 201);
-        assertEquals("success - Update Drivers manually", manualUpdate.path("respMsg").asString());
-        assertEquals(123456789012345L, manualUpdate.path("impoundmentId").asLong());
+        var manualUpdate = request("POST", createPath, BODY, AUTH);
+        assertEquals(json.readTree("{\"impoundmentId\":123456789012345}"),
+                responseJson(manualUpdate, 201));
+        createdResourcePath(manualUpdate, "/impoundments/" + NOTICE);
         checkedNotice("impoundment", NOTICE);
         downstream("POST", "/cases/impoundments");
     }

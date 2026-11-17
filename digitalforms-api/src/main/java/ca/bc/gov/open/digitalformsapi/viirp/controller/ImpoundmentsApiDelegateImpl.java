@@ -1,5 +1,6 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.ImpoundmentsApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.BadRequestException;
@@ -14,7 +16,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetImpoundmentServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundObj;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VipsRegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
@@ -31,6 +33,9 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 
 	@Autowired
 	private NoticeConflictService noticeConflicts;
+
+	@Autowired
+	private HttpServletRequest request;
 
 	/**
 	 * POST Impoundment (TO VIPS WS) 
@@ -72,15 +77,12 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		}
 		
 		// Depending on the result code from VIPS, we set the response Entity accordingly. 
-		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
-			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MSG);
-		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SHOW_MANUAL_DIALOG_CD) {
-			logger.warn("VIPS created impoundment with warning. Response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_MANUAL_DRIVER_UPDATE_MSG);
-		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_INTERNAL_FAILURE_CD) {
-			logger.warn("VIPS created impoundment with warning. Response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
-			resp.setRespMsg(DigitalFormsConstants.DIGITALFORMS_SUCCESS_ICBC_NOT_UPDATED_MSG);
-		} else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
+		if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD // SUCCESS_MSG
+				|| _resp.getRespCd() == DigitalFormsConstants.VIPSWS_SHOW_MANUAL_DIALOG_CD // SUCCESS_MANUAL_DRIVER_UPDATE_MSG
+				|| _resp.getRespCd() == DigitalFormsConstants.VIPSWS_INTERNAL_FAILURE_CD) { // SUCCESS_ICBC_NOT_UPDATED_MSG
+			// no-op, we can continue to return the impoundmentId from the response.
+		}
+		else if (_resp.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD) {
 			// Preserve the database constraint as the final guard against concurrent creates.
 			noticeConflicts.checkImpoundment(createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo());
 			logger.error("VIPS error response code: " + _resp.getRespCd() + ", response msg:  " + _resp.getRespMsg());
@@ -97,7 +99,9 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 		}
 		resp.setImpoundmentId(_resp.getImpoundmentId());
 		
-		return new ResponseEntity<>(resp, HttpStatus.CREATED);
+		return ResponseEntity.created(UriComponentsBuilder.fromPath(request.getContextPath())
+				.pathSegment("impoundments", createImpoundment.getVipsImpoundCreate().getImpoundmentNoticeNo())
+				.build().encode().toUri()).body(resp);
 		
 	}
 
@@ -116,11 +120,11 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 	 * 	500. local VI/IRP processing failure.
 	 */
 	@Override
-	public ResponseEntity<GetImpoundmentServiceResponse> getImpoundment(String noticeNo, String xCorrelationID) {
+	public ResponseEntity<VipsImpoundObj> getImpoundment(String noticeNo, String xCorrelationID) {
 		
 		logger.info("Heard a call to the endpoint 'getImpoundment' with noticeNo " + noticeNo);
 		
-		GetImpoundmentServiceResponse resp = new GetImpoundmentServiceResponse();
+		VipsImpoundObj resp;
 		
 		// Start cascade by fetching impoundmentId for notice number. 
 		SearchImpoundmentsServiceResponse _resp = digitalformsApiService.searchImpoundment(noticeNo);
@@ -155,8 +159,7 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 				// as the prior VIPS search said that there was an impoundment for the id returned above. 
 				if (null != _resp2.getResult()) {
 				
-					// Populate response object from VIPS response object (This removes the VIPS WS resultCd, resultMsg, etc.) 
-					resp.setResult(_resp2.getResult());
+					resp = _resp2.getResult();
 					
 				} else {
 					throw new ResourceNotFoundException("No impoundment returned when a prior search indicated there was an impoundment linked to impoundment id  : " + impoundmentId);

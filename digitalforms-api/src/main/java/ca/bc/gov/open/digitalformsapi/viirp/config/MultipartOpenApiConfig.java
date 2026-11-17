@@ -86,6 +86,12 @@ public class MultipartOpenApiConfig implements WebMvcRegistrations {
             }
             // The generator repeats the operation's combined media types on every response annotation.
             operation.getResponses().forEach((status, response) -> {
+                if ("201".equals(status) && handler.getBeanType().getPackageName().equals(ApiUtil.class.getPackageName())) {
+                    response.addHeaderObject("Location", new Header().required(true)
+                            .description("URI reference for retrieving the created resource with GET. Resolve it against the request URL. "
+                                    + "Notice URLs use the notice number; document URLs use the document ID.")
+                            .schema(new StringSchema().format("uri-reference").minLength(1)));
+                }
                 if ("503".equals(status) && handler.getBeanType().getPackageName().equals(ApiUtil.class.getPackageName())) {
                     // Response-header annotations are also omitted by the generator.
                     response.addHeaderObject("Retry-After", new Header().required(true)

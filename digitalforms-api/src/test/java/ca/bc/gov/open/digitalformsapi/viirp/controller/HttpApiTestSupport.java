@@ -112,6 +112,14 @@ abstract class HttpApiTestSupport {
         return "http://127.0.0.1:" + port + "/digitalforms-viirp/v1";
     }
 
+    protected String createdResourcePath(HttpResponse<?> response, String expectedPath) {
+        URI expected = URI.create(apiBaseUrl() + expectedPath);
+        assertEquals(List.of(expected.getRawPath()), response.headers().allValues("Location"));
+        URI location = response.uri().resolve(response.headers().firstValue("Location").orElseThrow());
+        assertEquals(expected, location);
+        return location.getRawPath().substring(URI.create(apiBaseUrl()).getRawPath().length());
+    }
+
     protected HttpResponse<String> request(String method, String path, String body, String auth)
             throws IOException, InterruptedException {
         return request(method, path, body, auth, body == null ? null : "application/json",

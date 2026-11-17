@@ -137,8 +137,8 @@ from the request, and without the `X-Correlation-ID` response header (the
 generator's annotations omit response headers). `springdoc.api-docs.version` is
 set to `openapi_3_0` because springdoc's 3.1 default deprecates the schema
 `example` keyword used by the generated models, which editor.swagger.io reports
-as warnings. `MultipartOpenApiConfig` explicitly restores the required `Retry-After`
-header on business-operation 503 responses in the runtime docs.
+as warnings. `MultipartOpenApiConfig` explicitly restores the required `Location`
+header on 201 responses and `Retry-After` on business-operation 503 responses in the runtime docs.
 Moving the contract to 3.1 waits for an OpenAPI Generator release
 that keeps schema examples ([#24755](https://github.com/OpenAPITools/openapi-generator/issues/24755));
 today it drops them. Share the YAML itself with API consumers.
@@ -150,8 +150,9 @@ today it drops them. Share the YAML itself with API consumers.
 
 | Response | Meaning |
 |---|---|
-| 200 | Successful GET; an existing notice with no documents returns `{"results":[]}`. |
-| 201 | Successful prohibition, impoundment, document or document-association POST; includes saved-with-warning codes 11 and 29. |
+| 200 | Successful GET; notices are resources without a `result` wrapper, and document collections are arrays (`[]` when empty). |
+| 201 | Successful prohibition, impoundment or document POST, with a `Location` header and the saved resource ID. |
+| 204 | Successful idempotent PUT document association, with no response body. |
 | 400 | Missing/malformed JSON or multipart data, invalid parameter types or failed request constraints. |
 | 401 | Missing, invalid or expired bearer token, with a `WWW-Authenticate: Bearer` challenge. |
 | 404 | Unknown route or missing requested notice/document. |
@@ -200,8 +201,52 @@ feedback. Accept the success media type and `application/problem+json` (for exam
 Errors can return Problem Details even when the caller only accepts the success media
 type. VIPS WS/ORDS failures previously reported as 500 now use 502/503/504 as above.
 The `X-Correlation-ID` echo, Bearer `WWW-Authenticate` challenge, `Allow` header,
-client-error statuses, JSON success bodies and binary PDF downloads are unchanged. Actuator
+client-error statuses and binary PDF downloads are unchanged. JSON success responses follow
+the resource contract below. Actuator
 health retains its standard health payload, including `{"status":"DOWN"}` with 503.
+
+#### Success responses and caller migration
+
+`GET /prohibitions/{noticeNo}` and `GET /impoundments/{noticeNo}` return the existing
+notice fields directly, without `{"result": ...}`. The two typed document collection
+GETs return a JSON array rather than `{"results": [...]}`; a known notice with no
+documents returns `[]`. Field names, types and nested resource fields are unchanged.
+`GET /codetables` retains its `configuration` data but no longer exposes VIPS `respMsg`.
+
+All three create operations return **201 Created** and **Location**. The header is a
+root-relative URI that includes the servlet context path, so it works on the caller's
+origin without depending on an internal host, scheme or proxy-forwarded headers:
+
+| Create operation | Example `Location` |
+|---|---|
+| `POST /prohibitions` | `/digitalforms-viirp/v1/prohibitions/21900601` |
+| `POST /impoundments` | `/digitalforms-viirp/v1/impoundments/00123456` |
+| `POST /documents` | `/digitalforms-viirp/v1/documents/102220` |
+
+Resolve `Location` against the request URL and GET that URI using the same bearer
+authentication. Notice resources use the **notice number**, not the internal ID.
+Leading zeroes are preserved. Document resources use the document ID. An invalid
+upstream document ID produces 502 rather than a 201 with an unusable link.
+
+Notice-create bodies contain only `prohibitionId` or `impoundmentId`, with no
+`warnings` or `respMsg`:
+
+```json
+{"prohibitionId":123456789012345}
+```
+
+**201** means the submission was saved; unsuccessful submissions use the documented
+error responses. VIPS codes 11 and 29 also represent saved notices, so they retain
+201, the saved ID and `Location`. Their diagnostics remain in server logs, not in the
+public response. Callers must not resubmit these saved notices.
+
+Manual vetting, approval and subsequent ICBC submission are separate from this API's
+create contract. Neither manual-driver nor ICBC processing produces a caller-facing
+warning in a successful create response.
+
+These response changes do not alter approval rules, upstream calls or retry policies.
+Uploads retain `{"document_id":"..."}`.
+Idempotent document associations remain bodyless 204 responses.
 
 #### Upstream failures and retries
 
@@ -236,7 +281,8 @@ Send the OAuth2 bearer token and the optional `X-Correlation-ID` header as for o
 | `notice_type_code` | No | Notice classification, e.g. `IRP`; at most 3 characters. |
 | `notice_subject_code` | No | Subject classification, e.g. `PERS`; at most 4 characters. |
 
-The response remains **HTTP 201** with a string document ID:
+The response is **HTTP 201** with a `Location` header pointing to the PDF download
+(for example, `/digitalforms-viirp/v1/documents/102220`) and a string document ID:
 
 ```json
 {"document_id":"102220"}

@@ -9,7 +9,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTablesResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
@@ -42,13 +42,13 @@ public class VipsRestServiceImpl implements VipsRestService {
 	}
 
 	@Override
-	public GetCodetablesServiceResponse getCodeTableValues() {
+	public CodeTablesResponse getCodeTableValues() {
 		return readResponse(webClient
                 .get()
                 .uri("/configuration")
                 .headers(headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()))
                 .retrieve()
-                .bodyToMono(GetCodetablesServiceResponse.class));
+                .bodyToMono(CodeTablesResponse.class));
 	}
 
 	/**

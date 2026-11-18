@@ -21,8 +21,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsConfigurationObj;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTablesResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTables;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -65,8 +65,8 @@ public class VipsRestServiceTest {
 	@Test
 	public void testGetCodeTableValues() {
 
-		GetCodetablesServiceResponse codeTablesServiceResponse = new GetCodetablesServiceResponse();
-		VipsConfigurationObj configuration = new VipsConfigurationObj();
+		CodeTablesResponse codeTablesServiceResponse = new CodeTablesResponse();
+		CodeTables configuration = new CodeTables();
 
 		codeTablesServiceResponse.setConfiguration(configuration);
 
@@ -74,7 +74,7 @@ public class VipsRestServiceTest {
 		when(this.requestHeadersUriMock.uri("/configuration")).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.headers(any(Consumer.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.retrieve()).thenReturn(this.responseMock);
-		when(this.responseMock.bodyToMono(GetCodetablesServiceResponse.class))
+		when(this.responseMock.bodyToMono(CodeTablesResponse.class))
 				.thenReturn(Mono.just(codeTablesServiceResponse));
 
 		var result = service.getCodeTableValues();

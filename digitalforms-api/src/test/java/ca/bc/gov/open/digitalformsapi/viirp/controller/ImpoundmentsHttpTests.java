@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
@@ -12,19 +14,19 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     private static final String NOTICE = "00123456";
     static final String BODY = """
             {
-              "vipsDocumentIdArray": [123456789012345], "vipsImpoundmentArray": [],
-              "vipsImpoundCreate": {
+              "documentIds": [123456789012345], "priorImpoundmentIds": [987],
+              "impoundment": {
                 "impoundmentNoticeNo": "00123456", "dlJurisdictionCd": "BC",
                 "impoundmentDt": "2022-10-11",
                 "noticeSubjectCd": "VEHI", "noticeTypeCd": "IMP",
-                "originalCauseCds": ["STUNT"], "policeDetatchmentId": 304, "policeFileNo": "HTTP-TEST"
+                "originalCauseCds": ["STUNT"], "policeDetachmentId": 304, "policeFileNo": "HTTP-TEST"
               },
-              "vipsRegistrationCreateArray": [{
+              "registrations": [{
                 "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
-                "surnameNm": "HTTP TEST", "vipsAddressArray": [],
-                "vipsLicenceObj": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
+                "surnameNm": "HTTP TEST", "addresses": [],
+                "licence": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
               }],
-              "vipsVehicleCreate": {"registrationNo": "00005678", "licencePlateNo": "TEST"}
+              "vehicle": {"registrationNo": "00005678", "licencePlateNo": "TEST"}
             }
             """;
 
@@ -51,17 +53,39 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         assertFalse(submitted.at("/vipsRegistrationCreateArray/0").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertEquals("00005678", submitted.at("/vipsVehicleCreate/registrationNo").asString());
+        assertEquals(304L, submitted.at("/vipsImpoundCreate/policeDetatchmentId").asLong());
+        assertEquals(987L, submitted.at("/vipsImpoundmentArray/0").asLong());
+        assertTrue(submitted.at("/vipsRegistrationCreateArray/0/vipsAddressArray").isArray());
+        assertEquals(Set.of("vipsDocumentIdArray", "vipsImpoundCreate", "vipsImpoundmentArray",
+                "vipsRegistrationCreateArray", "vipsVehicleCreate"),
+                Set.copyOf(submitted.propertyNames()), "VIPS WS binds only its own property names");
+        assertFalse(submitted.path("vipsImpoundCreate").has("policeDetachmentId"));
+        assertFalse(submitted.at("/vipsRegistrationCreateArray/0").has("licence"));
+        assertFalse(submitted.at("/vipsRegistrationCreateArray/0").has("addresses"));
         assertEquals("2022-10-11T00:00:00.000-07:00", submitted.at("/vipsImpoundCreate/impoundmentDt").asString());
 
         vips.enqueue(200, "{\"respCd\":0,\"resultsCount\":null,\"result\":[{\"impoundmentId\":123456789012345}]}");
         vips.enqueue(200, """
                 {"respCd":0,"result":{"impoundmentNoticeNo":"%s","dlJurisdictionCd":"BC",
-                 "impoundmentDt":"%s","extraVipsField":"ignored"}}
+                 "impoundmentDt":"%s","extraVipsField":"ignored","policeDetatchmentId":304,
+                 "judicialOrderYN":"N","fvpa":false,"cancelled":true,
+                 "registrations":[{"surnameNm":"HTTP TEST","vipsLicenceObj":{"driverLicenceNo":"00001234"},
+                  "vipsAddressArray":[{"cityNm":"VICTORIA"}]}],
+                 "documents":[{"documentId":7,"disclosureDocumentYN":"Y"}]}}
                 """.formatted(NOTICE, submitted.at("/vipsImpoundCreate/impoundmentDt").asString()));
         JsonNode result = responseJson(request("GET", resourcePath, null, AUTH), 200);
         assertEquals(NOTICE, result.path("impoundmentNoticeNo").asString());
         assertEquals("BC", result.path("dlJurisdictionCd").asString());
         assertEquals("2022-10-11", result.path("impoundmentDt").asString());
+        assertEquals(304L, result.path("policeDetachmentId").asLong());
+        assertEquals(json.readTree("true"), result.path("cancelled"));
+        assertEquals("00001234", result.at("/registrations/0/licence/driverLicenceNo").asString());
+        assertEquals("VICTORIA", result.at("/registrations/0/addresses/0/cityNm").asString());
+        assertEquals(json.readTree("true"), result.at("/documents/0/disclosureDocument"));
+        assertFalse(result.has("policeDetatchmentId"));
+        assertFalse(result.has("judicialOrderYN"));
+        assertFalse(result.at("/registrations/0").has("vipsLicenceObj"));
+        assertFalse(result.at("/documents/0").has("disclosureDocumentYN"));
         assertFalse(result.has("result"));
         assertFalse(result.has("respCd"));
         assertFalse(result.has("respMsg"));
@@ -136,7 +160,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     void missingDriverLicenceIsRejectedBeforeCallingVips() throws Exception {
         JsonNode error = responseJson(request("POST", "/impoundments",
                 BODY.replace("\"00001234\"", "\"\""), AUTH), 400);
-        assertEquals("vipsRegistrationCreateArray[0].vipsLicenceObj.driverLicenceNo",
+        assertEquals("registrations[0].licence.driverLicenceNo",
                 error.at("/errors/0/field").asString());
         assertEquals("Invalid license object - DL is a required field.", error.at("/errors/0/message").asString());
     }

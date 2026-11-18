@@ -34,12 +34,12 @@ import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
-import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibitionServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsAddressCreateObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsLicenceCreate;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionCreate;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsRegistrationCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibitionResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.AddressCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.LicenceCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.ProhibitionCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.Prohibition;
+import ca.bc.gov.open.digitalformsapi.viirp.model.RegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.ProhibitionSearchResponseType;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
@@ -81,7 +81,7 @@ public class ProhibitionsApiControllerTests {
 		
 		// Mock POST Prohibition body 
 		createProhibition = new CreateProhibition();
-		VipsProhibitionCreate vipsProhibitionCreate = new VipsProhibitionCreate();
+		ProhibitionCreate vipsProhibitionCreate = new ProhibitionCreate();
 		vipsProhibitionCreate.setCityNm("VICTORIA");
 		vipsProhibitionCreate.setDreEvaluationCds(null);
 		vipsProhibitionCreate.setEffectiveDt(LocalDate.parse("2018-10-11"));
@@ -91,7 +91,7 @@ public class ProhibitionsApiControllerTests {
 		vipsProhibitionCreate.setNoticeSubjectCd("PERS");
 		vipsProhibitionCreate.setNoticeTypeCd("UL");
 		vipsProhibitionCreate.setOriginalCauseCd("IRPINDEF");
-		vipsProhibitionCreate.setPoliceDetatchmentId(304L);
+		vipsProhibitionCreate.setPoliceDetachmentId(304L);
 		vipsProhibitionCreate.setPoliceFileNo("802");
 		vipsProhibitionCreate.setPoliceOfficerNm("Police Name");
 		vipsProhibitionCreate.setPoliceFileNo("1234");
@@ -101,7 +101,7 @@ public class ProhibitionsApiControllerTests {
 		vipsProhibitionCreate.setTempDlEffectiveDt(null);
 		vipsProhibitionCreate.setTempDlExpiryDt(null);			
 		
-		VipsRegistrationCreate vipsRegistrationCreate = new VipsRegistrationCreate();
+		RegistrationCreate vipsRegistrationCreate = new RegistrationCreate();
 		vipsRegistrationCreate.setDataSourceCd("VIPS");
 		vipsRegistrationCreate.setFirstGivenNm("AARON");
 		vipsRegistrationCreate.setIcbcEnterpriseId("123");
@@ -109,8 +109,8 @@ public class ProhibitionsApiControllerTests {
 		vipsRegistrationCreate.setSecondGivenNm("CHRISTOPHER");
 		vipsRegistrationCreate.setSurnameNm("SMITH");
 		
-		List<VipsAddressCreateObj> vipsAddressArray = new ArrayList<>(); 
-		VipsAddressCreateObj vipsAddressCreateObj = new VipsAddressCreateObj();
+		List<AddressCreate> vipsAddressArray = new ArrayList<>(); 
+		AddressCreate vipsAddressCreateObj = new AddressCreate();
 		vipsAddressCreateObj.setAddressFirstLineTxt("2018 Warner Bros. Pl");
 		vipsAddressCreateObj.setCityNm("Burbank");
 		vipsAddressCreateObj.setCountryNm("USA");
@@ -118,20 +118,20 @@ public class ProhibitionsApiControllerTests {
 		vipsAddressCreateObj.setProvinceCd("CA");
 		vipsAddressCreateObj.setRegistrationAddressTypeCd("MAIL");
 		
-		VipsLicenceCreate vipsLicenceCreateObj = new VipsLicenceCreate();
+		LicenceCreate vipsLicenceCreateObj = new LicenceCreate();
 
 		vipsLicenceCreateObj.setBirthDt(LocalDate.parse("1971-04-08"));
 		vipsLicenceCreateObj.setDriverLicenceNo("4771979");
 		vipsLicenceCreateObj.setDlJurisdictionCd("FL");
 		
-		vipsRegistrationCreate.setVipsLicenceObj(vipsLicenceCreateObj);
-		vipsRegistrationCreate.setVipsAddressArray(vipsAddressArray);
+		vipsRegistrationCreate.setLicence(vipsLicenceCreateObj);
+		vipsRegistrationCreate.setAddresses(vipsAddressArray);
 		
 		List<Long> vipsDocumentIdArray = new ArrayList<>();
 		
-		createProhibition.setVipsProhibitionCreate(vipsProhibitionCreate); // 1
-		createProhibition.setVipsRegistrationCreate(vipsRegistrationCreate); // 2
-		createProhibition.setVipsDocumentIdArray(vipsDocumentIdArray); // 3
+		createProhibition.setProhibition(vipsProhibitionCreate); // 1
+		createProhibition.setRegistration(vipsRegistrationCreate); // 2
+		createProhibition.setDocumentIds(vipsDocumentIdArray); // 3
 		
 		
 		//Mock VIPS WS Notice number for Prohibition Search response
@@ -144,7 +144,7 @@ public class ProhibitionsApiControllerTests {
 				
 		// Mock VIPS WS GET Prohibition response. 
 		vipsProhibition = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse();
-		ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj vipsProhibitionObj = new ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj();
+		Prohibition vipsProhibitionObj = new Prohibition();
 		vipsProhibitionObj.setCityNm("VICTORIA");
 		vipsProhibitionObj.setCancelled(false);
 		vipsProhibition.setResult(vipsProhibitionObj);
@@ -163,8 +163,8 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.createProhibition(createProhibition)).thenReturn(response);
         
         // Create successful call and validate response 
-        ResponseEntity<CreateProhibitionServiceResponse> controllerResponse = controller.createProhibition(createProhibition, null);
-        CreateProhibitionServiceResponse result = controllerResponse.getBody();
+        ResponseEntity<CreateProhibitionResponse> controllerResponse = controller.createProhibition(createProhibition, null);
+        CreateProhibitionResponse result = controllerResponse.getBody();
         Mockito.verify(service).createProhibition(createProhibition);
 		assertEquals(123L, result.getProhibitionId());
         assertEquals("/prohibitions/21900601", controllerResponse.getHeaders().getLocation().toString());
@@ -216,7 +216,7 @@ public class ProhibitionsApiControllerTests {
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors[0].field").value("vipsProhibitionCreate.incidentDtm"))
+				.andExpect(jsonPath("$.errors[0].field").value("prohibition.incidentDtm"))
 				.andExpect(jsonPath("$.errors[0].message").value(TemporalJson.DATE_TIME_MESSAGE));
 	    
 	}
@@ -239,8 +239,8 @@ public class ProhibitionsApiControllerTests {
         Mockito.when(service.getProhibition(prohibitionId)).thenReturn(vipsProhibition);
         
         // Create successful search notice number call with prohibitionId and validate response 
-        ResponseEntity<VipsProhibitionObj> controllerResponse = controller.getProhibition(noticeNo, null);
-        VipsProhibitionObj result = controllerResponse.getBody();
+        ResponseEntity<Prohibition> controllerResponse = controller.getProhibition(noticeNo, null);
+        Prohibition result = controllerResponse.getBody();
         assertEquals("VICTORIA", result.getCityNm());
         
     }

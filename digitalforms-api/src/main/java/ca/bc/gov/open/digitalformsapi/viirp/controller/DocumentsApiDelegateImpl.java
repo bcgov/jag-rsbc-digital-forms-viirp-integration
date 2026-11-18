@@ -31,8 +31,8 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.BadRequestException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CreateDocumentResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.Document;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
@@ -62,14 +62,14 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	private VipsRestService digitalformsApiService;
 	
 	@Override
-	public ResponseEntity<List<VipsDocumentObj>> listProhibitionDocuments(
+	public ResponseEntity<List<Document>> listProhibitionDocuments(
 	        String noticeNo, String xCorrelationID) {
 		Long prohibitionId = findProhibitionId(noticeNo);
 		return ResponseEntity.ok(getNoticeDocuments(noticeNo, null, prohibitionId));
 	}
 
 	@Override
-	public ResponseEntity<List<VipsDocumentObj>> listImpoundmentDocuments(
+	public ResponseEntity<List<Document>> listImpoundmentDocuments(
 	        String noticeNo, String xCorrelationID) {
 		Long impoundmentId = findImpoundmentId(noticeNo);
 		return ResponseEntity.ok(getNoticeDocuments(noticeNo, impoundmentId, null));
@@ -119,7 +119,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		return search.getResult().get(0).getProhibitionId();
 	}
 
-	private List<VipsDocumentObj> getNoticeDocuments(
+	private List<Document> getNoticeDocuments(
 	        String noticeNo, Long impoundmentId, Long prohibitionId) {
 		var upstream = digitalformsApiService.getDocumentsMetaList(impoundmentId, prohibitionId);
 		if (upstream == null || upstream.getRespCd() != DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
@@ -182,7 +182,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		return response.getResult().getNoticeTypeCd();
 	}
 
-	private boolean containsDocument(List<VipsDocumentObj> documents, Long documentId) {
+	private boolean containsDocument(List<Document> documents, Long documentId) {
 		return documents.stream().filter(Objects::nonNull)
 				.anyMatch(document -> Objects.equals(documentId, document.getDocumentId()));
 	}
@@ -200,17 +200,17 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	 * The page count stored in VIPS is read from the PDF, not supplied by the client. 
 	 */
 	@Override
-	public ResponseEntity<VipsDocumentResponse> storeDocument(
-	        String typeCode, MultipartFile file, String xCorrelationID,
-	        String noticeTypeCode, String noticeSubjectCode) {
+	public ResponseEntity<CreateDocumentResponse> storeDocument(
+	        String documentTypeCd, MultipartFile file, String xCorrelationID,
+	        String noticeTypeCd, String noticeSubjectCd) {
 		
 		logger.info("Heard a call to the endpoint 'storeDocument'");
 		
 		PdfUpload upload = readPdfUpload(file);
-		VipsDocumentResponse resp = new VipsDocumentResponse();
+		CreateDocumentResponse resp = new CreateDocumentResponse();
 	
 		VipsDocumentOrdsResponse _resp = vipsOrdsService.storeDocument(
-				typeCode, upload.content(), noticeTypeCode, noticeSubjectCode, upload.pageCount());
+				documentTypeCd, upload.content(), noticeTypeCd, noticeSubjectCd, upload.pageCount());
 		if (_resp == null) {
 			throw UpstreamServiceException.invalidResponse("VIPS ORDS returned an empty document-upload response.");
 		}
@@ -219,20 +219,22 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			if (_resp.getDocumentId() == null || !_resp.getDocumentId().matches("[0-9]+")) {
 				throw UpstreamServiceException.invalidResponse("VIPS ORDS returned an invalid document ID.");
 			}
+			long documentId;
 			try {
-				if (Long.parseLong(_resp.getDocumentId()) < 1) {
-					throw UpstreamServiceException.invalidResponse("VIPS ORDS returned a nonpositive document ID.");
-				}
+				documentId = Long.parseLong(_resp.getDocumentId());
 			} catch (NumberFormatException e) {
 				throw UpstreamServiceException.invalidResponse("VIPS ORDS returned a document ID outside the int64 range.");
 			}
-			resp.setDocumentId(_resp.getDocumentId());
+			if (documentId < 1) {
+				throw UpstreamServiceException.invalidResponse("VIPS ORDS returned a nonpositive document ID.");
+			}
+			resp.setDocumentId(documentId);
 		} else {
 			logger.error("VIPS ORDS error response code: {}, response msg: {}", _resp.getStatusCode(), _resp.getStatusMessage());
-			throw UpstreamServiceException.invalidResponse("VIPS ORDS document upload failed. Type Code: " + typeCode);
+			throw UpstreamServiceException.invalidResponse("VIPS ORDS document upload failed. Document type code: " + documentTypeCd);
 		}
 		return ResponseEntity.created(UriComponentsBuilder.fromPath(request.getContextPath())
-				.pathSegment("documents", resp.getDocumentId()).build().encode().toUri()).body(resp);
+				.pathSegment("documents", String.valueOf(resp.getDocumentId())).build().encode().toUri()).body(resp);
 	}
 
 	private record PdfUpload(byte[] content, int pageCount) { }

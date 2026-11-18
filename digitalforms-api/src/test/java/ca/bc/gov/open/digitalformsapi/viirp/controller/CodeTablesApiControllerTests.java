@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 //import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTablesResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -47,12 +47,12 @@ class CodeTablesApiControllerTests {
 	@Test
     public void testCodeTablesApiGetSuccess() {
         
-		GetCodetablesServiceResponse response = new GetCodetablesServiceResponse();
-		response.setConfiguration(new ca.bc.gov.open.digitalformsapi.viirp.model.VipsConfigurationObj());
+		CodeTablesResponse response = new CodeTablesResponse();
+		response.setConfiguration(new ca.bc.gov.open.digitalformsapi.viirp.model.CodeTables());
 
         Mockito.when(service.getCodeTableValues()).thenReturn(response);
-        ResponseEntity<GetCodetablesServiceResponse> controllerResponse = controller.getCodeTables(null);
-        GetCodetablesServiceResponse result = controllerResponse.getBody();
+        ResponseEntity<CodeTablesResponse> controllerResponse = controller.getCodeTables(null);
+        CodeTablesResponse result = controllerResponse.getBody();
         Mockito.verify(service).getCodeTableValues();
         assertEquals(response.getConfiguration(), result.getConfiguration());
     }

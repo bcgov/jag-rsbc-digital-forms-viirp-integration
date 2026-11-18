@@ -1,6 +1,6 @@
 package ca.bc.gov.open.digitalformsapi.viirp.service;
 
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTablesResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
@@ -22,11 +22,11 @@ import reactor.core.publisher.Flux;
 public interface VipsRestService {
 	
 	/**
-	 * Retrieves a {@link GetCodetablesServiceResponse} by proxying the VIPS WS call to the 'configuration' endpoint
+	 * Retrieves a {@link CodeTablesResponse} by proxying the VIPS WS call to the 'configuration' endpoint
 	 * 
 	 * @return
 	 */
-	public GetCodetablesServiceResponse getCodeTableValues();
+	public CodeTablesResponse getCodeTableValues();
 	
 	/**
 	 * 

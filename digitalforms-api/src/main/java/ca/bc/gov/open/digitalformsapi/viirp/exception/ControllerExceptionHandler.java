@@ -40,6 +40,7 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ApiProblemDetails.ValidationError;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.BooleanJson;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.MismatchedInputException;
@@ -153,11 +154,14 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 error.getDefaultMessage() == null ? "Invalid value." : error.getDefaultMessage());
     }
 
-    /** Names the field for an invalid date or date-time; any other unreadable body stays generic. */
+    /** Names the field for an invalid date, date-time or boolean; any other unreadable body stays generic. */
     private static ValidationError unreadableBodyError(Throwable ex) {
         for (Throwable cause = ex; cause != null && cause != cause.getCause(); cause = cause.getCause()) {
             if (cause instanceof MismatchedInputException mismatch) {
                 String message = TemporalJson.message(mismatch.getTargetType());
+                if (message == null) {
+                    message = BooleanJson.message(mismatch.getTargetType());
+                }
                 String field = jsonField(mismatch.getPath());
                 if (message != null && !field.isEmpty()) {
                     return new ValidationError(field, message);

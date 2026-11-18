@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import ca.bc.gov.open.digitalformsapi.viirp.api.CodetablesApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
-import ca.bc.gov.open.digitalformsapi.viirp.model.GetCodetablesServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTablesResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 
 @Service
@@ -21,15 +21,15 @@ public class CodeTablesApiDelegateImpl implements CodetablesApiDelegate{
 	private VipsRestService digitalformsApiService;
 	
 	@Override
-	public ResponseEntity<GetCodetablesServiceResponse> getCodeTables(String xCorrelationID) {
+	public ResponseEntity<CodeTablesResponse> getCodeTables(String xCorrelationID) {
 		
 		logger.info("Heard a call to the endpoint 'getCodeTables'");
 		
-		GetCodetablesServiceResponse _resp = digitalformsApiService.getCodeTableValues();
+		CodeTablesResponse _resp = digitalformsApiService.getCodeTableValues();
 		
 		if (_resp == null || _resp.getConfiguration() == null) {
 			throw UpstreamServiceException.invalidResponse("VIPS returned no code-table configuration.");
 		}
-		return new ResponseEntity<GetCodetablesServiceResponse>(_resp, HttpStatus.OK);
+		return new ResponseEntity<CodeTablesResponse>(_resp, HttpStatus.OK);
 	}
 }

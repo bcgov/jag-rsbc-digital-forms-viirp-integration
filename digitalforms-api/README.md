@@ -178,7 +178,7 @@ rendered with Spring `ProblemDetail` and `Content-Type: application/problem+json
   "instance": "/digitalforms-viirp/v1/prohibitions",
   "errors": [
     {
-      "field": "vipsProhibitionCreate.prohibitionNoticeNo",
+      "field": "prohibition.prohibitionNoticeNo",
       "message": "must not be null"
     }
   ]
@@ -211,7 +211,8 @@ health retains its standard health payload, including `{"status":"DOWN"}` with 5
 `GET /prohibitions/{noticeNo}` and `GET /impoundments/{noticeNo}` return the existing
 notice fields directly, without `{"result": ...}`. The two typed document collection
 GETs return a JSON array rather than `{"results": [...]}`; a known notice with no
-documents returns `[]`. Field names, types and nested resource fields are unchanged.
+documents returns `[]`. Nested resources use the names and types in
+[Consistent names and types](#consistent-names-and-types).
 `GET /codetables` retains its `configuration` data but no longer exposes VIPS `respMsg`.
 
 All three create operations return **201 Created** and **Location**. The header is a
@@ -246,7 +247,7 @@ create contract. Neither manual-driver nor ICBC processing produces a caller-fac
 warning in a successful create response.
 
 These response changes do not alter approval rules, upstream calls or retry policies.
-Uploads retain `{"document_id":"..."}`.
+Uploads return the integer `{"documentId":102220}`.
 Idempotent document associations remain bodyless 204 responses.
 
 #### Dates and timestamps
@@ -277,6 +278,59 @@ timestamp from VIPS returns 502 `Invalid response from VIPS.`
 need exactly three fraction digits or a negative offset. Responses return dates as
 `YYYY-MM-DD` and timestamps with milliseconds and an offset.
 
+#### Consistent names and types
+
+The public contract uses camelCase names without VIPS prefixes or `Obj`/`YN` suffixes,
+JSON booleans for flags and an integer document ID. Only the VI/IRP VIPS WS client
+(`VipsJson`) translates these to the historical VIPS WS property names and `"Y"`/`"N"`
+strings. The VIPS WS contract, ORDS client and database are unchanged.
+
+| Before | Now |
+|---|---|
+| `vipsDocumentIdArray` | `documentIds` |
+| `vipsProhibitionCreate`, `vipsRegistrationCreate` | `prohibition`, `registration` |
+| `vipsImpoundCreate`, `vipsRegistrationCreateArray`, `vipsVehicleCreate` | `impoundment`, `registrations`, `vehicle` |
+| `vipsImpoundmentArray` | `priorImpoundmentIds` |
+| `vipsAddressArray`, `vipsLicenceObj` | `addresses`, `licence` |
+| `policeDetatchmentId` | `policeDetachmentId` |
+| `driverLicenceSeizedYN: "Y"` / `"N"` | `driverLicenceSeized: true` / `false` |
+| `disclosureDocumentYN` | `disclosureDocument` (boolean) |
+| Code tables `data_sources`, `registration_roles` | `dataSources`, `registrationRoles` |
+| Code-table `activeYN`, `internalYN`, `noticeActiveYN`, `documentActiveYN`, `reviewAppActiveYN` | `active`, `internal`, `noticeActive`, `documentActive`, `reviewAppActive` (booleans) |
+| Upload parts `type_code`, `notice_type_code`, `notice_subject_code` | `documentTypeCd`, `noticeTypeCd`, `noticeSubjectCd` |
+| Upload response `{"document_id":"102220"}` | `{"documentId":102220}` (int64) |
+| Impoundment `driverLicenceNo` maximum 8; licence `driverLicenceNo` maximum 10 | Both maximum 20 |
+| Impoundment `policeOfficerNm` maximum 100 | Maximum 60, matching prohibitions and the VIPS column |
+
+OpenAPI schema names also drop the VIPS naming, which changes generated client type
+names:
+
+| Before | Now |
+|---|---|
+| `VipsProhibitionCreate`, `VipsProhibitionObj` | `ProhibitionCreate`, `Prohibition` |
+| `VipsImpoundmentCreate`, `VipsImpoundObj` | `ImpoundmentCreate`, `Impoundment` |
+| `VipsRegistrationCreate`, `VipsRegistrationObj` | `RegistrationCreate`, `Registration` |
+| `VipsAddressCreateObj`, `VipsAddressObj` | `AddressCreate`, `Address` |
+| `VipsLicenceCreate`, `VipsLicenceObj` | `LicenceCreate`, `Licence` |
+| `VipsVehicleCreate`, `VipsVehicleObj` | `VehicleCreate`, `Vehicle` |
+| `VipsDocumentObj`, `storeVIPSDocument`, `vipsDocumentResponse` | `Document`, `DocumentUpload`, `CreateDocumentResponse` |
+| `CreateProhibitionServiceResponse`, `CreateImpoundmentServiceResponse` | `CreateProhibitionResponse`, `CreateImpoundmentResponse` |
+| `GetCodetablesServiceResponse`, `VipsConfigurationObj` | `CodeTablesResponse`, `CodeTables` |
+| `VipsCodeDescriptionObj`, `VipsCodeDescAbbrevObj`, `VipsIdNameObj` | `CodeDescription`, `AbbreviatedCodeDescription`, `IdentityName` |
+| `VipsCodeDescByNoticeObj`, `VipsCodeDescAbbrByNoticeObj` | `NoticeTypeCodes`, `NoticeTypeAbbreviatedCodes` |
+| `VipsCodeDescByDocObj`, `VipsCodeDescByRVWAppObj` | `DocumentTypeCodes`, `ReviewApplicationTypeCodes` |
+
+Request booleans must be JSON `true` or `false`; `"Y"`, `"true"`, `1` and other values
+return 400 with the field path and `Must be true or false.` A required boolean that is
+missing or `null` returns the usual required-field error. Validation field paths use
+the new names, for example `registrations[0].licence.driverLicenceNo`. A VIPS WS flag
+other than `"Y"`, `"N"` or `null` returns 502 `Invalid response from VIPS.`
+
+**Caller migration:** rename request and response properties, multipart parts and
+generated client types as above; send booleans instead of `"Y"`/`"N"`, and read the
+upload `documentId` as a number. Old names are not accepted as aliases: an unknown
+property is ignored, so a required field sent only under its old name returns 400.
+
 #### Upstream failures and retries
 
 All business operations distinguish dependency failures from local VI/IRP errors.
@@ -306,15 +360,15 @@ Send the OAuth2 bearer token and the optional `X-Correlation-ID` header as for o
 | Part | Required | Value |
 |---|---|---|
 | `file` | Yes | A non-empty, readable PDF with 1 to 99,999 pages; at most 10 MiB (10,485,760 bytes). |
-| `type_code` | Yes | Document classification, e.g. `MV2723`; nonblank, at most 10 characters. |
-| `notice_type_code` | No | Notice classification, e.g. `IRP`; at most 3 characters. |
-| `notice_subject_code` | No | Subject classification, e.g. `PERS`; at most 4 characters. |
+| `documentTypeCd` | Yes | Document classification, e.g. `MV2723`; nonblank, at most 10 characters. |
+| `noticeTypeCd` | No | Notice classification, e.g. `IRP`; at most 3 characters. |
+| `noticeSubjectCd` | No | Subject classification, e.g. `PERS`; at most 4 characters. |
 
 The response is **HTTP 201** with a `Location` header pointing to the PDF download
-(for example, `/digitalforms-viirp/v1/documents/102220`) and a string document ID:
+(for example, `/digitalforms-viirp/v1/documents/102220`) and an integer (int64) document ID:
 
 ```json
-{"document_id":"102220"}
+{"documentId":102220}
 ```
 
 The API validates the PDF contents with PDFBox; it does not trust the filename or
@@ -347,8 +401,8 @@ the JSON 413 response; much larger rejected uploads may have their connection cl
 Deployment overrides must not lower these limits unintentionally.
 
 Uploading still **only stores a document**: the notice classifications do not associate
-it with a notice. The association endpoint and create-request `vipsDocumentIdArray`
-properties are unchanged.
+it with a notice. Use the association endpoint or the create-request `documentIds`
+property to associate it.
 
 `GET /documents/{documentId}` downloads the original document as `application/pdf`
 with an attachment filename. VI/IRP requests the raw PDF from VIPS and forwards its

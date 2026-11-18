@@ -38,7 +38,7 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
             assertFalse(error.path("message").asString().isBlank());
             fields.add(error.path("field").asString());
         }
-        assertEquals(Set.of("vipsDocumentIdArray", "vipsProhibitionCreate", "vipsRegistrationCreate"), fields);
+        assertEquals(Set.of("documentIds", "prohibition", "registration"), fields);
     }
 
     @Test
@@ -117,9 +117,9 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
         responseJson(request("POST", "/prohibitions",
                 ProhibitionsHttpTests.BODY.replace("\"21900601\"", "\"   \""), AUTH), 400);
         var impoundment = json.readTree(ImpoundmentsHttpTests.BODY);
-        impoundment.withArray("vipsRegistrationCreateArray").removeAll();
+        impoundment.withArray("registrations").removeAll();
         responseJson(request("POST", "/impoundments", impoundment.toString(), AUTH), 400);
-        impoundment.withArray("vipsRegistrationCreateArray").addNull();
+        impoundment.withArray("registrations").addNull();
         responseJson(request("POST", "/impoundments", impoundment.toString(), AUTH), 400);
     }
 }

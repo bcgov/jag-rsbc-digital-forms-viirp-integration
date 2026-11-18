@@ -39,7 +39,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         byte[] pdf = UnitTestUtilities.samplePdf();
         vips.enqueue(200, "{\"status_code\":\"0\",\"status_message\":\"success\",\"document_id\":\"" + documentId + "\"}");
         var created = upload(pdf);
-        assertEquals(json.readTree("{\"document_id\":\"" + documentId + "\"}"), responseJson(created, 201));
+        assertEquals(json.readTree("{\"documentId\":" + documentId + "}"), responseJson(created, 201));
         String resourcePath = createdResourcePath(created, "/documents/" + documentId);
         var stored = ords("POST", "/ords/storeDocument");
         assertEquals("application/pdf", stored.headers().getFirst("Content-Type"));
@@ -59,8 +59,8 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     void forwardsNoticeMetadataAndPageCountReadFromPdfWithoutAssociating() throws Exception {
         vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
         responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf(3))),
-                Map.of("type_code", "MV2723", "notice_type_code", "IRP",
-                        "notice_subject_code", "PERS", "pageCount", "abc")), 201);
+                Map.of("documentTypeCd", "MV2723", "noticeTypeCd", "IRP",
+                        "noticeSubjectCd", "PERS", "pageCount", "abc")), 201);
         var stored = ords("POST", "/ords/storeDocument");
         assertEquals("type_code=MV2723&mime_type=application&mime_sub_type=pdf&auth_guid=route-test-guid"
                 + "&notice_type_code=IRP&notice_subject_code=PERS&page_count=3", stored.uri().getRawQuery());
@@ -80,12 +80,12 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         byte[] pdf = UnitTestUtilities.samplePdf();
         responseJson(upload(List.of(pdfPart(pdf),
                 new UploadPart(secondName, "second.pdf", "application/pdf", pdf)),
-                Map.of("type_code", "MV2723")), 400);
+                Map.of("documentTypeCd", "MV2723")), 400);
     }
 
     @Test
     void rejectsMissingOrEmptyFile() throws Exception {
-        responseJson(upload(List.of(), Map.of("type_code", "MV2723")), 400);
+        responseJson(upload(List.of(), Map.of("documentTypeCd", "MV2723")), 400);
         responseJson(upload(new byte[0]), 400);
     }
 
@@ -114,18 +114,19 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     void identifiesPdfFromContentRatherThanTrustingFilenameOrMime() throws Exception {
         vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
         responseJson(upload(List.of(new UploadPart("file", "upload.bin", "application/octet-stream",
-                UnitTestUtilities.samplePdf())), Map.of("type_code", "MV2723")), 201);
+                UnitTestUtilities.samplePdf())), Map.of("documentTypeCd", "MV2723")), 201);
         assertEquals("application/pdf", ords("POST", "/ords/storeDocument").headers().getFirst("Content-Type"));
     }
 
     @Test
     void rejectsInvalidMultipartMetadata() throws Exception {
         var file = List.of(pdfPart(UnitTestUtilities.samplePdf()));
-        for (var invalid : List.of(Map.entry("type_code", Map.<String, String>of()),
-                Map.entry("type_code", Map.of("type_code", " ")),
-                Map.entry("type_code", Map.of("type_code", "x".repeat(11))),
-                Map.entry("notice_type_code", Map.of("type_code", "MV2723", "notice_type_code", "LONG")),
-                Map.entry("notice_subject_code", Map.of("type_code", "MV2723", "notice_subject_code", "LONGER")))) {
+        for (var invalid : List.of(Map.entry("documentTypeCd", Map.<String, String>of()),
+                Map.entry("documentTypeCd", Map.of("type_code", "MV2723")),
+                Map.entry("documentTypeCd", Map.of("documentTypeCd", " ")),
+                Map.entry("documentTypeCd", Map.of("documentTypeCd", "x".repeat(11))),
+                Map.entry("noticeTypeCd", Map.of("documentTypeCd", "MV2723", "noticeTypeCd", "LONG")),
+                Map.entry("noticeSubjectCd", Map.of("documentTypeCd", "MV2723", "noticeSubjectCd", "LONGER")))) {
             var problem = responseJson(upload(file, invalid.getValue()), 400);
             assertEquals(invalid.getKey(), problem.at("/errors/0/field").asString(), problem.toString());
         }
@@ -143,7 +144,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @Test
     void rejectsOversizedMultipartRequestAndMalformedMultipart() throws Exception {
         responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf())),
-                Map.of("type_code", "x".repeat(11 * 1024 * 1024))), 413);
+                Map.of("documentTypeCd", "x".repeat(11 * 1024 * 1024))), 413);
         responseJson(requestBytes("POST", "/documents", new byte[0], AUTH, "multipart/form-data"), 400);
     }
 
@@ -424,7 +425,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     }
 
     private HttpResponse<String> upload(byte[] pdf) throws Exception {
-        return upload(List.of(pdfPart(pdf)), Map.of("type_code", "MV2702A"));
+        return upload(List.of(pdfPart(pdf)), Map.of("documentTypeCd", "MV2702A"));
     }
 
     private HttpResponse<String> upload(List<UploadPart> files, Map<String, String> fields) throws Exception {

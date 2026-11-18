@@ -470,6 +470,13 @@ With `JAVA_HOME` pointing to JDK 21, run from the repository root:
 mvn -B -ntp clean verify
 ```
 
+Both Spring test starters exclude JSONAssert's transitive `android-json` dependency.
+Tests retain JSONAssert but use the same `org.json:json` library supplied by the
+ORDS client in production, avoiding duplicate `org.json.JSONObject` implementations
+and classpath-order-dependent behavior. `JsonClasspathTest` guards against duplicates.
+After changing these dependencies, reload the Maven project in your IDE before
+rerunning JUnit tests.
+
 The HTTP regression suites in [src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller](src/test/java/ca/bc/gov/open/digitalformsapi/viirp/controller)
 start the application on a random port with the real security filters, controllers,
 JSON codecs, and VIPS WebClient/ORDS client. A loopback HTTP stub replaces the remote

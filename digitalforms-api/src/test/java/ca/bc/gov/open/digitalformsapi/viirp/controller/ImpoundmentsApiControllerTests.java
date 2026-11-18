@@ -31,13 +31,13 @@ import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
-import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentServiceResponse;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsAddressCreateObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundmentCreate;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsLicenceCreate;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsRegistrationCreate;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsVehicleCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundmentResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.AddressCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.Impoundment;
+import ca.bc.gov.open.digitalformsapi.viirp.model.ImpoundmentCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.LicenceCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.RegistrationCreate;
+import ca.bc.gov.open.digitalformsapi.viirp.model.VehicleCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
@@ -81,7 +81,7 @@ public class ImpoundmentsApiControllerTests {
 		
 		// Mock POST Impoundment body 
 		createImpoundment = new CreateImpoundment();
-		VipsImpoundmentCreate vipsImpoundmentCreate = new VipsImpoundmentCreate();
+		ImpoundmentCreate vipsImpoundmentCreate = new ImpoundmentCreate();
 		vipsImpoundmentCreate.setDlJurisdictionCd("BC");
 		vipsImpoundmentCreate.setImpoundmentDt(LocalDate.parse("2021-10-08"));
 		vipsImpoundmentCreate.setImpoundmentNoticeNo("12345678");
@@ -89,17 +89,17 @@ public class ImpoundmentsApiControllerTests {
 		vipsImpoundmentCreate.setNoticeTypeCd("IMP");
 		List<String> originalCauseCds = Arrays.asList("STUNT");
 		vipsImpoundmentCreate.setOriginalCauseCds(originalCauseCds);
-		vipsImpoundmentCreate.setPoliceDetatchmentId(304L);
+		vipsImpoundmentCreate.setPoliceDetachmentId(304L);
 		vipsImpoundmentCreate.setPoliceOfficerNm("Jones");
 		vipsImpoundmentCreate.setPoliceOfficerNo("420");
 		vipsImpoundmentCreate.setPoliceFileNo("29");
 		vipsImpoundmentCreate.setSeizureLocationTxt("Victoria");				
 
-		createImpoundment.setVipsImpoundCreate(vipsImpoundmentCreate);	
+		createImpoundment.setImpoundment(vipsImpoundmentCreate);	
 		
-		List<VipsRegistrationCreate> vipsRegistrationCreateArray = new ArrayList<>();
+		List<RegistrationCreate> vipsRegistrationCreateArray = new ArrayList<>();
 		
-		VipsRegistrationCreate vipsRegistrationCreate = new VipsRegistrationCreate();
+		RegistrationCreate vipsRegistrationCreate = new RegistrationCreate();
 		vipsRegistrationCreate.setDataSourceCd("VIPS");
 		vipsRegistrationCreate.setFirstGivenNm("AARON");
 		vipsRegistrationCreate.setIcbcEnterpriseId("123");
@@ -107,8 +107,8 @@ public class ImpoundmentsApiControllerTests {
 		vipsRegistrationCreate.setSecondGivenNm("CHRISTOPHER");
 		vipsRegistrationCreate.setSurnameNm("SMITH");
 		
-		List<VipsAddressCreateObj> vipsAddressArray = new ArrayList<>(); 
-		VipsAddressCreateObj vipsAddressCreateObj = new VipsAddressCreateObj();
+		List<AddressCreate> vipsAddressArray = new ArrayList<>(); 
+		AddressCreate vipsAddressCreateObj = new AddressCreate();
 		vipsAddressCreateObj.setAddressFirstLineTxt("2018 Warner Bros. Pl");
 		vipsAddressCreateObj.setCityNm("Burbank");
 		vipsAddressCreateObj.setCountryNm("USA");
@@ -116,16 +116,16 @@ public class ImpoundmentsApiControllerTests {
 		vipsAddressCreateObj.setProvinceCd("CA");
 		vipsAddressCreateObj.setRegistrationAddressTypeCd("MAIL");
 		
-		VipsLicenceCreate vipsLicenceCreateObj = new VipsLicenceCreate();
+		LicenceCreate vipsLicenceCreateObj = new LicenceCreate();
 
 		vipsLicenceCreateObj.setBirthDt(LocalDate.parse("1971-04-08"));
 		vipsLicenceCreateObj.setDriverLicenceNo("4771979");
 		vipsLicenceCreateObj.setDlJurisdictionCd("FL");
 		
-		vipsRegistrationCreate.setVipsLicenceObj(vipsLicenceCreateObj);
-		vipsRegistrationCreate.setVipsAddressArray(vipsAddressArray);
+		vipsRegistrationCreate.setLicence(vipsLicenceCreateObj);
+		vipsRegistrationCreate.setAddresses(vipsAddressArray);
 		
-		VipsVehicleCreate vipsVehicleCreate = new VipsVehicleCreate();
+		VehicleCreate vipsVehicleCreate = new VehicleCreate();
 		vipsVehicleCreate.setLicencePlateNo("RGAMB9");
 		vipsVehicleCreate.setLpDecalValidYy(2018L);
 		vipsVehicleCreate.setLpJurisdictionCd("BC");
@@ -141,11 +141,11 @@ public class ImpoundmentsApiControllerTests {
 		
 		List<Long> vipsImpoundmentArray = new ArrayList<>();
 		
-		createImpoundment.setVipsImpoundCreate(vipsImpoundmentCreate); // 1
-		createImpoundment.setVipsRegistrationCreateArray(vipsRegistrationCreateArray); // 2
-		createImpoundment.setVipsVehicleCreate(vipsVehicleCreate); // 3
-		createImpoundment.setVipsDocumentIdArray(vipsDocumentIdArray); // 4
-		createImpoundment.setVipsImpoundmentArray(vipsImpoundmentArray); // 5
+		createImpoundment.setImpoundment(vipsImpoundmentCreate); // 1
+		createImpoundment.setRegistrations(vipsRegistrationCreateArray); // 2
+		createImpoundment.setVehicle(vipsVehicleCreate); // 3
+		createImpoundment.setDocumentIds(vipsDocumentIdArray); // 4
+		createImpoundment.setPriorImpoundmentIds(vipsImpoundmentArray); // 5
 		
 		//Mock VIPS WS Notice number for Impoundment Search response
 		vipsSearch = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse();
@@ -157,7 +157,7 @@ public class ImpoundmentsApiControllerTests {
 		
 		// Mock VIPS WS GET Impoundment response. 
 		vipsImpoundment = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse();
-		VipsImpoundObj vipsImpoundObj = new VipsImpoundObj();
+		Impoundment vipsImpoundObj = new Impoundment();
 		vipsImpoundObj.setDlJurisdictionCd("BC");
 		vipsImpoundObj.setImpoundmentDt(LocalDate.parse("2018-10-22"));
 		vipsImpoundment.setResult(vipsImpoundObj);
@@ -176,8 +176,8 @@ public class ImpoundmentsApiControllerTests {
         Mockito.when(service.createImpoundment(createImpoundment)).thenReturn(response);
         
         // Create successful call and validate response 
-        ResponseEntity<CreateImpoundmentServiceResponse> controllerResponse = controller.createImpoundment(createImpoundment, null);
-        CreateImpoundmentServiceResponse result = controllerResponse.getBody();
+        ResponseEntity<CreateImpoundmentResponse> controllerResponse = controller.createImpoundment(createImpoundment, null);
+        CreateImpoundmentResponse result = controllerResponse.getBody();
         Mockito.verify(service).createImpoundment(createImpoundment);
 		Assertions.assertEquals(123L, result.getImpoundmentId());
         Assertions.assertEquals("/impoundments/12345678", controllerResponse.getHeaders().getLocation().toString());
@@ -228,7 +228,7 @@ public class ImpoundmentsApiControllerTests {
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors[0].field").value("vipsImpoundCreate.impoundmentDt"))
+				.andExpect(jsonPath("$.errors[0].field").value("impoundment.impoundmentDt"))
 				.andExpect(jsonPath("$.errors[0].message").value(TemporalJson.DATE_MESSAGE));
 	    
 	}
@@ -251,8 +251,8 @@ public class ImpoundmentsApiControllerTests {
         Mockito.when(service.getImpoundment(impoundmentId)).thenReturn(vipsImpoundment);
         
         // Create successful search notice number call with impoundmentId and validate response 
-        ResponseEntity<VipsImpoundObj> controllerResponse = controller.getImpoundment(noticeNo, null);
-        VipsImpoundObj result = controllerResponse.getBody();
+        ResponseEntity<Impoundment> controllerResponse = controller.getImpoundment(noticeNo, null);
+        Impoundment result = controllerResponse.getBody();
         Assertions.assertEquals("BC", result.getDlJurisdictionCd());
         
     }

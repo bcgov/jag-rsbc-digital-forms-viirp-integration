@@ -21,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.VipsJson;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -59,12 +60,13 @@ public class WebClientConfiguration {
     }
 
 	/**
-	 * Spring's default JSON codecs, plus the VIPS WS date and timestamp format.
+	 * Spring's default JSON codecs, plus the VIPS WS date and timestamp format, property names and Y/N flags.
 	 */
 	private void vipsJsonCodecs(ClientCodecConfigurer codecs) {
 		JsonMapper mapper = JsonMapper.builder()
 				.addModules(MapperBuilder.findModules(WebClientConfiguration.class.getClassLoader()))
 				.addModule(TemporalJson.vipsModule())
+				.addModule(VipsJson.module())
 				.build();
 		codecs.defaultCodecs().jacksonJsonEncoder(new JacksonJsonEncoder(mapper));
 		codecs.defaultCodecs().jacksonJsonDecoder(new JacksonJsonDecoder(mapper));

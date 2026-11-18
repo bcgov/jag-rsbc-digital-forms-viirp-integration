@@ -166,7 +166,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals("string", schema.path("properties").path("file").path("type").asString());
         assertEquals("binary", schema.path("properties").path("file").path("format").asString());
         assertTrue(schema.path("required").toString().contains("\"file\""));
-        assertTrue(schema.path("required").toString().contains("\"type_code\""), schema.toPrettyString());
+        assertTrue(schema.path("required").toString().contains("\"documentTypeCd\""), schema.toPrettyString());
         assertFalse(schema.path("properties").has("file_object"));
         assertFalse(schema.path("properties").has("mime_type"));
         assertFalse(schema.path("properties").has("mime_sub_type"));
@@ -174,7 +174,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertTrue(operation.path("responses").has("413"));
         var response = operation.path("responses").path("201").path("content")
                 .path("application/json").path("schema");
-        assertEquals("#/components/schemas/VipsDocumentResponse", response.path("$ref").asString());
+        assertEquals("#/components/schemas/CreateDocumentResponse", response.path("$ref").asString());
     }
 
     @Test
@@ -188,7 +188,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
             var collection = api.path("paths").path(path + "/documents").path("get")
                     .at("/responses/200/content/application~1json/schema");
             assertEquals("array", collection.path("type").asString());
-            assertEquals("#/components/schemas/VipsDocumentObj", collection.at("/items/$ref").asString());
+            assertEquals("#/components/schemas/Document", collection.at("/items/$ref").asString());
             assertEquals(CONTRACT_JSON.path("paths").path(path + "/documents").path("get")
                     .at("/responses/200/content/application~1json/schema"), collection);
         }
@@ -196,8 +196,8 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
             var created = api.path("paths").path("/" + resource).path("post").at("/responses/201");
             assertEquals(CONTRACT_JSON.at("/components/headers/Location"), created.at("/headers/Location"));
         }
-        for (String model : List.of("CreateProhibitionServiceResponse", "CreateImpoundmentServiceResponse",
-                "GetCodetablesServiceResponse")) {
+        for (String model : List.of("CreateProhibitionResponse", "CreateImpoundmentResponse",
+                "CodeTablesResponse")) {
             var canonical = CONTRACT_JSON.path("components").path("schemas").path(model);
             var published = api.path("components").path("schemas").path(model);
             assertEquals(canonical.path("properties").propertyNames(), published.path("properties").propertyNames());
@@ -253,6 +253,50 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals("GET", upstream.method());
         assertEquals("/configuration", upstream.uri().toString());
         assertEquals(basicAuth("vips-test", "vips-test-password"), upstream.headers().getFirst("Authorization"));
+    }
+
+    @Test
+    void codeTablesUseConsistentNamesAndJsonBooleans() throws Exception {
+        vips.enqueue(200, """
+                {"respCd":0,"configuration":{
+                 "data_sources":[{"objectCd":"VIPS","objectDsc":"VIPS","activeYN":"Y","internalYN":"N"}],
+                 "registration_roles":[{"objectCd":"REGOWN","objectDsc":"Owner","activeYN":"N","internalYN":"Y"}],
+                 "policeDetachments":[{"identityId":304,"identityNm":"Victoria","activeYN":"Y"}],
+                 "originalCauses":[{"noticeTypeCd":"IRP","noticeActiveYN":"Y",
+                  "codes":[{"objectCd":"IRPINDEF","objectAbbrev":"IND","activeYN":"N"}]}],
+                 "documentNotices":[{"documentTypeCd":"MV2702A","documentActiveYN":"N"}],
+                 "groundsDecisions":[{"reviewAppTypeCd":"IRP","reviewAppActiveYN":"Y","codes":[]}],
+                 "countries":[{"objectCd":"CAN","activeYN":null}],
+                 "iloDocumentTypes":[{"objectCd":"ignored"}]}}
+                """);
+        var response = responseJson(request("GET", "/codetables", null, AUTH), 200);
+        var configuration = response.path("configuration");
+        var yes = json.readTree("true");
+        var no = json.readTree("false");
+        assertEquals(yes, configuration.at("/dataSources/0/active"));
+        assertEquals(no, configuration.at("/dataSources/0/internal"));
+        assertEquals(no, configuration.at("/registrationRoles/0/active"));
+        assertEquals(yes, configuration.at("/registrationRoles/0/internal"));
+        assertEquals(yes, configuration.at("/policeDetachments/0/active"));
+        assertEquals(yes, configuration.at("/originalCauses/0/noticeActive"));
+        assertEquals(no, configuration.at("/originalCauses/0/codes/0/active"));
+        assertEquals(no, configuration.at("/documentNotices/0/documentActive"));
+        assertEquals(yes, configuration.at("/groundsDecisions/0/reviewAppActive"));
+        assertTrue(configuration.at("/countries/0/active").isNull());
+        for (String vipsName : List.of("data_sources", "registration_roles", "YN\"", "iloDocumentTypes")) {
+            assertFalse(response.toString().contains(vipsName), vipsName);
+        }
+        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"y\"", "\"Yes\"", "\"\"", "true", "1"})
+    void invalidCodeTableFlagIsAnInvalidUpstreamResponse(String flag) throws Exception {
+        vips.enqueue(200, "{\"configuration\":{\"countries\":[{\"objectCd\":\"CAN\",\"activeYN\":%s}]}}"
+                .formatted(flag));
+        var error = responseJson(request("GET", "/codetables", null, AUTH), 502);
+        assertEquals("Invalid response from VIPS.", error.path("detail").asString());
+        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
     }
 
     @Test
@@ -322,7 +366,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         String problem = """
                 {"type":"about:blank","title":"Bad Request","status":400,"detail":"Request validation failed.",
                  "instance":"/digitalforms-viirp/v1/prohibitions",
-                 "errors":[{"field":"vipsProhibitionCreate","message":"must not be null"}]}
+                 "errors":[{"field":"prohibition","message":"must not be null"}]}
                 """;
         assertConforms("POST", path, 400, problem, headers("application/problem+json", correlationId));
         assertThrows(AssertionError.class,
@@ -331,7 +375,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
                 () -> assertConforms("POST", path, 400, "{\"status_message\":\"Bad Request\"}",
                         headers("application/problem+json", correlationId)));
         assertThrows(AssertionError.class,
-                () -> assertConforms("POST", path, 400, problem.replace("\"field\":\"vipsProhibitionCreate\",", ""),
+                () -> assertConforms("POST", path, 400, problem.replace("\"field\":\"prohibition\",", ""),
                         headers("application/problem+json", correlationId)));
     }
 

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -28,6 +29,18 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     private static final List<String> ROUTES = List.of("/prohibitions", "/impoundments");
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final long CREATED_ID = 123456789012345L;
+    private static final Map<String, String> VIPS_NAMES = Map.ofEntries(
+            Map.entry("documentIds", "vipsDocumentIdArray"),
+            Map.entry("prohibition", "vipsProhibitionCreate"),
+            Map.entry("registration", "vipsRegistrationCreate"),
+            Map.entry("impoundment", "vipsImpoundCreate"),
+            Map.entry("priorImpoundmentIds", "vipsImpoundmentArray"),
+            Map.entry("registrations", "vipsRegistrationCreateArray"),
+            Map.entry("vehicle", "vipsVehicleCreate"),
+            Map.entry("addresses", "vipsAddressArray"),
+            Map.entry("licence", "vipsLicenceObj"),
+            Map.entry("policeDetachmentId", "policeDetatchmentId"),
+            Map.entry("driverLicenceSeized", "driverLicenceSeizedYN"));
     private static final List<Mutation> INVALID_STRINGS = List.of(
             Mutation.MISSING, Mutation.NULL, Mutation.EMPTY_STRING,
             Mutation.SPACE_ONLY, Mutation.TAB_ONLY, Mutation.NEWLINE_ONLY);
@@ -73,7 +86,7 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     void requiredDoesNotMeanNonemptyUnlessTheContractSaysSo(String route, String pointer) throws Exception {
         ObjectNode body = validBody(route);
         mutate(body, pointer, Mutation.EMPTY_ARRAY);
-        assertEquals(JSON.createArrayNode(), assertAccepted(route, body).at(pointer));
+        assertEquals(JSON.createArrayNode(), assertAccepted(route, body).at(vipsPointer(pointer)));
     }
 
     static Stream<Arguments> emptyAllowedArrays() {
@@ -88,13 +101,13 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     void licenceObjectsRemainOptional(String route, String pointer, Mutation mutation) throws Exception {
         ObjectNode body = validBody(route);
         mutate(body, pointer, mutation);
-        assertTrue(assertAccepted(route, body).at(pointer).isNull());
+        assertTrue(assertAccepted(route, body).at(vipsPointer(pointer)).isNull());
     }
 
     static Stream<Arguments> optionalLicenceObjects() {
         return ROUTES.stream().flatMap(route -> registrationPointers(route).stream()
                 .flatMap(pointer -> Stream.of(Mutation.MISSING, Mutation.NULL)
-                        .map(mutation -> Arguments.of(route, pointer + "/vipsLicenceObj", mutation))));
+                        .map(mutation -> Arguments.of(route, pointer + "/licence", mutation))));
     }
 
     @ParameterizedTest(name = "{0}: {1}")
@@ -109,16 +122,16 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     static Stream<Arguments> invalidImpoundmentLicences() {
         return registrationPointers("/impoundments").stream().flatMap(pointer -> Stream.concat(
                 INVALID_STRINGS.stream().map(mutation ->
-                        Arguments.of(pointer + "/vipsLicenceObj/driverLicenceNo", mutation)),
-                Stream.of(Arguments.of(pointer + "/vipsLicenceObj", Mutation.EMPTY_OBJECT))));
+                        Arguments.of(pointer + "/licence/driverLicenceNo", mutation)),
+                Stream.of(Arguments.of(pointer + "/licence", Mutation.EMPTY_OBJECT))));
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1})
     void nullImpoundmentRegistrationIsRejectedAtEveryPosition(int index) throws Exception {
         ObjectNode body = validBody("/impoundments");
-        body.withArray("vipsRegistrationCreateArray").set(index, NullNode.getInstance());
-        assertRejected("/impoundments", body, "vipsRegistrationCreateArray[" + index + "]");
+        body.withArray("registrations").set(index, NullNode.getInstance());
+        assertRejected("/impoundments", body, "registrations[" + index + "]");
     }
 
     @ParameterizedTest(name = "{0} {1} = {2}")
@@ -168,8 +181,8 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
             ObjectNode body = validBody(route);
             dates.forEach(field -> set(body, field.pointer(), text(date)));
             JsonNode submitted = assertAccepted(route, body);
-            dates.forEach(field -> assertEquals(vipsTimestamp, submitted.at(field.pointer()).asString(),
-                    route + field.pointer()));
+            dates.forEach(field -> assertEquals(vipsTimestamp,
+                    submitted.at(vipsPointer(field.pointer())).asString(), route + field.pointer()));
         }
     }
 
@@ -187,8 +200,33 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         ObjectNode body = validBody("/prohibitions");
         dateTimes.forEach(field -> set(body, field.pointer(), text(dateTime)));
         JsonNode submitted = assertAccepted("/prohibitions", body);
-        dateTimes.forEach(field -> assertEquals(vipsTimestamp, submitted.at(field.pointer()).asString(),
-                field.pointer()));
+        dateTimes.forEach(field -> assertEquals(vipsTimestamp,
+                submitted.at(vipsPointer(field.pointer())).asString(), field.pointer()));
+    }
+
+    @ParameterizedTest(name = "{0} {1}: {2} characters")
+    @MethodSource("vipsColumnLengths")
+    void stringLengthsMatchTheVipsColumns(String route, String pointer, int maxLength) throws Exception {
+        ObjectNode body = validBody(route);
+        set(body, pointer, text("X".repeat(maxLength)));
+        assertEquals("X".repeat(maxLength), assertAccepted(route, body).at(vipsPointer(pointer)).asString());
+        set(body, pointer, text("X".repeat(maxLength + 1)));
+        assertRejected(route, body, fieldPath(pointer));
+    }
+
+    static Stream<Arguments> vipsColumnLengths() {
+        return Stream.of(
+                Arguments.of("/prohibitions", "/registration/licence/driverLicenceNo", 20),
+                Arguments.of("/prohibitions", "/prohibition/policeOfficerNm", 60),
+                Arguments.of("/impoundments", "/impoundment/driverLicenceNo", 20),
+                Arguments.of("/impoundments", "/registrations/1/licence/driverLicenceNo", 20),
+                Arguments.of("/impoundments", "/impoundment/policeOfficerNm", 60));
+    }
+
+    /** Translates a public request pointer to the property names VIPS WS binds. */
+    private static String vipsPointer(String pointer) {
+        return Stream.of(pointer.split("/", -1)).map(segment -> VIPS_NAMES.getOrDefault(segment, segment))
+                .collect(Collectors.joining("/"));
     }
 
     private static String fieldPath(String pointer) {
@@ -212,7 +250,7 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         JsonNode response = responseJson(request("POST", route, body.toString(), AUTH), 201);
         assertEquals(CREATED_ID, response.path(type + "Id").asLong());
         String noticePointer = route.equals("/prohibitions")
-                ? "/vipsProhibitionCreate/prohibitionNoticeNo" : "/vipsImpoundCreate/impoundmentNoticeNo";
+                ? "/prohibition/prohibitionNoticeNo" : "/impoundment/impoundmentNoticeNo";
         checkedNotice(type, body.at(noticePointer).asString());
         return json.readTree(downstream("POST", "/cases" + route).body());
     }
@@ -304,9 +342,9 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         };
         ObjectNode body = JSON.readValue(fixture, ObjectNode.class);
         if (route.equals("/prohibitions")) {
-            addAddresses(assertInstanceOf(ObjectNode.class, body.path("vipsRegistrationCreate")));
+            addAddresses(assertInstanceOf(ObjectNode.class, body.path("registration")));
         } else {
-            ArrayNode registrations = body.withArray("vipsRegistrationCreateArray");
+            ArrayNode registrations = body.withArray("registrations");
             ObjectNode second = assertInstanceOf(ObjectNode.class, registrations.get(0)).deepCopy();
             second.put("registrationRoleCd", "DRVR").put("surnameNm", "SECOND HTTP TEST");
             registrations.add(second);
@@ -318,15 +356,15 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     }
 
     private static void addAddresses(ObjectNode registration) {
-        ArrayNode addresses = registration.putArray("vipsAddressArray");
+        ArrayNode addresses = registration.putArray("addresses");
         addresses.addObject().put("registrationAddressTypeCd", "RES");
         addresses.addObject().put("registrationAddressTypeCd", "MAIL");
     }
 
     private static List<String> registrationPointers(String route) {
-        return route.equals("/prohibitions") ? List.of("/vipsRegistrationCreate")
-                : IntStream.range(0, validBody(route).path("vipsRegistrationCreateArray").size())
-                        .mapToObj(i -> "/vipsRegistrationCreateArray/" + i).toList();
+        return route.equals("/prohibitions") ? List.of("/registration")
+                : IntStream.range(0, validBody(route).path("registrations").size())
+                        .mapToObj(i -> "/registrations/" + i).toList();
     }
 
     private static void mutate(ObjectNode body, String pointer, Mutation mutation) {

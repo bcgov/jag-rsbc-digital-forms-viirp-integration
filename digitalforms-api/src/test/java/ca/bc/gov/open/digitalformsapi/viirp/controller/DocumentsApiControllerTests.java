@@ -36,8 +36,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentObj;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsDocumentResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.Document;
+import ca.bc.gov.open.digitalformsapi.viirp.model.CreateDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.ProhibitionSearchResponseType;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
@@ -116,8 +116,8 @@ public class DocumentsApiControllerTests {
 		
 		// Mock VIPS WS GET Documents List response. 
 		vipsDocumentsResponse = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse();
-		List<VipsDocumentObj> documentsList = new ArrayList<VipsDocumentObj>();
-		VipsDocumentObj vipsDocumentObj = new VipsDocumentObj();
+		List<Document> documentsList = new ArrayList<Document>();
+		Document vipsDocumentObj = new Document();
 		vipsDocumentObj.setDocumentId(DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID);
 		vipsDocumentObj.setAddToFileDtm(OffsetDateTime.parse("2018-10-22T00:00:00.000-07:00"));
 		vipsDocumentObj.setDocumentTypeCd("MV2702A");
@@ -134,10 +134,10 @@ public class DocumentsApiControllerTests {
 		.thenReturn(goodOrds);
 		
 		// Create successful call and validate response 
-        ResponseEntity<VipsDocumentResponse> controllerResponse =
+        ResponseEntity<CreateDocumentResponse> controllerResponse =
                 controller.storeDocument("MV2702A", pdfFile, null, null, null);
-        VipsDocumentResponse result = controllerResponse.getBody();
-        Assertions.assertEquals("567", result.getDocumentId());
+        CreateDocumentResponse result = controllerResponse.getBody();
+        Assertions.assertEquals(567L, result.getDocumentId());
         assertEquals("/documents/567", controllerResponse.getHeaders().getLocation().toString());
         
     }
@@ -213,9 +213,9 @@ public class DocumentsApiControllerTests {
         Mockito.when(service.getDocumentsMetaList(impoundmentId, null)).thenReturn(vipsDocumentsResponse);
         
         // Create successful get documents call with noticeNo and validate response 
-        ResponseEntity<List<VipsDocumentObj>> controllerResponse =
+        ResponseEntity<List<Document>> controllerResponse =
             controller.listImpoundmentDocuments(noticeNo, null);
-        List<VipsDocumentObj> result = controllerResponse.getBody();
+        List<Document> result = controllerResponse.getBody();
         Assertions.assertTrue(result.size() > 0);
         Assertions.assertEquals("MV2702A", result.get(0).getDocumentTypeCd());
     }
@@ -238,9 +238,9 @@ public class DocumentsApiControllerTests {
         Mockito.when(service.getDocumentsMetaList(null, prohibitionId)).thenReturn(vipsDocumentsResponse);
         
         // Create successful get documents call with noticeNo and validate response 
-        ResponseEntity<List<VipsDocumentObj>> controllerResponse =
+        ResponseEntity<List<Document>> controllerResponse =
                 controller.listProhibitionDocuments(noticeNo, null);
-        List<VipsDocumentObj> result = controllerResponse.getBody();
+        List<Document> result = controllerResponse.getBody();
         Assertions.assertTrue(result.size() > 0);
         Assertions.assertEquals("MV2702A", result.get(0).getDocumentTypeCd());
     }

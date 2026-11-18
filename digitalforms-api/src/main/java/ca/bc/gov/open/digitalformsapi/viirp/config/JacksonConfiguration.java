@@ -3,6 +3,7 @@ package ca.bc.gov.open.digitalformsapi.viirp.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import ca.bc.gov.open.digitalformsapi.viirp.utils.BooleanJson;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
 import tools.jackson.databind.JacksonModule;
 
@@ -13,5 +14,10 @@ public class JacksonConfiguration {
     @Bean
     JacksonModule publicTemporalJsonModule() {
         return TemporalJson.publicModule();
+    }
+
+    @Bean
+    JacksonModule publicBooleanJsonModule() {
+        return BooleanJson.publicModule();
     }
 }

@@ -4,7 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import tools.jackson.databind.JsonNode;
 
 class ProhibitionsHttpTests extends HttpApiTestSupport {
@@ -12,20 +18,20 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
     private static final String NOTICE = "21900601";
     static final String BODY = """
             {
-              "vipsDocumentIdArray": [123456789012345],
-              "vipsProhibitionCreate": {
+              "documentIds": [123456789012345],
+              "prohibition": {
                 "prohibitionNoticeNo": "21900601",
-                "driverLicenceSeizedYN": "N",
+                "driverLicenceSeized": false,
                 "effectiveDt": "2022-10-11",
                 "noticeServedDt": "2022-10-11",
                 "noticeSubjectCd": "PERS", "noticeTypeCd": "IRP",
-                "originalCauseCd": "IRPINDEF", "policeDetatchmentId": 304,
+                "originalCauseCd": "IRPINDEF", "policeDetachmentId": 304,
                 "cityNm": "VICTORIA", "expiryDt": null
               },
-              "vipsRegistrationCreate": {
+              "registration": {
                 "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
-                "surnameNm": "HTTP TEST", "vipsAddressArray": [],
-                "vipsLicenceObj": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
+                "surnameNm": "HTTP TEST", "addresses": [],
+                "licence": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
               }
             }
             """;
@@ -54,6 +60,14 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertEquals("00001234", submitted.at("/vipsRegistrationCreate/vipsLicenceObj/driverLicenceNo").asString());
         assertFalse(submitted.at("/vipsRegistrationCreate").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
+        assertEquals(304L, submitted.at("/vipsProhibitionCreate/policeDetatchmentId").asLong());
+        assertTrue(submitted.at("/vipsRegistrationCreate/vipsAddressArray").isArray());
+        assertEquals(Set.of("vipsDocumentIdArray", "vipsProhibitionCreate", "vipsRegistrationCreate"),
+                Set.copyOf(submitted.propertyNames()), "VIPS WS binds only its own property names");
+        assertFalse(submitted.path("vipsProhibitionCreate").has("driverLicenceSeized"));
+        assertFalse(submitted.path("vipsProhibitionCreate").has("policeDetachmentId"));
+        assertFalse(submitted.path("vipsRegistrationCreate").has("licence"));
+        assertFalse(submitted.path("vipsRegistrationCreate").has("addresses"));
         assertTrue(submitted.at("/vipsProhibitionCreate/expiryDt").isNull());
         assertEquals("2022-10-11T00:00:00.000-07:00", submitted.at("/vipsProhibitionCreate/effectiveDt").asString(),
                 "VIPS WS binds dates as timestamps, so a date is sent as B.C. midnight");
@@ -65,7 +79,11 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 """);
         vips.enqueue(200, """
                 {"respCd":0,"result":{"prohibitionNoticeNo":"%s","cityNm":"%s",
-                 "effectiveDt":"%s","cancelled":false,"extraVipsField":"ignored"}}
+                 "effectiveDt":"%s","cancelled":false,"extraVipsField":"ignored",
+                 "policeDetatchmentId":304,"driverLicenceSeizedYN":"Y",
+                 "registration":{"surnameNm":"HTTP TEST","vipsLicenceObj":{"driverLicenceNo":"00001234"},
+                  "vipsAddressArray":[{"cityNm":"VICTORIA"}]},
+                 "documents":[{"documentId":7,"disclosureDocumentYN":"N"}]}}
                 """.formatted(NOTICE, submitted.at("/vipsProhibitionCreate/cityNm").asString(),
                         submitted.at("/vipsProhibitionCreate/effectiveDt").asString()));
         JsonNode result = responseJson(request("GET", resourcePath, null, AUTH), 200);
@@ -73,6 +91,16 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertEquals("VICTORIA", result.path("cityNm").asString());
         assertEquals("2022-10-11", result.path("effectiveDt").asString());
         assertEquals(json.readTree("false"), result.path("cancelled"));
+        assertEquals(304L, result.path("policeDetachmentId").asLong());
+        assertEquals(json.readTree("true"), result.path("driverLicenceSeized"));
+        assertEquals("00001234", result.at("/registration/licence/driverLicenceNo").asString());
+        assertEquals("VICTORIA", result.at("/registration/addresses/0/cityNm").asString());
+        assertEquals(json.readTree("false"), result.at("/documents/0/disclosureDocument"));
+        assertFalse(result.has("policeDetatchmentId"));
+        assertFalse(result.has("driverLicenceSeizedYN"));
+        assertFalse(result.path("registration").has("vipsLicenceObj"));
+        assertFalse(result.path("registration").has("vipsAddressArray"));
+        assertFalse(result.at("/documents/0").has("disclosureDocumentYN"));
         assertFalse(result.has("result"));
         assertFalse(result.has("respCd"));
         assertFalse(result.has("respMsg"));
@@ -128,6 +156,54 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertFalse(error.toString().contains("15/12/2025"));
         downstream("GET", "/cases/prohibitions/search?prohibitionNoticeNo=" + NOTICE);
         downstream("GET", "/cases/prohibitions/123456789012345");
+    }
+
+    @Test
+    void seizedLicenceIsSentToVipsAsY() throws Exception {
+        availableNotice();
+        vips.enqueue(200, "{\"respCd\":0,\"prohibitionId\":123456789012345}");
+        responseJson(request("POST", "/prohibitions",
+                BODY.replace("\"driverLicenceSeized\": false", "\"driverLicenceSeized\": true"), AUTH), 201);
+        checkedNotice("prohibition", NOTICE);
+        JsonNode submitted = json.readTree(downstream("POST", "/cases/prohibitions").body());
+        assertEquals("Y", submitted.at("/vipsProhibitionCreate/driverLicenceSeizedYN").asString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"Y\"", "\"N\"", "\"true\"", "\"\"", "1", "0", "{}", "[]", "[true]"})
+    void driverLicenceSeizedMustBeAJsonBoolean(String value) throws Exception {
+        JsonNode error = responseJson(request("POST", "/prohibitions",
+                BODY.replace("\"driverLicenceSeized\": false", "\"driverLicenceSeized\": " + value), AUTH), 400);
+        assertEquals("Request validation failed.", error.path("detail").asString());
+        assertEquals(json.readTree("""
+                [{"field":"prohibition.driverLicenceSeized","message":"Must be true or false."}]
+                """), error.path("errors"));
+        assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"X\"", "\"y\"", "\"\"", "true", "1"})
+    void invalidVipsYesNoFlagIsAnInvalidUpstreamResponse(String flag) throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"prohibitionId\":123456789012345}]}");
+        vips.enqueue(200, """
+                {"respCd":0,"result":{"prohibitionNoticeNo":"%s","driverLicenceSeizedYN":%s}}
+                """.formatted(NOTICE, flag));
+        JsonNode error = responseJson(request("GET", "/prohibitions/" + NOTICE, null, AUTH), 502);
+        assertEquals("Invalid response from VIPS.", error.path("detail").asString());
+        downstream("GET", "/cases/prohibitions/search?prohibitionNoticeNo=" + NOTICE);
+        downstream("GET", "/cases/prohibitions/123456789012345");
+    }
+
+    @Test
+    void legacyVipsPropertyNamesAreNotAcceptedAsAliases() throws Exception {
+        String legacy = BODY.replace("\"documentIds\"", "\"vipsDocumentIdArray\"")
+                .replace("\"prohibition\"", "\"vipsProhibitionCreate\"")
+                .replace("\"registration\"", "\"vipsRegistrationCreate\"");
+        JsonNode error = responseJson(request("POST", "/prohibitions", legacy, AUTH), 400);
+        Set<String> fields = new HashSet<>();
+        error.path("errors").forEach(validation -> fields.add(validation.path("field").asString()));
+        assertEquals(Set.of("documentIds", "prohibition", "registration"), fields, error.toString());
+        assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
     }
 
     @Test
@@ -196,9 +272,9 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
 
     @Test
     void missingRequiredDocumentIdArrayIsRejectedBeforeCallingVips() throws Exception {
-        String body = BODY.replace("\"vipsDocumentIdArray\": [123456789012345],", "");
+        String body = BODY.replace("\"documentIds\": [123456789012345],", "");
         int status = request("POST", "/prohibitions", body, AUTH).statusCode();
-        assertEquals(400, status, "vipsDocumentIdArray is required by the spec");
+        assertEquals(400, status, "documentIds is required by the spec");
         assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
     }
 }

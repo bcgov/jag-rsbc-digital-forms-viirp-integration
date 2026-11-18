@@ -1,6 +1,6 @@
 package ca.bc.gov.open.digitalformsapi.viirp.model.vips;
 
-import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundObj;
+import ca.bc.gov.open.digitalformsapi.viirp.model.Impoundment;
 
 /**
  * 
@@ -12,21 +12,21 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsImpoundObj;
  */
 public final class GetImpoundmentServiceResponse extends VipswsBasicResponse {
 
-    private VipsImpoundObj result;
+    private Impoundment result;
     
     public GetImpoundmentServiceResponse(){};
 
-    public GetImpoundmentServiceResponse(int respCd, String respMsg, VipsImpoundObj result){
+    public GetImpoundmentServiceResponse(int respCd, String respMsg, Impoundment result){
         this.respCd = respCd;
         this.respMsg = respMsg;
         this.setResult(result);
     }
 
-	public VipsImpoundObj getResult() {
+	public Impoundment getResult() {
 		return result;
 	}
 
-	public void setResult(VipsImpoundObj result) {
+	public void setResult(Impoundment result) {
 		this.result = result;
 	}
 

@@ -1,5 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.model.vips;
 
+import ca.bc.gov.open.digitalformsapi.viirp.model.Prohibition;
+
 /**
  * 
  * GetProhibitionServiceResponse
@@ -10,21 +12,21 @@ package ca.bc.gov.open.digitalformsapi.viirp.model.vips;
  */
 public final class GetProhibitionServiceResponse extends VipswsBasicResponse {
 
-    private ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj result;
+    private Prohibition result;
     
     public GetProhibitionServiceResponse(){};
 
-    public GetProhibitionServiceResponse(int respCd, String respMsg, ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj result){
+    public GetProhibitionServiceResponse(int respCd, String respMsg, Prohibition result){
         this.respCd = respCd;
         this.respMsg = respMsg;
         this.setResult(result);
     }
 
-	public ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj getResult() {
+	public Prohibition getResult() {
 		return result;
 	}
 
-	public void setResult(ca.bc.gov.open.digitalformsapi.viirp.model.VipsProhibitionObj result) {
+	public void setResult(Prohibition result) {
 		this.result = result;
 	}
 

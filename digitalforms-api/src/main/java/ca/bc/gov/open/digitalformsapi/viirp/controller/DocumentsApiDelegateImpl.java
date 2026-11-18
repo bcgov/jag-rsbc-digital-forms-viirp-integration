@@ -33,6 +33,8 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Document;
+import ca.bc.gov.open.digitalformsapi.viirp.model.UploadNoticeSubject;
+import ca.bc.gov.open.digitalformsapi.viirp.model.UploadNoticeType;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
@@ -202,7 +204,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	@Override
 	public ResponseEntity<CreateDocumentResponse> storeDocument(
 	        String documentTypeCd, MultipartFile file, String xCorrelationID,
-	        String noticeTypeCd, String noticeSubjectCd) {
+	        UploadNoticeType noticeTypeCd, UploadNoticeSubject noticeSubjectCd) {
 		
 		logger.info("Heard a call to the endpoint 'storeDocument'");
 		
@@ -210,7 +212,8 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		CreateDocumentResponse resp = new CreateDocumentResponse();
 	
 		VipsDocumentOrdsResponse _resp = vipsOrdsService.storeDocument(
-				documentTypeCd, upload.content(), noticeTypeCd, noticeSubjectCd, upload.pageCount());
+				documentTypeCd, upload.content(), noticeTypeCd == null ? null : noticeTypeCd.getValue(),
+				noticeSubjectCd == null ? null : noticeSubjectCd.getValue(), upload.pageCount());
 		if (_resp == null) {
 			throw UpstreamServiceException.invalidResponse("VIPS ORDS returned an empty document-upload response.");
 		}

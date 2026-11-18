@@ -281,16 +281,17 @@ need exactly three fraction digits or a negative offset. Responses return dates 
 #### Consistent names and types
 
 The public contract uses camelCase names without VIPS prefixes or `Obj`/`YN` suffixes,
-JSON booleans for flags and an integer document ID. Only the VI/IRP VIPS WS client
-(`VipsJson`) translates these to the historical VIPS WS property names and `"Y"`/`"N"`
-strings. The VIPS WS contract, ORDS client and database are unchanged.
+JSON booleans for flags and an integer document ID. The private VIPS request adapters
+and the client-only `VipsJson` module translate these to the historical VIPS WS
+property names and `"Y"`/`"N"` strings. The VIPS WS contract, ORDS client and database
+are unchanged.
 
 | Before | Now |
 |---|---|
 | `vipsDocumentIdArray` | `documentIds` |
 | `vipsProhibitionCreate`, `vipsRegistrationCreate` | `prohibition`, `registration` |
 | `vipsImpoundCreate`, `vipsRegistrationCreateArray`, `vipsVehicleCreate` | `impoundment`, `registrations`, `vehicle` |
-| `vipsImpoundmentArray` | `priorImpoundmentIds` |
+| `vipsImpoundmentArray` (later `priorImpoundmentIds`) | Removed from create requests; the API supplies `[]` to VIPS |
 | `vipsAddressArray`, `vipsLicenceObj` | `addresses`, `licence` |
 | `policeDetatchmentId` | `policeDetachmentId` |
 | `driverLicenceSeizedYN: "Y"` / `"N"` | `driverLicenceSeized: true` / `false` |
@@ -331,6 +332,46 @@ generated client types as above; send booleans instead of `"Y"`/`"N"`, and read 
 upload `documentId` as a number. Old names are not accepted as aliases: an unknown
 property is ignored, so a required field sent only under its old name returns 400.
 
+#### Server-owned inputs and request enums
+
+Callers no longer send these fields when creating a notice:
+
+| Removed public input | Value supplied to VIPS WS by the API |
+|---|---|
+| `impoundment.noticeTypeCd` | `"IMP"` |
+| `impoundment.noticeSubjectCd` | `"VEHI"` |
+| `priorImpoundmentIds` | `"vipsImpoundmentArray": []` |
+| `prohibition.noticeSubjectCd` | `"PERS"` |
+
+These are server-owned values, not overridable defaults. If a caller still supplies
+a removed field, it is ignored like any other unknown JSON property, even if it is
+`null` or has the wrong type. It cannot change the downstream values. Private create
+request adapters supply the VIPS-only fields without adding them to the public
+models. Notice GET responses still include `noticeTypeCd` and `noticeSubjectCd`.
+
+The remaining documented fixed code sets are enforced as OpenAPI enums:
+
+| Request field | Allowed values |
+|---|---|
+| `prohibition.noticeTypeCd` | `UL`, `IRP`, `ADP` |
+| Each create address's `registrationAddressTypeCd` | `RES`, `MAIL`, `BUSI` |
+| Upload `noticeTypeCd` | `IRP`, `ADP`, `UL`, `IMP` |
+| Upload `noticeSubjectCd` | `PERS`, `VEHI` |
+
+Codes are case-sensitive and are not trimmed. Unsupported codes, blank values,
+and non-string JSON values return 400 Problem Details with the public field path
+and the allowed values, without echoing the rejected value or calling VIPS/ORDS.
+Required JSON enums still reject missing/null values. Both upload codes remain
+optional: omit the part rather than send an empty value. Generated clients use
+`UploadNoticeType` and `UploadNoticeSubject` for the upload enums.
+
+`dataSourceCd` remains a required registration field with the existing four-character
+limit; the separate Digital Forms source-lifecycle change is not included here.
+Dynamic code-table values and all GET response types are unchanged.
+
+**Caller migration:** remove the four server-owned fields, use the exact enum
+values above, and regenerate clients from the updated specification.
+
 #### Upstream failures and retries
 
 All business operations distinguish dependency failures from local VI/IRP errors.
@@ -361,8 +402,8 @@ Send the OAuth2 bearer token and the optional `X-Correlation-ID` header as for o
 |---|---|---|
 | `file` | Yes | A non-empty, readable PDF with 1 to 99,999 pages; at most 10 MiB (10,485,760 bytes). |
 | `documentTypeCd` | Yes | Document classification, e.g. `MV2723`; nonblank, at most 10 characters. |
-| `noticeTypeCd` | No | Notice classification, e.g. `IRP`; at most 3 characters. |
-| `noticeSubjectCd` | No | Subject classification, e.g. `PERS`; at most 4 characters. |
+| `noticeTypeCd` | No | Exactly one of `IRP`, `ADP`, `UL`, `IMP`. |
+| `noticeSubjectCd` | No | Exactly one of `PERS`, `VEHI`. |
 
 The response is **HTTP 201** with a `Location` header pointing to the PDF download
 (for example, `/digitalforms-viirp/v1/documents/102220`) and an integer (int64) document ID:

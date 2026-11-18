@@ -88,8 +88,7 @@ public class ProhibitionsApiControllerTests {
 		vipsProhibitionCreate.setExpiryDt(null);
 		vipsProhibitionCreate.setIncidentDtm(OffsetDateTime.parse("2018-11-05T00:00:00.000-07:00"));
 		vipsProhibitionCreate.setNoticeServedDt(LocalDate.parse("2018-10-07"));
-		vipsProhibitionCreate.setNoticeSubjectCd("PERS");
-		vipsProhibitionCreate.setNoticeTypeCd("UL");
+		vipsProhibitionCreate.setNoticeTypeCd(ProhibitionCreate.NoticeTypeCdEnum.UL);
 		vipsProhibitionCreate.setOriginalCauseCd("IRPINDEF");
 		vipsProhibitionCreate.setPoliceDetachmentId(304L);
 		vipsProhibitionCreate.setPoliceFileNo("802");
@@ -116,7 +115,7 @@ public class ProhibitionsApiControllerTests {
 		vipsAddressCreateObj.setCountryNm("USA");
 		vipsAddressCreateObj.setPostalCodeTxt("96321");
 		vipsAddressCreateObj.setProvinceCd("CA");
-		vipsAddressCreateObj.setRegistrationAddressTypeCd("MAIL");
+		vipsAddressCreateObj.setRegistrationAddressTypeCd(AddressCreate.RegistrationAddressTypeCdEnum.MAIL);
 		
 		LicenceCreate vipsLicenceCreateObj = new LicenceCreate();
 

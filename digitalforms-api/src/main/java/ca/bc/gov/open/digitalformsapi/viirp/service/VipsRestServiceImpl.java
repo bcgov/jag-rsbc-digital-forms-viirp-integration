@@ -11,6 +11,8 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTablesResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceRequest;
+import ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceRequest;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
@@ -67,7 +69,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
-                .body(Mono.just(impoundment), ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment.class) // body of request.
+                .bodyValue(new CreateImpoundmentServiceRequest(impoundment))
                 .retrieve()
                 .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateImpoundmentServiceResponse.class));
 	}
@@ -217,7 +219,7 @@ public class VipsRestServiceImpl implements VipsRestService {
         		.header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid()) 
         		.header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
         		.header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
-                .body(Mono.just(prohibition), CreateProhibition.class) // body of request.
+                .bodyValue(new CreateProhibitionServiceRequest(prohibition))
                 .retrieve()
                 .bodyToMono(ca.bc.gov.open.digitalformsapi.viirp.model.vips.CreateProhibitionServiceResponse.class));
 	}

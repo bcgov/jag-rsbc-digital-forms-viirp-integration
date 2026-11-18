@@ -24,7 +24,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 "driverLicenceSeized": false,
                 "effectiveDt": "2022-10-11",
                 "noticeServedDt": "2022-10-11",
-                "noticeSubjectCd": "PERS", "noticeTypeCd": "IRP",
+                "noticeTypeCd": "IRP",
                 "originalCauseCd": "IRPINDEF", "policeDetachmentId": 304,
                 "cityNm": "VICTORIA", "expiryDt": null
               },
@@ -57,6 +57,8 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertEquals(NOTICE, submitted.at("/vipsProhibitionCreate/prohibitionNoticeNo").asString());
         assertEquals(123456789012345L, submitted.at("/vipsDocumentIdArray/0").asLong());
         assertEquals("N", submitted.at("/vipsProhibitionCreate/driverLicenceSeizedYN").asString());
+        assertEquals("IRP", submitted.at("/vipsProhibitionCreate/noticeTypeCd").asString());
+        assertEquals("PERS", submitted.at("/vipsProhibitionCreate/noticeSubjectCd").asString());
         assertEquals("00001234", submitted.at("/vipsRegistrationCreate/vipsLicenceObj/driverLicenceNo").asString());
         assertFalse(submitted.at("/vipsRegistrationCreate").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
@@ -80,7 +82,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, """
                 {"respCd":0,"result":{"prohibitionNoticeNo":"%s","cityNm":"%s",
                  "effectiveDt":"%s","cancelled":false,"extraVipsField":"ignored",
-                 "policeDetatchmentId":304,"driverLicenceSeizedYN":"Y",
+                 "policeDetatchmentId":304,"driverLicenceSeizedYN":"Y","noticeTypeCd":"IRP","noticeSubjectCd":"PERS",
                  "registration":{"surnameNm":"HTTP TEST","vipsLicenceObj":{"driverLicenceNo":"00001234"},
                   "vipsAddressArray":[{"cityNm":"VICTORIA"}]},
                  "documents":[{"documentId":7,"disclosureDocumentYN":"N"}]}}
@@ -92,6 +94,8 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertEquals("2022-10-11", result.path("effectiveDt").asString());
         assertEquals(json.readTree("false"), result.path("cancelled"));
         assertEquals(304L, result.path("policeDetachmentId").asLong());
+        assertEquals("IRP", result.path("noticeTypeCd").asString());
+        assertEquals("PERS", result.path("noticeSubjectCd").asString());
         assertEquals(json.readTree("true"), result.path("driverLicenceSeized"));
         assertEquals("00001234", result.at("/registration/licence/driverLicenceNo").asString());
         assertEquals("VICTORIA", result.at("/registration/addresses/0/cityNm").asString());

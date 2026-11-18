@@ -214,6 +214,31 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     }
 
     @Test
+    void publishedDatesAndTimestampsUseTheContractFormats() throws Exception {
+        var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
+        int temporalFields = 0;
+        for (var schema : CONTRACT_JSON.path("components").path("schemas").properties()) {
+            for (var property : schema.getValue().path("properties").properties()) {
+                var canonical = property.getValue();
+                String format = canonical.path("format").asString();
+                if (!format.equals("date") && !format.equals("date-time")) {
+                    continue;
+                }
+                temporalFields++;
+                String field = schema.getKey() + "." + property.getKey();
+                var published = api.path("components").path("schemas").path(schema.getKey())
+                        .path("properties").path(property.getKey());
+                assertEquals("string", canonical.path("type").asString(), field);
+                assertEquals("string", published.path("type").asString(), field);
+                assertEquals(format, published.path("format").asString(), field);
+                assertFalse(canonical.has("pattern") || published.has("pattern"),
+                        field + " must rely on its format rather than a legacy timestamp pattern");
+            }
+        }
+        assertEquals(21, temporalFields, "Every VIPS date and timestamp field must declare its format");
+    }
+
+    @Test
     void codeTablesReturnConfigurationWithoutUpstreamStatusStrings() throws Exception {
         vips.enqueue(200, """
                 {"configuration":{"countries":[{"objectCd":"CAN","objectDsc":"Canada"}]},

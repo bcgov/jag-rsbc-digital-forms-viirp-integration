@@ -1,8 +1,10 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +41,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.VipsVehicleCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -80,7 +83,7 @@ public class ImpoundmentsApiControllerTests {
 		createImpoundment = new CreateImpoundment();
 		VipsImpoundmentCreate vipsImpoundmentCreate = new VipsImpoundmentCreate();
 		vipsImpoundmentCreate.setDlJurisdictionCd("BC");
-		vipsImpoundmentCreate.setImpoundmentDt("2021-10-08T00:00:00.000-07:00");
+		vipsImpoundmentCreate.setImpoundmentDt(LocalDate.parse("2021-10-08"));
 		vipsImpoundmentCreate.setImpoundmentNoticeNo("12345678");
 		vipsImpoundmentCreate.setNoticeSubjectCd("VEHI");
 		vipsImpoundmentCreate.setNoticeTypeCd("IMP");
@@ -115,7 +118,7 @@ public class ImpoundmentsApiControllerTests {
 		
 		VipsLicenceCreate vipsLicenceCreateObj = new VipsLicenceCreate();
 
-		vipsLicenceCreateObj.setBirthDt("1971-04-08T00:00:00.000-07:00");
+		vipsLicenceCreateObj.setBirthDt(LocalDate.parse("1971-04-08"));
 		vipsLicenceCreateObj.setDriverLicenceNo("4771979");
 		vipsLicenceCreateObj.setDlJurisdictionCd("FL");
 		
@@ -156,7 +159,7 @@ public class ImpoundmentsApiControllerTests {
 		vipsImpoundment = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse();
 		VipsImpoundObj vipsImpoundObj = new VipsImpoundObj();
 		vipsImpoundObj.setDlJurisdictionCd("BC");
-		vipsImpoundObj.setImpoundmentDt("2018-10-22T00:00:00.000-07:00");
+		vipsImpoundObj.setImpoundmentDt(LocalDate.parse("2018-10-22"));
 		vipsImpoundment.setResult(vipsImpoundObj);
 		
 	}
@@ -215,14 +218,18 @@ public class ImpoundmentsApiControllerTests {
     @Test
 	public void testImpoundmentCreateApiPOSTBadRequest() throws Exception {
     	
-    	createImpoundment.getVipsImpoundCreate().setImpoundmentDt("2021-10-22T0a:23:23.100-07:00"); // Doesn;t match regex for date/time. 
+		String body = UnitTestUtilities.asJsonString(createImpoundment);
+		String invalid = body.replace("\"2021-10-08\"", "\"2021-10-22T00:00:00.000-07:00\"");
+		Assertions.assertNotEquals(body, invalid);
 		
 	    mvc.perform( MockMvcRequestBuilders
 	    	      .post("/impoundments")
-	    	      .content(UnitTestUtilities.asJsonString(createImpoundment))
+				  .content(invalid)
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("vipsImpoundCreate.impoundmentDt"))
+				.andExpect(jsonPath("$.errors[0].message").value(TemporalJson.DATE_MESSAGE));
 	    
 	}
     

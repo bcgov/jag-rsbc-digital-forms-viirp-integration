@@ -7,11 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -119,6 +121,76 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         assertRejected("/impoundments", body, "vipsRegistrationCreateArray[" + index + "]");
     }
 
+    @ParameterizedTest(name = "{0} {1} = {2}")
+    @MethodSource("invalidTemporalValues")
+    void invalidDateOrDateTimeIsRejectedForItsFieldBeforeCallingVips(String route, String pointer, JsonNode value,
+            String message) throws Exception {
+        ObjectNode body = validBody(route);
+        set(body, pointer, value);
+        JsonNode error = responseJson(request("POST", route, body.toString(), AUTH), 400);
+        assertEquals("Request validation failed.", error.path("detail").asString());
+        assertEquals(JSON.createArrayNode().add(JSON.createObjectNode()
+                .put("field", fieldPath(pointer)).put("message", message)), error.path("errors"));
+        if (value.isString() && !value.asString().isBlank()) {
+            assertFalse(error.toString().contains(value.asString()), "Errors must not echo the submitted value");
+        }
+        assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS, including the notice lookup");
+    }
+
+    static Stream<Arguments> invalidTemporalValues() {
+        Map<String, List<JsonNode>> invalid = Map.of(
+                "date", List.of(text("2026-02-29"), text("2026-13-01"), text("2026-11-5"), text("05/11/2026"),
+                        text("2026-11-05T00:00:00.000-07:00"), text(""), text(" "),
+                        JSON.getNodeFactory().numberNode(20261105), JSON.createArrayNode().add("2026-11-05")),
+                "date-time", List.of(text("2026-11-05T01:30:00"), text("2026-11-05T01:30-07:00"),
+                        text("2026-11-05"), text("2026-11-05 01:30:00-07:00"), text("2026-11-05T24:00:00-07:00"),
+                        text("2026-11-05T01:30:00-0700"), text("2026-11-05T01:30:00.1234567890-07:00"),
+                        text("2026-11-05T01:30:00+18:30"), text(""),
+                        JSON.getNodeFactory().numberNode(1793867400L), JSON.createObjectNode()));
+        Map<String, String> messages = Map.of(
+                "date", "Must be a date in YYYY-MM-DD format.",
+                "date-time", "Must be an RFC 3339 date-time with seconds and Z or a numeric UTC offset.");
+        return ROUTES.stream().flatMap(route -> temporalFields(route).stream())
+                .flatMap(field -> invalid.get(field.format()).stream().map(value ->
+                        Arguments.of(field.route(), field.pointer(), value, messages.get(field.format()))));
+    }
+
+    @ParameterizedTest(name = "{0} is sent to VIPS as {1}")
+    @CsvSource({
+            "2025-12-15, 2025-12-15T00:00:00.000-08:00",
+            "2026-07-01, 2026-07-01T00:00:00.000-07:00",
+            "2026-12-15, 2026-12-15T00:00:00.000-07:00",
+            "2028-02-29, 2028-02-29T00:00:00.000-07:00"})
+    void datesAreSentToVipsAsMidnightBcTime(String date, String vipsTimestamp) throws Exception {
+        for (String route : ROUTES) {
+            List<TemporalField> dates = temporalFields(route).stream()
+                    .filter(field -> field.format().equals("date")).toList();
+            ObjectNode body = validBody(route);
+            dates.forEach(field -> set(body, field.pointer(), text(date)));
+            JsonNode submitted = assertAccepted(route, body);
+            dates.forEach(field -> assertEquals(vipsTimestamp, submitted.at(field.pointer()).asString(),
+                    route + field.pointer()));
+        }
+    }
+
+    @ParameterizedTest(name = "{0} is sent to VIPS as {1}")
+    @CsvSource({
+            "2026-11-05T01:30:00-07:00, 2026-11-05T01:30:00.000-07:00",
+            "2026-11-05T08:30:00Z, 2026-11-05T08:30:00.000Z",
+            "2026-11-05T14:00:00.5+05:30, 2026-11-05T14:00:00.500+05:30",
+            "2025-12-15T23:59:59.123456789-08:00, 2025-12-15T23:59:59.123-08:00"})
+    void dateTimesKeepTheirOffsetAndMillisecondsWhenSentToVips(String dateTime, String vipsTimestamp)
+            throws Exception {
+        List<TemporalField> dateTimes = temporalFields("/prohibitions").stream()
+                .filter(field -> field.format().equals("date-time")).toList();
+        assertFalse(dateTimes.isEmpty());
+        ObjectNode body = validBody("/prohibitions");
+        dateTimes.forEach(field -> set(body, field.pointer(), text(dateTime)));
+        JsonNode submitted = assertAccepted("/prohibitions", body);
+        dateTimes.forEach(field -> assertEquals(vipsTimestamp, submitted.at(field.pointer()).asString(),
+                field.pointer()));
+    }
+
     private static String fieldPath(String pointer) {
         return pointer.substring(1).replaceAll("/(\\d+)", "[$1]").replace('/', '.');
     }
@@ -146,12 +218,41 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     }
 
     private static List<RequiredField> requiredFields(String route) {
-        JsonNode schema = CONTRACT_JSON.path("paths").path(route).path("post").path("requestBody")
-                .path("content").path("application/json").path("schema");
         List<RequiredField> fields = new ArrayList<>();
-        collectRequiredFields(route, schema, validBody(route), "", fields);
+        collectRequiredFields(route, requestSchema(route), validBody(route), "", fields);
         assertFalse(fields.isEmpty(), "No required fields discovered for " + route);
         return fields;
+    }
+
+    private static JsonNode requestSchema(String route) {
+        return CONTRACT_JSON.path("paths").path(route).path("post").path("requestBody")
+                .path("content").path("application/json").path("schema");
+    }
+
+    private static List<TemporalField> temporalFields(String route) {
+        List<TemporalField> fields = new ArrayList<>();
+        collectTemporalFields(route, requestSchema(route), validBody(route), "", fields);
+        assertFalse(fields.isEmpty(), "No date or date-time fields discovered for " + route);
+        return fields;
+    }
+
+    /** Fields inside arrays are found only at the positions the fixture populates. */
+    private static void collectTemporalFields(String route, JsonNode schema, JsonNode sample, String pointer,
+            List<TemporalField> fields) {
+        schema = resolveSchema(schema);
+        String format = schema.path("format").asString();
+        if (format.equals("date") || format.equals("date-time")) {
+            fields.add(new TemporalField(route, pointer, format));
+        } else if (schema.path("type").asString().equals("array")) {
+            for (int i = 0; i < sample.size(); i++) {
+                collectTemporalFields(route, schema.path("items"), sample.get(i), pointer + "/" + i, fields);
+            }
+        } else if (schema.path("type").asString().equals("object")) {
+            for (var property : schema.path("properties").properties()) {
+                collectTemporalFields(route, property.getValue(), sample.path(property.getKey()),
+                        pointer + "/" + property.getKey(), fields);
+            }
+        }
     }
 
     private static void collectRequiredFields(String route, JsonNode schema, JsonNode sample, String pointer,
@@ -245,7 +346,19 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         }
     }
 
+    private static void set(ObjectNode body, String pointer, JsonNode value) {
+        int separator = pointer.lastIndexOf('/');
+        assertInstanceOf(ObjectNode.class, body.at(pointer.substring(0, separator)),
+                "Fixture must populate the parent of " + pointer).set(pointer.substring(separator + 1), value);
+    }
+
+    private static JsonNode text(String value) {
+        return JSON.getNodeFactory().stringNode(value);
+    }
+
     private record RequiredField(String route, String pointer, JsonNode schema) { }
+
+    private record TemporalField(String route, String pointer, String format) { }
 
     enum Mutation {
         MISSING, NULL, EMPTY_STRING, SPACE_ONLY, TAB_ONLY, NEWLINE_ONLY, EMPTY_OBJECT, EMPTY_ARRAY

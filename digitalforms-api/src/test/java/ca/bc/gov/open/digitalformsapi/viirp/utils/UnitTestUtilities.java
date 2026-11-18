@@ -1,10 +1,11 @@
 package ca.bc.gov.open.digitalformsapi.viirp.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 
@@ -12,6 +13,8 @@ import org.apache.pdfbox.pdmodel.PDPage;
  *
  */
 public class UnitTestUtilities {
+
+    private static final JsonMapper JSON = JsonMapper.builder().addModule(TemporalJson.publicModule()).build();
 
     public static byte[] samplePdf() throws IOException {
         return samplePdf(1);
@@ -34,7 +37,7 @@ public class UnitTestUtilities {
      */
     public static String asJsonString(final Object obj) {
         try {
-            return new ObjectMapper().writeValueAsString(obj);
+            return JSON.writeValueAsString(obj);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

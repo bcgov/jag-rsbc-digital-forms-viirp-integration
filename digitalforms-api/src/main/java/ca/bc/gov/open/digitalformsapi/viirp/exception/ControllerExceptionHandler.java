@@ -40,6 +40,9 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ApiProblemDetails.ValidationError;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 @RestControllerAdvice
 public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
@@ -65,8 +68,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                     errors.add(validationError(error, "body")));
             problem = ApiProblemDetails.validation(servletRequest, errors);
         } else if (ex instanceof HttpMessageNotReadableException) {
-            problem = ApiProblemDetails.validation(servletRequest,
-                    List.of(new ValidationError("body", "Malformed or missing request body.")));
+            problem = ApiProblemDetails.validation(servletRequest, List.of(unreadableBodyError(ex)));
         } else if (ex instanceof MethodArgumentTypeMismatchException mismatch) {
             problem = ApiProblemDetails.validation(servletRequest,
                     List.of(new ValidationError(mismatch.getName(), "Invalid value.")));
@@ -149,6 +151,38 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     private static ValidationError validationError(MessageSourceResolvable error, String field) {
         return new ValidationError(error instanceof FieldError fieldError ? fieldError.getField() : field,
                 error.getDefaultMessage() == null ? "Invalid value." : error.getDefaultMessage());
+    }
+
+    /** Names the field for an invalid date or date-time; any other unreadable body stays generic. */
+    private static ValidationError unreadableBodyError(Throwable ex) {
+        for (Throwable cause = ex; cause != null && cause != cause.getCause(); cause = cause.getCause()) {
+            if (cause instanceof MismatchedInputException mismatch) {
+                String message = TemporalJson.message(mismatch.getTargetType());
+                String field = jsonField(mismatch.getPath());
+                if (message != null && !field.isEmpty()) {
+                    return new ValidationError(field, message);
+                }
+                break;
+            }
+        }
+        return new ValidationError("body", "Malformed or missing request body.");
+    }
+
+    private static String jsonField(List<JacksonException.Reference> path) {
+        StringBuilder field = new StringBuilder();
+        for (JacksonException.Reference reference : path) {
+            if (reference.getIndex() >= 0) {
+                field.append('[').append(reference.getIndex()).append(']');
+            } else if (reference.getPropertyName() != null) {
+                if (!field.isEmpty()) {
+                    field.append('.');
+                }
+                field.append(reference.getPropertyName());
+            } else {
+                return "";
+            }
+        }
+        return field.toString();
     }
 
     private static String parameterName(MethodParameter parameter) {

@@ -12,17 +12,23 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.http.codec.ClientCodecConfigurer;
+import org.springframework.http.codec.json.JacksonJsonDecoder;
+import org.springframework.http.codec.json.JacksonJsonEncoder;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
+import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.util.retry.Retry;
+import tools.jackson.databind.cfg.MapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 public class WebClientConfiguration {
@@ -45,11 +51,24 @@ public class WebClientConfiguration {
         return WebClient.builder()
                 .baseUrl(properties.getVipsRestApiUrl())
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .codecs(this::vipsJsonCodecs)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
                 .defaultStatusHandler(status -> !status.is2xxSuccessful(), ClientResponse::createException)
                 .filter(retryFilter())
                 .build();
     }
+
+	/**
+	 * Spring's default JSON codecs, plus the VIPS WS date and timestamp format.
+	 */
+	private void vipsJsonCodecs(ClientCodecConfigurer codecs) {
+		JsonMapper mapper = JsonMapper.builder()
+				.addModules(MapperBuilder.findModules(WebClientConfiguration.class.getClassLoader()))
+				.addModule(TemporalJson.vipsModule())
+				.build();
+		codecs.defaultCodecs().jacksonJsonEncoder(new JacksonJsonEncoder(mapper));
+		codecs.defaultCodecs().jacksonJsonDecoder(new JacksonJsonDecoder(mapper));
+	}
 	
 	
 	/**

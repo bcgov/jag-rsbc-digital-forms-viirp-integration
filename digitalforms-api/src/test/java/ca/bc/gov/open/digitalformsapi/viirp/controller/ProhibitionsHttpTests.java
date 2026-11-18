@@ -16,8 +16,8 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
               "vipsProhibitionCreate": {
                 "prohibitionNoticeNo": "21900601",
                 "driverLicenceSeizedYN": "N",
-                "effectiveDt": "2022-10-11T00:00:00.000-07:00",
-                "noticeServedDt": "2022-10-11T00:00:00.000-07:00",
+                "effectiveDt": "2022-10-11",
+                "noticeServedDt": "2022-10-11",
                 "noticeSubjectCd": "PERS", "noticeTypeCd": "IRP",
                 "originalCauseCd": "IRPINDEF", "policeDetatchmentId": 304,
                 "cityNm": "VICTORIA", "expiryDt": null
@@ -55,6 +55,8 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertFalse(submitted.at("/vipsRegistrationCreate").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertTrue(submitted.at("/vipsProhibitionCreate/expiryDt").isNull());
+        assertEquals("2022-10-11T00:00:00.000-07:00", submitted.at("/vipsProhibitionCreate/effectiveDt").asString(),
+                "VIPS WS binds dates as timestamps, so a date is sent as B.C. midnight");
         assertTrue(submitted.at("/vipsProhibitionCreate/dreEvaluationCds").isNull(),
                 "Omitted optional arrays must be forwarded as null, not []");
 
@@ -69,7 +71,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         JsonNode result = responseJson(request("GET", resourcePath, null, AUTH), 200);
         assertEquals(NOTICE, result.path("prohibitionNoticeNo").asString());
         assertEquals("VICTORIA", result.path("cityNm").asString());
-        assertEquals("2022-10-11T00:00:00.000-07:00", result.path("effectiveDt").asString());
+        assertEquals("2022-10-11", result.path("effectiveDt").asString());
         assertEquals(json.readTree("false"), result.path("cancelled"));
         assertFalse(result.has("result"));
         assertFalse(result.has("respCd"));
@@ -86,6 +88,46 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 request("GET", "/prohibitions/" + NOTICE, null, AUTH), 404);
         assertEquals("Not Found", error.path("detail").asString());
         downstream("GET", "/cases/prohibitions/search?prohibitionNoticeNo=" + NOTICE);
+    }
+
+    @Test
+    void vipsTimestampsAreReadAsTheirCalendarDateWithoutAZoneShift() throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"prohibitionId\":123456789012345}]}");
+        vips.enqueue(200, """
+                {"respCd":0,"result":{"prohibitionNoticeNo":"%s",
+                 "effectiveDt":"2025-12-15T00:00:00.000-08:00",
+                 "expiryDt":"2025-12-15T00:00:00.000-07:00",
+                 "noticeServedDt":"2026-12-15T00:00:00.000-07:00",
+                 "tempDlEffectiveDt":"2026-11-05",
+                 "tempDlExpiryDt":null,
+                 "incidentDtm":"2025-12-15T23:30:00.000-08:00",
+                 "fieldAddedByVips":"ignored"}}
+                """.formatted(NOTICE));
+        JsonNode result = responseJson(request("GET", "/prohibitions/" + NOTICE, null, AUTH), 200);
+        assertEquals("2025-12-15", result.path("effectiveDt").asString());
+        assertEquals("2025-12-15", result.path("expiryDt").asString(),
+                "A VIPS server on a fixed -07:00 offset must not move a winter date to the previous day");
+        assertEquals("2026-12-15", result.path("noticeServedDt").asString());
+        assertEquals("2026-11-05", result.path("tempDlEffectiveDt").asString());
+        assertTrue(result.path("tempDlExpiryDt").isNull());
+        assertEquals("2025-12-15T23:30:00.000-08:00", result.path("incidentDtm").asString(),
+                "Timestamps keep the instant and offset VIPS returned");
+        assertFalse(result.has("fieldAddedByVips"), "The VIPS codec must still ignore unknown fields");
+        downstream("GET", "/cases/prohibitions/search?prohibitionNoticeNo=" + NOTICE);
+        downstream("GET", "/cases/prohibitions/123456789012345");
+    }
+
+    @Test
+    void malformedVipsDateIsAnInvalidUpstreamResponse() throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"prohibitionId\":123456789012345}]}");
+        vips.enqueue(200, """
+                {"respCd":0,"result":{"prohibitionNoticeNo":"%s","effectiveDt":"15/12/2025"}}
+                """.formatted(NOTICE));
+        JsonNode error = responseJson(request("GET", "/prohibitions/" + NOTICE, null, AUTH), 502);
+        assertEquals("Invalid response from VIPS.", error.path("detail").asString());
+        assertFalse(error.toString().contains("15/12/2025"));
+        downstream("GET", "/cases/prohibitions/search?prohibitionNoticeNo=" + NOTICE);
+        downstream("GET", "/cases/prohibitions/123456789012345");
     }
 
     @Test

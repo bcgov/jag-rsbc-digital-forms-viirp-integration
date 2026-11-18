@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -89,12 +90,16 @@ abstract class HttpApiTestSupport {
     protected TestIdentityProvider identityProvider;
 
     private HttpClient client;
+    private TimeZone defaultTimeZone;
 
     @BeforeEach
     void setUpHttp() {
         vips.reset();
         correlationId = UUID.randomUUID().toString();
         client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+        // The container runs with TZ=America/Vancouver, which the VIPS date conversion relies on.
+        defaultTimeZone = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone("America/Vancouver"));
     }
 
     @AfterEach
@@ -105,6 +110,7 @@ abstract class HttpApiTestSupport {
         } finally {
             client.close();
             vips.reset();
+            TimeZone.setDefault(defaultTimeZone);
         }
     }
 

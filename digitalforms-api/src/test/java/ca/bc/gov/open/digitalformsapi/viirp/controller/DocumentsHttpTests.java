@@ -318,6 +318,23 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         downstream("GET", "/documents?" + type + "Id=123");
     }
 
+    @Test
+    void documentTimestampsKeepTheOffsetVipsReturnedWithMilliseconds() throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"prohibitionId\":123}]}");
+        vips.enqueue(200, """
+                {"respCd":0,"results":[{"documentId":456,"documentTypeCd":"MV2702A",
+                 "addToFileDtm":"2025-12-15T09:15:30.1-08:00",
+                 "receivedDtm":"2026-11-05T16:15:30Z",
+                 "disclosedToClientDtm":null}]}
+                """);
+        var response = responseJson(request("GET", documentListPath("prohibition"), null, AUTH), 200);
+        assertEquals("2025-12-15T09:15:30.100-08:00", response.at("/0/addToFileDtm").asString());
+        assertEquals("2026-11-05T16:15:30.000Z", response.at("/0/receivedDtm").asString());
+        assertTrue(response.at("/0/disclosedToClientDtm").isNull());
+        checkedNotice("prohibition", "81000029");
+        downstream("GET", "/documents?prohibitionId=123");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"impoundment", "prohibition"})
     void putAssociationIsIdempotentAndUsesNoticeTypeFromVips(String type) throws Exception {

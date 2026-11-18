@@ -886,10 +886,10 @@ components:
           description: RFC 3339 date-time with milliseconds and the UTC offset returned by VIPS.
     CreateImpoundment:
       type: object
+      description: The API supplies the IMP/VEHI notice codes and an empty prior-impoundment placeholder to VIPS.
       required:
         - documentIds
         - impoundment
-        - priorImpoundmentIds
         - registrations
         - vehicle
       properties:
@@ -903,13 +903,6 @@ components:
           example: [102220]
         impoundment:
           $ref: '#/components/schemas/ImpoundmentCreate'
-        priorImpoundmentIds:
-          type: array
-          items:
-            type: integer
-            format: int64
-            description: Placeholder for priors. Not expected to be used by DF. These will be calculated by VIPS. 
-          example: []
         registrations:
           type: array
           items:
@@ -966,10 +959,9 @@ components:
           description: code table value
         registrationAddressTypeCd:
           type: string
-          pattern: '.*\S.*'
-          minLength: 1
+          enum: [RES, MAIL, BUSI]
           example: "RES"
-          description: Must be one of "RES", "MAIL", or "BUSI"
+          description: Registration address type.
     Licence:
       type: object
       nullable: true
@@ -996,8 +988,6 @@ components:
       required: 
         - impoundmentDt
         - impoundmentNoticeNo
-        - noticeSubjectCd
-        - noticeTypeCd
         - originalCauseCds
         - policeDetachmentId
         - policeFileNo
@@ -1027,20 +1017,6 @@ components:
           maxLength: 12
           example: "00900123"
           description: Notice Number beginning with 00 for impoundments. 
-        noticeSubjectCd:
-          type: string
-          pattern: '.*\S.*'
-          minLength: 1
-          maxLength: 10
-          example: "VEHI"
-          description: For impoundments, this value is always "VEHI"
-        noticeTypeCd:
-          type: string
-          pattern: '.*\S.*'
-          minLength: 1
-          maxLength: 10
-          example: "IMP"
-          description: For impoundments, this value is always "IMP"
         originalCauseCds:
           type: array
           items:
@@ -1457,11 +1433,11 @@ components:
           $ref: '#/components/schemas/RegistrationCreate'
     ProhibitionCreate:
       type: object
+      description: The API supplies the PERS notice subject to VIPS.
       required:
         - driverLicenceSeized
         - effectiveDt
         - noticeServedDt
-        - noticeSubjectCd
         - noticeTypeCd
         - originalCauseCd
         - policeDetachmentId
@@ -1503,20 +1479,11 @@ components:
           format: date
           example: "2026-11-05"
           description: Calendar date in YYYY-MM-DD format.
-        noticeSubjectCd:
-          type: string
-          pattern: '.*\S.*'
-          minLength: 1
-          maxLength: 10
-          example: "PERS"
-          description: For prohibitions, this value is always "PERS"
         noticeTypeCd:
           type: string
-          pattern: '.*\S.*'
-          minLength: 1
-          maxLength: 10
+          enum: [UL, IRP, ADP]
           example: "IRP"
-          description: For prohibitions this value is always "UL", "IRP", or "ADP"
+          description: Prohibition notice type.
         originalCauseCd:
           type: string
           pattern: '.*\S.*'
@@ -1663,15 +1630,19 @@ components:
           format: binary
           description: Exactly one non-empty, readable PDF file with 1 to 99999 pages, at most 10485760 bytes (10 MiB).
         noticeTypeCd:
-          type: string
-          description: Notice type code. One of IRP, ADP, UL, or IMP.
-          maxLength: 3  
-          example: "IRP"
+          $ref: '#/components/schemas/UploadNoticeType'
         noticeSubjectCd:
-          type: string
-          description: Notice subject code. One of PERS or VEHI.
-          maxLength: 4   
-          example: "PERS"
+          $ref: '#/components/schemas/UploadNoticeSubject'
+    UploadNoticeType:
+      type: string
+      enum: [IRP, ADP, UL, IMP]
+      description: Notice type code for a document upload.
+      example: "IRP"
+    UploadNoticeSubject:
+      type: string
+      enum: [PERS, VEHI]
+      description: Notice subject code for a document upload.
+      example: "PERS"
     CodeTablesResponse:
         type: object
         required:

@@ -14,11 +14,10 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     private static final String NOTICE = "00123456";
     static final String BODY = """
             {
-              "documentIds": [123456789012345], "priorImpoundmentIds": [987],
+              "documentIds": [123456789012345],
               "impoundment": {
                 "impoundmentNoticeNo": "00123456", "dlJurisdictionCd": "BC",
                 "impoundmentDt": "2022-10-11",
-                "noticeSubjectCd": "VEHI", "noticeTypeCd": "IMP",
                 "originalCauseCds": ["STUNT"], "policeDetachmentId": 304, "policeFileNo": "HTTP-TEST"
               },
               "registrations": [{
@@ -54,7 +53,9 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertEquals("00005678", submitted.at("/vipsVehicleCreate/registrationNo").asString());
         assertEquals(304L, submitted.at("/vipsImpoundCreate/policeDetatchmentId").asLong());
-        assertEquals(987L, submitted.at("/vipsImpoundmentArray/0").asLong());
+        assertEquals(json.createArrayNode(), submitted.path("vipsImpoundmentArray"));
+        assertEquals("IMP", submitted.at("/vipsImpoundCreate/noticeTypeCd").asString());
+        assertEquals("VEHI", submitted.at("/vipsImpoundCreate/noticeSubjectCd").asString());
         assertTrue(submitted.at("/vipsRegistrationCreateArray/0/vipsAddressArray").isArray());
         assertEquals(Set.of("vipsDocumentIdArray", "vipsImpoundCreate", "vipsImpoundmentArray",
                 "vipsRegistrationCreateArray", "vipsVehicleCreate"),
@@ -68,7 +69,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, """
                 {"respCd":0,"result":{"impoundmentNoticeNo":"%s","dlJurisdictionCd":"BC",
                  "impoundmentDt":"%s","extraVipsField":"ignored","policeDetatchmentId":304,
-                 "judicialOrderYN":"N","fvpa":false,"cancelled":true,
+                 "judicialOrderYN":"N","fvpa":false,"cancelled":true,"noticeTypeCd":"IMP","noticeSubjectCd":"VEHI",
                  "registrations":[{"surnameNm":"HTTP TEST","vipsLicenceObj":{"driverLicenceNo":"00001234"},
                   "vipsAddressArray":[{"cityNm":"VICTORIA"}]}],
                  "documents":[{"documentId":7,"disclosureDocumentYN":"Y"}]}}
@@ -78,6 +79,8 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         assertEquals("BC", result.path("dlJurisdictionCd").asString());
         assertEquals("2022-10-11", result.path("impoundmentDt").asString());
         assertEquals(304L, result.path("policeDetachmentId").asLong());
+        assertEquals("IMP", result.path("noticeTypeCd").asString());
+        assertEquals("VEHI", result.path("noticeSubjectCd").asString());
         assertEquals(json.readTree("true"), result.path("cancelled"));
         assertEquals("00001234", result.at("/registrations/0/licence/driverLicenceNo").asString());
         assertEquals("VICTORIA", result.at("/registrations/0/addresses/0/cityNm").asString());

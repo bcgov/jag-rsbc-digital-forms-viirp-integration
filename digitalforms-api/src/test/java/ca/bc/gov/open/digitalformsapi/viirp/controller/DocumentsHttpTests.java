@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,35 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         var stored = ords("POST", "/ords/storeDocument");
         assertEquals("type_code=MV2723&mime_type=application&mime_sub_type=pdf&auth_guid=route-test-guid"
                 + "&notice_type_code=IRP&notice_subject_code=PERS&page_count=3", stored.uri().getRawQuery());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "noticeTypeCd, notice_type_code, IRP|ADP|UL|IMP",
+            "noticeSubjectCd, notice_subject_code, PERS|VEHI"})
+    void everyDocumentedUploadCodeIsForwardedUnchanged(String field, String ordsField, String codes)
+            throws Exception {
+        for (String code : codes.split("\\|")) {
+            vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+            responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf())),
+                    Map.of("documentTypeCd", "MV2723", field, code)), 201);
+            assertTrue(ords("POST", "/ords/storeDocument").uri().getRawQuery()
+                    .contains("&" + ordsField + "=" + code + "&page_count=1"));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"noticeTypeCd, IRP|ADP|UL|IMP", "noticeSubjectCd, PERS|VEHI"})
+    void invalidUploadCodeIsRejectedForItsFieldWithoutCallingOrds(String field, String codes) throws Exception {
+        String first = codes.split("\\|")[0];
+        for (String invalid : List.of("XYZ", first.toLowerCase(Locale.ROOT), " " + first, first + " ", "", "0")) {
+            var problem = responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf())),
+                    Map.of("documentTypeCd", "MV2723", field, invalid)), 400);
+            assertEquals(json.createArrayNode().add(json.createObjectNode().put("field", field)
+                    .put("message", "Must be one of: " + codes.replace("|", ", ") + ".")),
+                    problem.path("errors"));
+            assertTrue(vips.requests.isEmpty(), "Invalid upload metadata must not reach ORDS");
+        }
     }
 
     @Test

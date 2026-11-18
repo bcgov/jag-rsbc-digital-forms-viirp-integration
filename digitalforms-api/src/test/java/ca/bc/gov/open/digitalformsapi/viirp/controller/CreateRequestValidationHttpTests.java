@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -34,7 +35,6 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
             Map.entry("prohibition", "vipsProhibitionCreate"),
             Map.entry("registration", "vipsRegistrationCreate"),
             Map.entry("impoundment", "vipsImpoundCreate"),
-            Map.entry("priorImpoundmentIds", "vipsImpoundmentArray"),
             Map.entry("registrations", "vipsRegistrationCreateArray"),
             Map.entry("vehicle", "vipsVehicleCreate"),
             Map.entry("addresses", "vipsAddressArray"),
@@ -79,6 +79,90 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     @ValueSource(strings = {"/prohibitions", "/impoundments"})
     void validControlRequestReachesVips(String route) throws Exception {
         assertAccepted(route, validBody(route));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/prohibitions", "/impoundments"})
+    void serverOwnedInputsCanBeOmitted(String route) throws Exception {
+        ObjectNode body = validBody(route);
+        if (route.equals("/impoundments")) {
+            body.remove("priorImpoundmentIds");
+            body.withObject("impoundment").remove(List.of("noticeTypeCd", "noticeSubjectCd"));
+        } else {
+            body.withObject("prohibition").remove("noticeSubjectCd");
+        }
+        assertServerOwnedValues(route, assertAccepted(route, body));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/prohibitions", "/impoundments"})
+    void suppliedRetiredInputsCannotOverrideServerOwnedValues(String route) throws Exception {
+        for (JsonNode value : List.of(text("CALLER_VALUE"), NullNode.getInstance(),
+                JSON.createArrayNode().add(987), JSON.createObjectNode().put("unexpected", true))) {
+            ObjectNode body = validBody(route);
+            if (route.equals("/impoundments")) {
+                body.set("priorImpoundmentIds", value);
+                body.set("vipsImpoundmentArray", value);
+                body.withObject("impoundment").set("noticeTypeCd", value);
+                body.withObject("impoundment").set("noticeSubjectCd", value);
+            } else {
+                body.withObject("prohibition").set("noticeSubjectCd", value);
+            }
+            assertServerOwnedValues(route, assertAccepted(route, body));
+        }
+    }
+
+    private static void assertServerOwnedValues(String route, JsonNode submitted) {
+        if (route.equals("/impoundments")) {
+            assertEquals("IMP", submitted.at("/vipsImpoundCreate/noticeTypeCd").asString());
+            assertEquals("VEHI", submitted.at("/vipsImpoundCreate/noticeSubjectCd").asString());
+            assertEquals(JSON.createArrayNode(), submitted.path("vipsImpoundmentArray"));
+            assertFalse(submitted.has("priorImpoundmentIds"));
+        } else {
+            assertEquals("PERS", submitted.at("/vipsProhibitionCreate/noticeSubjectCd").asString());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("requestEnums")
+    void everyDocumentedRequestCodeReachesVipsUnchanged(EnumField field) throws Exception {
+        for (String value : field.values()) {
+            ObjectNode body = validBody(field.route());
+            set(body, field.pointer(), text(value));
+            assertEquals(value, assertAccepted(field.route(), body).at(vipsPointer(field.pointer())).asString());
+        }
+    }
+
+    @ParameterizedTest(name = "{0}: {1}")
+    @MethodSource("invalidRequestEnums")
+    void invalidRequestCodeIsRejectedForItsFieldWithoutCallingVips(EnumField field, JsonNode value)
+            throws Exception {
+        ObjectNode body = validBody(field.route());
+        set(body, field.pointer(), value);
+        JsonNode error = assertRejected(field.route(), body, fieldPath(field.pointer()));
+        assertEquals(JSON.createArrayNode().add(JSON.createObjectNode()
+                .put("field", fieldPath(field.pointer()))
+                .put("message", "Must be one of: " + String.join(", ", field.values()) + ".")),
+                error.path("errors"));
+        assertFalse(error.toString().contains("DO_NOT_ECHO"));
+    }
+
+    static Stream<EnumField> requestEnums() {
+        return Stream.of(
+                new EnumField("/prohibitions", "/prohibition/noticeTypeCd", List.of("UL", "IRP", "ADP")),
+                new EnumField("/prohibitions", "/registration/addresses/1/registrationAddressTypeCd",
+                        List.of("RES", "MAIL", "BUSI")),
+                new EnumField("/impoundments", "/registrations/1/addresses/1/registrationAddressTypeCd",
+                        List.of("RES", "MAIL", "BUSI")));
+    }
+
+    static Stream<Arguments> invalidRequestEnums() {
+        return requestEnums().flatMap(field -> Stream.of(text("DO_NOT_ECHO"),
+                text(field.values().getFirst().toLowerCase(Locale.ROOT)), text(" " + field.values().getFirst()),
+                text(field.values().getFirst() + " "), text(""),
+                JSON.getNodeFactory().numberNode(0), JSON.getNodeFactory().booleanNode(true),
+                JSON.createObjectNode(), JSON.createArrayNode().add(field.values().getFirst()))
+                .map(value -> Arguments.of(field, value)));
     }
 
     @ParameterizedTest(name = "{0} {1}: empty array is allowed")
@@ -233,7 +317,7 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         return pointer.substring(1).replaceAll("/(\\d+)", "[$1]").replace('/', '.');
     }
 
-    private void assertRejected(String route, ObjectNode body, String expectedField) throws Exception {
+    private JsonNode assertRejected(String route, ObjectNode body, String expectedField) throws Exception {
         JsonNode error = responseJson(request("POST", route, body.toString(), AUTH), 400);
         assertEquals("Request validation failed.", error.path("detail").asString());
         List<String> fields = new ArrayList<>();
@@ -241,6 +325,7 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         assertTrue(fields.stream().anyMatch(field -> field.equals(expectedField)
                 || field.startsWith(expectedField + ".")), error.toString());
         assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS, including the notice lookup");
+        return error;
     }
 
     private JsonNode assertAccepted(String route, ObjectNode body) throws Exception {
@@ -397,6 +482,8 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     private record RequiredField(String route, String pointer, JsonNode schema) { }
 
     private record TemporalField(String route, String pointer, String format) { }
+
+    private record EnumField(String route, String pointer, List<String> values) { }
 
     enum Mutation {
         MISSING, NULL, EMPTY_STRING, SPACE_ONLY, TAB_ONLY, NEWLINE_ONLY, EMPTY_OBJECT, EMPTY_ARRAY

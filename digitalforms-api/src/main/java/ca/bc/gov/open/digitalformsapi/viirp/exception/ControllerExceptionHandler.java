@@ -1,7 +1,9 @@
 package ca.bc.gov.open.digitalformsapi.viirp.exception;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -44,6 +46,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.utils.BooleanJson;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.exc.ValueInstantiationException;
 
 @RestControllerAdvice
 public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
@@ -71,8 +74,9 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
         } else if (ex instanceof HttpMessageNotReadableException) {
             problem = ApiProblemDetails.validation(servletRequest, List.of(unreadableBodyError(ex)));
         } else if (ex instanceof MethodArgumentTypeMismatchException mismatch) {
+            String message = enumMessage(mismatch.getRequiredType());
             problem = ApiProblemDetails.validation(servletRequest,
-                    List.of(new ValidationError(mismatch.getName(), "Invalid value.")));
+                    List.of(new ValidationError(mismatch.getName(), message == null ? "Invalid value." : message)));
         } else if (ex instanceof MissingServletRequestParameterException missing) {
             problem = ApiProblemDetails.validation(servletRequest,
                     List.of(new ValidationError(missing.getParameterName(), "Required parameter is missing.")));
@@ -154,7 +158,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 error.getDefaultMessage() == null ? "Invalid value." : error.getDefaultMessage());
     }
 
-    /** Names the field for an invalid date, date-time or boolean; any other unreadable body stays generic. */
+    /** Names the field for an invalid date, date-time, boolean or enum; other unreadable bodies stay generic. */
     private static ValidationError unreadableBodyError(Throwable ex) {
         for (Throwable cause = ex; cause != null && cause != cause.getCause(); cause = cause.getCause()) {
             if (cause instanceof MismatchedInputException mismatch) {
@@ -162,7 +166,17 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 if (message == null) {
                     message = BooleanJson.message(mismatch.getTargetType());
                 }
+                if (message == null) {
+                    message = enumMessage(mismatch.getTargetType());
+                }
                 String field = jsonField(mismatch.getPath());
+                if (message != null && !field.isEmpty()) {
+                    return new ValidationError(field, message);
+                }
+                break;
+            } else if (cause instanceof ValueInstantiationException instantiation) {
+                String message = enumMessage(instantiation.getType().getRawClass());
+                String field = jsonField(instantiation.getPath());
                 if (message != null && !field.isEmpty()) {
                     return new ValidationError(field, message);
                 }
@@ -170,6 +184,13 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
             }
         }
         return new ValidationError("body", "Malformed or missing request body.");
+    }
+
+    private static String enumMessage(Class<?> type) {
+        return type != null && type.isEnum()
+                ? Arrays.stream(type.getEnumConstants()).map(Object::toString)
+                        .collect(Collectors.joining(", ", "Must be one of: ", "."))
+                : null;
     }
 
     private static String jsonField(List<JacksonException.Reference> path) {

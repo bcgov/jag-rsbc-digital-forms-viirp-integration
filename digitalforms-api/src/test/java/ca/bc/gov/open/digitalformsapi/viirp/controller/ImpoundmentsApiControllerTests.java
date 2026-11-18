@@ -85,8 +85,6 @@ public class ImpoundmentsApiControllerTests {
 		vipsImpoundmentCreate.setDlJurisdictionCd("BC");
 		vipsImpoundmentCreate.setImpoundmentDt(LocalDate.parse("2021-10-08"));
 		vipsImpoundmentCreate.setImpoundmentNoticeNo("12345678");
-		vipsImpoundmentCreate.setNoticeSubjectCd("VEHI");
-		vipsImpoundmentCreate.setNoticeTypeCd("IMP");
 		List<String> originalCauseCds = Arrays.asList("STUNT");
 		vipsImpoundmentCreate.setOriginalCauseCds(originalCauseCds);
 		vipsImpoundmentCreate.setPoliceDetachmentId(304L);
@@ -114,7 +112,7 @@ public class ImpoundmentsApiControllerTests {
 		vipsAddressCreateObj.setCountryNm("USA");
 		vipsAddressCreateObj.setPostalCodeTxt("96321");
 		vipsAddressCreateObj.setProvinceCd("CA");
-		vipsAddressCreateObj.setRegistrationAddressTypeCd("MAIL");
+		vipsAddressCreateObj.setRegistrationAddressTypeCd(AddressCreate.RegistrationAddressTypeCdEnum.MAIL);
 		
 		LicenceCreate vipsLicenceCreateObj = new LicenceCreate();
 
@@ -139,13 +137,10 @@ public class ImpoundmentsApiControllerTests {
 		
 		List<Long> vipsDocumentIdArray = new ArrayList<>();
 		
-		List<Long> vipsImpoundmentArray = new ArrayList<>();
-		
 		createImpoundment.setImpoundment(vipsImpoundmentCreate); // 1
 		createImpoundment.setRegistrations(vipsRegistrationCreateArray); // 2
 		createImpoundment.setVehicle(vipsVehicleCreate); // 3
 		createImpoundment.setDocumentIds(vipsDocumentIdArray); // 4
-		createImpoundment.setPriorImpoundmentIds(vipsImpoundmentArray); // 5
 		
 		//Mock VIPS WS Notice number for Impoundment Search response
 		vipsSearch = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse();

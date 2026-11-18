@@ -239,6 +239,61 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     }
 
     @Test
+    void publishedCreateSchemasOmitServerOwnedInputsButReadSchemasKeepNoticeCodes() throws Exception {
+        var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
+        var removed = Map.of(
+                "CreateImpoundment", List.of("priorImpoundmentIds"),
+                "ImpoundmentCreate", List.of("noticeTypeCd", "noticeSubjectCd"),
+                "ProhibitionCreate", List.of("noticeSubjectCd"));
+        for (JsonNode contract : List.of(CONTRACT_JSON, api)) {
+            for (var entry : removed.entrySet()) {
+                var schema = contract.path("components").path("schemas").path(entry.getKey());
+                assertTrue(schema.isObject(), entry.getKey());
+                for (String field : entry.getValue()) {
+                    assertFalse(schema.path("properties").has(field), entry.getKey() + "." + field);
+                    assertFalse(schema.path("required").toString().contains("\"" + field + "\""));
+                }
+            }
+            for (String readModel : List.of("Prohibition", "Impoundment")) {
+                var properties = contract.path("components").path("schemas").path(readModel).path("properties");
+                assertEquals("string", properties.path("noticeTypeCd").path("type").asString());
+                assertEquals("string", properties.path("noticeSubjectCd").path("type").asString());
+                assertFalse(properties.path("noticeTypeCd").has("enum"));
+                assertFalse(properties.path("noticeSubjectCd").has("enum"));
+            }
+        }
+    }
+
+    @Test
+    void documentedRequestEnumsArePublishedForJsonAndMultipart() throws Exception {
+        var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
+        for (var entry : Map.of(
+                "/components/schemas/ProhibitionCreate/properties/noticeTypeCd", List.of("UL", "IRP", "ADP"),
+                "/components/schemas/AddressCreate/properties/registrationAddressTypeCd",
+                        List.of("RES", "MAIL", "BUSI")).entrySet()) {
+            for (JsonNode contract : List.of(CONTRACT_JSON, api)) {
+                assertEquals(json.valueToTree(entry.getValue()), contract.at(entry.getKey()).path("enum"),
+                        entry.getKey());
+            }
+        }
+        var publishedUpload = api.path("paths").path("/documents").path("post")
+                .at("/requestBody/content/multipart~1form-data/schema/properties");
+        var canonicalUpload = CONTRACT_JSON.at("/components/schemas/DocumentUpload/properties");
+        for (var entry : Map.of("noticeTypeCd", List.of("IRP", "ADP", "UL", "IMP"),
+                "noticeSubjectCd", List.of("PERS", "VEHI")).entrySet()) {
+            assertEquals(json.valueToTree(entry.getValue()), enumValues(CONTRACT_JSON, canonicalUpload.path(entry.getKey())));
+            assertEquals(json.valueToTree(entry.getValue()), enumValues(api, publishedUpload.path(entry.getKey())));
+        }
+    }
+
+    private static JsonNode enumValues(JsonNode contract, JsonNode schema) {
+        if (schema.has("$ref")) {
+            schema = contract.at(schema.path("$ref").asString().substring(1));
+        }
+        return schema.path("enum");
+    }
+
+    @Test
     void codeTablesReturnConfigurationWithoutUpstreamStatusStrings() throws Exception {
         vips.enqueue(200, """
                 {"configuration":{"countries":[{"objectCd":"CAN","objectDsc":"Canada"}]},

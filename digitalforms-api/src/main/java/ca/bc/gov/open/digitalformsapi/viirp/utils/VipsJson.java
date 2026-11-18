@@ -9,8 +9,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.Address;
 import ca.bc.gov.open.digitalformsapi.viirp.model.AddressCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CodeDescription;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTables;
-import ca.bc.gov.open.digitalformsapi.viirp.model.CreateImpoundment;
-import ca.bc.gov.open.digitalformsapi.viirp.model.CreateProhibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Document;
 import ca.bc.gov.open.digitalformsapi.viirp.model.DocumentTypeCodes;
 import ca.bc.gov.open.digitalformsapi.viirp.model.IdentityName;
@@ -25,7 +23,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.ProhibitionCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Registration;
 import ca.bc.gov.open.digitalformsapi.viirp.model.RegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.ReviewApplicationTypeCodes;
-import ca.bc.gov.open.digitalformsapi.viirp.model.VehicleCreate;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
@@ -52,8 +49,6 @@ public final class VipsJson {
 
     public static JacksonModule module() {
         return new SimpleModule("viirp-vips-names")
-                .setMixInAnnotation(CreateProhibition.class, CreateProhibitionMixIn.class)
-                .setMixInAnnotation(CreateImpoundment.class, CreateImpoundmentMixIn.class)
                 .setMixInAnnotation(RegistrationCreate.class, RegistrationCreateMixIn.class)
                 .setMixInAnnotation(Registration.class, RegistrationMixIn.class)
                 .setMixInAnnotation(ProhibitionCreate.class, ProhibitionMixIn.class)
@@ -104,28 +99,6 @@ public final class VipsJson {
                 default -> throw InvalidFormatException.from(p, MESSAGE, p.getString(), Boolean.class);
             };
         }
-    }
-
-    private abstract static class CreateProhibitionMixIn {
-        @JsonProperty("vipsDocumentIdArray") abstract List<Long> getDocumentIds();
-        @JsonProperty("vipsDocumentIdArray") abstract void setDocumentIds(List<Long> value);
-        @JsonProperty("vipsProhibitionCreate") abstract ProhibitionCreate getProhibition();
-        @JsonProperty("vipsProhibitionCreate") abstract void setProhibition(ProhibitionCreate value);
-        @JsonProperty("vipsRegistrationCreate") abstract RegistrationCreate getRegistration();
-        @JsonProperty("vipsRegistrationCreate") abstract void setRegistration(RegistrationCreate value);
-    }
-
-    private abstract static class CreateImpoundmentMixIn {
-        @JsonProperty("vipsDocumentIdArray") abstract List<Long> getDocumentIds();
-        @JsonProperty("vipsDocumentIdArray") abstract void setDocumentIds(List<Long> value);
-        @JsonProperty("vipsImpoundCreate") abstract ImpoundmentCreate getImpoundment();
-        @JsonProperty("vipsImpoundCreate") abstract void setImpoundment(ImpoundmentCreate value);
-        @JsonProperty("vipsImpoundmentArray") abstract List<Long> getPriorImpoundmentIds();
-        @JsonProperty("vipsImpoundmentArray") abstract void setPriorImpoundmentIds(List<Long> value);
-        @JsonProperty("vipsRegistrationCreateArray") abstract List<RegistrationCreate> getRegistrations();
-        @JsonProperty("vipsRegistrationCreateArray") abstract void setRegistrations(List<RegistrationCreate> value);
-        @JsonProperty("vipsVehicleCreate") abstract VehicleCreate getVehicle();
-        @JsonProperty("vipsVehicleCreate") abstract void setVehicle(VehicleCreate value);
     }
 
     private interface RegistrationCreateMixIn {

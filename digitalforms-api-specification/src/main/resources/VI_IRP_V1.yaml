@@ -843,10 +843,16 @@ components:
       properties:
         addToFileDtm:
           type: string
+          format: date-time
           nullable: true
+          example: "2026-11-05T01:30:00.000-07:00"
+          description: RFC 3339 date-time with milliseconds and the UTC offset returned by VIPS.
         disclosedToClientDtm:
           type: string
+          format: date-time
           nullable: true
+          example: "2026-11-05T01:30:00.000-07:00"
+          description: RFC 3339 date-time with milliseconds and the UTC offset returned by VIPS.
         disclosureDocumentYN:
           type: string
           nullable: true
@@ -874,7 +880,10 @@ components:
           format: int64
         receivedDtm:
           type: string
+          format: date-time
           nullable: true
+          example: "2026-11-05T01:30:00.000-07:00"
+          description: RFC 3339 date-time with milliseconds and the UTC offset returned by VIPS.
     CreateImpoundment:
       type: object
       required:
@@ -967,7 +976,10 @@ components:
       properties:
         birthDt:
           type: string
+          format: date
           nullable: true
+          example: "1985-04-12"
+          description: Calendar date in YYYY-MM-DD format.
         dlJurisdictionCd:
           type: string
           nullable: true
@@ -1006,10 +1018,9 @@ components:
           example: 80
         impoundmentDt:
           type: string
-          minLength: 1
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2026-11-05T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset
+          format: date
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         impoundmentNoticeNo:
           type: string
           pattern: '.*\S.*'
@@ -1061,9 +1072,9 @@ components:
           example: "1234"
         projectedReleaseDt:
           type: string
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2026-11-12T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset
+          format: date
+          example: "2026-11-12"
+          description: Calendar date in YYYY-MM-DD format.
         seizureLocationTxt:
           type: string
           maxLength: 4000
@@ -1202,7 +1213,10 @@ components:
           format: int64
         impoundmentDt:
           type: string
+          format: date
           nullable: true
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         impoundmentId:
           type: integer
           nullable: true
@@ -1236,7 +1250,10 @@ components:
           nullable: true
         projectedReleaseDt:
           type: string
+          format: date
           nullable: true
+          example: "2026-11-12"
+          description: Calendar date in YYYY-MM-DD format.
         registrations:
           type: array
           nullable: true
@@ -1306,9 +1323,9 @@ components:
       properties:
         birthDt:
           type: string
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "1985-04-12T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset 
+          format: date
+          example: "1985-04-12"
+          description: Calendar date in YYYY-MM-DD format.
         dlJurisdictionCd:
           type: string
           maxLength: 10
@@ -1342,23 +1359,35 @@ components:
           nullable: true
         effectiveDt:
           type: string
+          format: date
           nullable: true
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         expiryDt:
           type: string
+          format: date
           nullable: true
+          example: "2027-02-03"
+          description: Calendar date in YYYY-MM-DD format.
         icbcTransmissionCd:
           type: string
           nullable: true
         incidentDtm:
           type: string
+          format: date-time
           nullable: true
+          example: "2026-11-05T01:30:00.000-07:00"
+          description: RFC 3339 date-time with milliseconds and the UTC offset returned by VIPS.
         licenceId:
           type: integer
           nullable: true
           format: int64
         noticeServedDt:
           type: string
+          format: date
           nullable: true
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         noticeSubjectCd:
           type: string
           nullable: true
@@ -1398,10 +1427,16 @@ components:
           nullable: true
         tempDlEffectiveDt:
           type: string
+          format: date
           nullable: true
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         tempDlExpiryDt:
           type: string
+          format: date
           nullable: true
+          example: "2026-11-26"
+          description: Calendar date in YYYY-MM-DD format.
     CreateProhibition:
       type: object
       required:
@@ -1450,26 +1485,27 @@ components:
           example: "Y"
         effectiveDt:
           type: string
-          minLength: 1
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2026-11-05T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset
+          format: date
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         expiryDt:
           type: string
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2027-02-03T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset
+          format: date
+          example: "2027-02-03"
+          description: Calendar date in YYYY-MM-DD format.
         incidentDtm:
           type: string
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2026-11-05T01:30:00.000-07:00"
-          description: ISO-8601. Date and time with offset
+          format: date-time
+          example: "2026-11-05T01:30:00-07:00"
+          description: >-
+            RFC 3339 date-time with seconds and Z or a numeric UTC offset.
+            Fractional seconds beyond milliseconds are truncated. VIPS stores
+            the instant, so reads return it with the UTC offset used by VIPS.
         noticeServedDt:
           type: string
-          minLength: 1
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2026-11-05T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset
+          format: date
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         noticeSubjectCd:
           type: string
           pattern: '.*\S.*'
@@ -1525,14 +1561,14 @@ components:
           example: "1200 BLOCK GRANVILLE ST"
         tempDlEffectiveDt:
           type: string
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2026-11-05T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset
+          format: date
+          example: "2026-11-05"
+          description: Calendar date in YYYY-MM-DD format.
         tempDlExpiryDt:
           type: string
-          pattern:  '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}-\d{2}:\d{2}$'
-          example: "2026-11-05T00:00:00.000-07:00"
-          description: ISO-8601. Date only with offset
+          format: date
+          example: "2026-11-26"
+          description: Calendar date in YYYY-MM-DD format.
     CreateProhibitionServiceResponse:
       type: object
       required:

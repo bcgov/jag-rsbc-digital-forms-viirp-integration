@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.http.HttpServletRequest;
@@ -118,7 +119,7 @@ public class DocumentsApiControllerTests {
 		List<VipsDocumentObj> documentsList = new ArrayList<VipsDocumentObj>();
 		VipsDocumentObj vipsDocumentObj = new VipsDocumentObj();
 		vipsDocumentObj.setDocumentId(DigitalFormsConstants.UNIT_TEST_DOCUMENT_ID);
-		vipsDocumentObj.setAddToFileDtm("2018-10-22T00:00:00.000-07:00");
+		vipsDocumentObj.setAddToFileDtm(OffsetDateTime.parse("2018-10-22T00:00:00.000-07:00"));
 		vipsDocumentObj.setDocumentTypeCd("MV2702A");
 		documentsList.add(vipsDocumentObj);
 		vipsDocumentsResponse.setResult(documentsList);

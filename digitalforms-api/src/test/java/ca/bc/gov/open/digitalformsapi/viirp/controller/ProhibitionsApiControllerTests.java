@@ -1,9 +1,13 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +28,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import ca.bc.gov.open.digitalformsapi.viirp.utils.TemporalJson;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
 import ca.bc.gov.open.digitalformsapi.viirp.config.ConfigProperties;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
@@ -79,10 +84,10 @@ public class ProhibitionsApiControllerTests {
 		VipsProhibitionCreate vipsProhibitionCreate = new VipsProhibitionCreate();
 		vipsProhibitionCreate.setCityNm("VICTORIA");
 		vipsProhibitionCreate.setDreEvaluationCds(null);
-		vipsProhibitionCreate.setEffectiveDt("2018-10-11T00:00:00.000-07:00");
+		vipsProhibitionCreate.setEffectiveDt(LocalDate.parse("2018-10-11"));
 		vipsProhibitionCreate.setExpiryDt(null);
-		vipsProhibitionCreate.setIncidentDtm("2018-11-05T00:00:00.000-07:00");
-		vipsProhibitionCreate.setNoticeServedDt("2018-10-07T00:00:00.000-07:00");
+		vipsProhibitionCreate.setIncidentDtm(OffsetDateTime.parse("2018-11-05T00:00:00.000-07:00"));
+		vipsProhibitionCreate.setNoticeServedDt(LocalDate.parse("2018-10-07"));
 		vipsProhibitionCreate.setNoticeSubjectCd("PERS");
 		vipsProhibitionCreate.setNoticeTypeCd("UL");
 		vipsProhibitionCreate.setOriginalCauseCd("IRPINDEF");
@@ -115,7 +120,7 @@ public class ProhibitionsApiControllerTests {
 		
 		VipsLicenceCreate vipsLicenceCreateObj = new VipsLicenceCreate();
 
-		vipsLicenceCreateObj.setBirthDt("1971-04-08T00:00:00.000-07:00");
+		vipsLicenceCreateObj.setBirthDt(LocalDate.parse("1971-04-08"));
 		vipsLicenceCreateObj.setDriverLicenceNo("4771979");
 		vipsLicenceCreateObj.setDlJurisdictionCd("FL");
 		
@@ -201,14 +206,18 @@ public class ProhibitionsApiControllerTests {
     @Test
 	public void testProhibitionCreateApiPOSTBadRequest() throws Exception {
     	
-    	createProhibition.getVipsProhibitionCreate().setIncidentDtm("2021-10-22T0a:23:23.100-07:00"); // Doesn't match regex for date/time. 
+		String body = UnitTestUtilities.asJsonString(createProhibition);
+		String invalid = body.replace("\"2018-11-05T00:00:00.000-07:00\"", "\"2021-10-22T0a:23:23.100-07:00\"");
+		assertNotEquals(body, invalid);
 		
 	    mvc.perform( MockMvcRequestBuilders
 	    	      .post("/prohibitions")
-	    	      .content(UnitTestUtilities.asJsonString(createProhibition))
+				  .content(invalid)
 	    	      .contentType(MediaType.APPLICATION_JSON)
 	    	      .accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("vipsProhibitionCreate.incidentDtm"))
+				.andExpect(jsonPath("$.errors[0].message").value(TemporalJson.DATE_TIME_MESSAGE));
 	    
 	}
    

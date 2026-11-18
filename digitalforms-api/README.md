@@ -26,6 +26,7 @@ These values must be set as environmental variables if running the API locally (
 | DIGITALFORMS_VIPSORDS_USER      | user                        |                  |
 | DIGITALFORMS_VIPSORDS_PASSWORD  | password                    |                  |
 | DIGITALFORMS_OAUTH2_ALLOWED_CLIENT_IDS | vips-vi-irp-dev         | DIAM client IDs allowed to call the API (comma-separated); startup fails if empty. See *Security* |
+| TZ                              | America/Vancouver           | Required in containers: date-only fields are sent to VIPS as midnight in this zone. See *Dates and timestamps*. A local run uses the operating system's zone |
 | SPLUNK_URL					  | url							| 'splunk' profile only|
 | SPLUNK_TOKEN_VIPS				  | splunk token				| 'splunk' profile only|   
 
@@ -248,6 +249,34 @@ These response changes do not alter approval rules, upstream calls or retry poli
 Uploads retain `{"document_id":"..."}`.
 Idempotent document associations remain bodyless 204 responses.
 
+#### Dates and timestamps
+
+Date-only fields (`*Dt`, including `birthDt`) use OpenAPI `format: date`, for example
+`"2026-11-05"`. `incidentDtm` and the document `*Dtm` fields use `format: date-time`:
+an RFC 3339 timestamp with seconds and `Z` or a numeric offset, for example
+`"2026-11-05T01:30:00-07:00"`.
+
+| Direction | Dates | Timestamps |
+|---|---|---|
+| Request | Strict `YYYY-MM-DD`; impossible dates, timestamps, blanks and non-strings are rejected. | Seconds and an offset are required; fractions beyond milliseconds are truncated. |
+| To VIPS WS | Midnight in the JVM default zone, e.g. `2025-12-15T00:00:00.000-08:00`, `2026-11-05T00:00:00.000-07:00`. | The caller's instant and offset, with milliseconds. |
+| Response | The calendar date VIPS returned, without a zone conversion. | The instant and offset VIPS returned, with milliseconds; UTC is `Z`. |
+
+VIPS WS binds every date as a timestamp and the create procedures truncate date-only
+fields to the day, so the deployed container must run with `TZ=America/Vancouver`:
+under UTC, a date would arrive as UTC midnight and be stored as the previous day. The
+zone is a deployment setting rather than application code, so B.C.'s permanent UTC-7
+and historical `-08:00` winter dates follow the JDK's timezone data. Reading only the
+calendar date keeps historical winter dates correct even if VIPS WS reports them with
+a fixed `-07:00`. An invalid request value returns 400 with the field path and the
+expected format, without echoing the value, and VIPS is not called. A malformed date or
+timestamp from VIPS returns 502 `Invalid response from VIPS.`
+
+**Caller migration:** send dates such as `"birthDt": "1974-05-25"` instead of
+`"1974-05-25T00:00:00.000-07:00"`; the old form now returns 400. Timestamps no longer
+need exactly three fraction digits or a negative offset. Responses return dates as
+`YYYY-MM-DD` and timestamps with milliseconds and an offset.
+
 #### Upstream failures and retries
 
 All business operations distinguish dependency failures from local VI/IRP errors.
@@ -424,6 +453,13 @@ They cover:
   return 400 identifying the field without reaching VIPS. Positive controls preserve
   optional licence objects and allowed empty arrays; separate cases cover the
   impoundment-only requirement for a licence number when a licence object is supplied.
+- Every date and timestamp field in both create requests, found from the YAML's
+  formats: impossible, partial, legacy-timestamp, blank and non-string values return a
+  field-specific 400 without reaching VIPS. Dates reach VIPS as B.C. midnight, including
+  `-08:00` before 2026-11-01 and `-07:00` afterwards (the tests set and restore
+  `America/Vancouver`); timestamps keep their offset with milliseconds. Reads return
+  VIPS dates without a zone shift, timestamps with their VIPS offset, and 502 for a
+  malformed VIPS date. Runtime OpenAPI keeps the contract's 21 formats.
 - Response status, content type, `X-Correlation-ID` header and body-schema validation
   against the YAML for every tested public operation. Guard tests deliberately inject
   wrong statuses, shapes and headers to prove drift fails the tests.

@@ -15,7 +15,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
               "vipsDocumentIdArray": [123456789012345], "vipsImpoundmentArray": [],
               "vipsImpoundCreate": {
                 "impoundmentNoticeNo": "00123456", "dlJurisdictionCd": "BC",
-                "impoundmentDt": "2022-10-11T00:00:00.000-07:00",
+                "impoundmentDt": "2022-10-11",
                 "noticeSubjectCd": "VEHI", "noticeTypeCd": "IMP",
                 "originalCauseCds": ["STUNT"], "policeDetatchmentId": 304, "policeFileNo": "HTTP-TEST"
               },
@@ -51,6 +51,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         assertFalse(submitted.at("/vipsRegistrationCreateArray/0").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertEquals("00005678", submitted.at("/vipsVehicleCreate/registrationNo").asString());
+        assertEquals("2022-10-11T00:00:00.000-07:00", submitted.at("/vipsImpoundCreate/impoundmentDt").asString());
 
         vips.enqueue(200, "{\"respCd\":0,\"resultsCount\":null,\"result\":[{\"impoundmentId\":123456789012345}]}");
         vips.enqueue(200, """
@@ -60,7 +61,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         JsonNode result = responseJson(request("GET", resourcePath, null, AUTH), 200);
         assertEquals(NOTICE, result.path("impoundmentNoticeNo").asString());
         assertEquals("BC", result.path("dlJurisdictionCd").asString());
-        assertEquals("2022-10-11T00:00:00.000-07:00", result.path("impoundmentDt").asString());
+        assertEquals("2022-10-11", result.path("impoundmentDt").asString());
         assertFalse(result.has("result"));
         assertFalse(result.has("respCd"));
         assertFalse(result.has("respMsg"));

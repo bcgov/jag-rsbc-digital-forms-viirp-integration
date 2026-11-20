@@ -135,12 +135,10 @@ public class ImpoundmentsApiControllerTests {
 		vipsVehicleCreate.setVehicleModelTxt("Sport");
 		vipsVehicleCreate.setVehicleTypeCd("1");
 		
-		List<Long> vipsDocumentIdArray = new ArrayList<>();
 		
 		createImpoundment.setImpoundment(vipsImpoundmentCreate); // 1
 		createImpoundment.setRegistrations(vipsRegistrationCreateArray); // 2
 		createImpoundment.setVehicle(vipsVehicleCreate); // 3
-		createImpoundment.setDocumentIds(vipsDocumentIdArray); // 4
 		
 		//Mock VIPS WS Notice number for Impoundment Search response
 		vipsSearch = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse();

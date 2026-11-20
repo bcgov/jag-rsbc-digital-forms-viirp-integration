@@ -38,7 +38,7 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
             assertFalse(error.path("message").asString().isBlank());
             fields.add(error.path("field").asString());
         }
-        assertEquals(Set.of("documentIds", "prohibition", "registration"), fields);
+        assertEquals(Set.of("prohibition", "registration"), fields);
     }
 
     @Test
@@ -76,14 +76,9 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
     @ParameterizedTest
     @ValueSource(strings = {"abc", "0", "-1", "9223372036854775808"})
     void invalidDocumentIdsReturn400(String id) throws Exception {
-        for (String path : new String[] {"/documents/" + id, "/prohibitions/81000029/documents/" + id,
-                "/impoundments/81000029/documents/" + id}) {
-            boolean download = path.startsWith("/documents/");
-            var error = responseJson(request(download ? "GET" : "PUT", path, null, AUTH, null,
-                    download ? "application/pdf, application/problem+json" : "application/json"), 400);
-            assertEquals("documentId", error.at("/errors/0/field").asString(), error.toString());
-            assertFalse(error.path("errors").toString().contains("getDocument"));
-        }
+        var error = responseJson(request("GET", "/documents/" + id, null, AUTH, null,
+                "application/pdf, application/problem+json"), 400);
+        assertEquals("documentId", error.at("/errors/0/field").asString(), error.toString());
     }
 
     @Test

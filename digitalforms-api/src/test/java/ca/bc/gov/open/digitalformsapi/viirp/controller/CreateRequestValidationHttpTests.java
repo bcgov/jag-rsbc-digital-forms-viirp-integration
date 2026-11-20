@@ -31,7 +31,6 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final long CREATED_ID = 123456789012345L;
     private static final Map<String, String> VIPS_NAMES = Map.ofEntries(
-            Map.entry("documentIds", "vipsDocumentIdArray"),
             Map.entry("prohibition", "vipsProhibitionCreate"),
             Map.entry("registration", "vipsRegistrationCreate"),
             Map.entry("impoundment", "vipsImpoundCreate"),
@@ -100,6 +99,8 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
         for (JsonNode value : List.of(text("CALLER_VALUE"), NullNode.getInstance(),
                 JSON.createArrayNode().add(987), JSON.createObjectNode().put("unexpected", true))) {
             ObjectNode body = validBody(route);
+            body.set("documentIds", value);
+            body.set("vipsDocumentIdArray", value);
             if (route.equals("/impoundments")) {
                 body.set("priorImpoundmentIds", value);
                 body.set("vipsImpoundmentArray", value);
@@ -113,6 +114,8 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     }
 
     private static void assertServerOwnedValues(String route, JsonNode submitted) {
+        assertEquals(JSON.createArrayNode(), submitted.path("vipsDocumentIdArray"));
+        assertFalse(submitted.has("documentIds"));
         if (route.equals("/impoundments")) {
             assertEquals("IMP", submitted.at("/vipsImpoundCreate/noticeTypeCd").asString());
             assertEquals("VEHI", submitted.at("/vipsImpoundCreate/noticeSubjectCd").asString());

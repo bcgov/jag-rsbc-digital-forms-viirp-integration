@@ -10,12 +10,16 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.ProhibitionCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.RegistrationCreate;
 
 public record CreateProhibitionServiceRequest(
-        @JsonProperty("vipsDocumentIdArray") List<Long> documentIds,
         @JsonProperty("vipsProhibitionCreate") ProhibitionDetails prohibition,
         @JsonProperty("vipsRegistrationCreate") RegistrationCreate registration) {
 
     public CreateProhibitionServiceRequest(CreateProhibition request) {
-        this(request.getDocumentIds(), new ProhibitionDetails(request.getProhibition()), request.getRegistration());
+        this(new ProhibitionDetails(request.getProhibition()), request.getRegistration());
+    }
+
+    @JsonProperty("vipsDocumentIdArray")
+    public List<Long> documentIds() {
+        return List.of();
     }
 
     public record ProhibitionDetails(@JsonUnwrapped ProhibitionCreate details) {

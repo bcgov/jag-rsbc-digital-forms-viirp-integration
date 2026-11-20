@@ -48,17 +48,17 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals(CONTRACT_JSON.path("info"), api.path("info"), "API metadata must come from the contract");
         assertEquals(apiBaseUrl(), api.path("servers").path(0).path("url").asString(),
                 "The server URL must be absolute so that clients such as Postman resolve it correctly");
-        assertEquals(12, CONTRACT_JSON.path("paths").size(),
+        assertEquals(9, CONTRACT_JSON.path("paths").size(),
                 "The canonical YAML remains the business API contract and excludes Actuator");
         JsonNode paths = api.path("paths");
-        assertEquals(15, paths.size(),
+        assertEquals(12, paths.size(),
                 "Runtime docs should include the exposed Actuator endpoints and authenticated discovery: "
                         + paths.propertyNames());
         for (String route : new String[] {"prohibitions", "impoundments"}) {
             assertTrue(paths.path("/" + route).has("post"));
             assertTrue(paths.path("/" + route + "/{noticeNo}").has("get"));
         }
-        assertTrue(paths.path("/documents").has("post"));
+        assertFalse(paths.has("/documents"));
         assertTrue(paths.path("/documents/{documentId}").has("get"));
         var downloadResponse = paths.path("/documents/{documentId}").path("get")
                 .path("responses").path("200").path("content").path("application/pdf").path("schema");
@@ -66,8 +66,8 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals("binary", downloadResponse.path("format").asString());
         assertTrue(paths.path("/prohibitions/{noticeNo}/documents").has("get"));
         assertTrue(paths.path("/impoundments/{noticeNo}/documents").has("get"));
-        assertTrue(paths.path("/prohibitions/{noticeNo}/documents/{documentId}").has("put"));
-        assertTrue(paths.path("/impoundments/{noticeNo}/documents/{documentId}").has("put"));
+        assertFalse(paths.has("/prohibitions/{noticeNo}/documents/{documentId}"));
+        assertFalse(paths.has("/impoundments/{noticeNo}/documents/{documentId}"));
         assertFalse(paths.has("/documents/list/{noticeNo}"));
         assertFalse(paths.has("/documents/association/notice/{documentId}"));
         assertTrue(paths.path("/codetables").has("get"));
@@ -90,6 +90,10 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertFalse(api.toString().contains("{correlationId}"), "Correlation ID is a header, not a path variable");
         assertFalse(api.toString().toLowerCase(Locale.ROOT).contains("dfpayload"));
         responseJson(request("GET", "/documents/list/81000029", null, AUTH), 404);
+        responseJson(request("POST", "/documents", "{}", AUTH), 404);
+        for (String resource : List.of("prohibitions", "impoundments")) {
+            responseJson(request("PUT", "/" + resource + "/81000029/documents/123", null, AUTH), 404);
+        }
         responseJson(request("POST", "/documents/association/notice/123",
                 "{\"noticeNo\":\"81000029\",\"noticeTypeCd\":\"IRP\"}", AUTH), 404);
         responseJson(request("GET", "/unknown", null, AUTH), 404);
@@ -158,23 +162,22 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     @Test
     void publishedUploadIsMultipartWithOneBinaryFileAndUnchangedResponse() throws Exception {
         var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
-        var operation = api.path("paths").path("/documents").path("post");
-        var content = operation.path("requestBody").path("content");
-        assertEquals(1, content.size());
-        var schema = content.path("multipart/form-data").path("schema");
-        assertEquals("object", schema.path("type").asString());
-        assertEquals("string", schema.path("properties").path("file").path("type").asString());
-        assertEquals("binary", schema.path("properties").path("file").path("format").asString());
-        assertTrue(schema.path("required").toString().contains("\"file\""));
-        assertTrue(schema.path("required").toString().contains("\"documentTypeCd\""), schema.toPrettyString());
-        assertFalse(schema.path("properties").has("file_object"));
-        assertFalse(schema.path("properties").has("mime_type"));
-        assertFalse(schema.path("properties").has("mime_sub_type"));
-        assertFalse(schema.path("properties").has("pageCount"));
-        assertTrue(operation.path("responses").has("413"));
-        var response = operation.path("responses").path("201").path("content")
-                .path("application/json").path("schema");
-        assertEquals("#/components/schemas/CreateDocumentResponse", response.path("$ref").asString());
+        for (String path : List.of("/prohibitions/{noticeNo}/documents", "/impoundments/{noticeNo}/documents")) {
+            var operation = api.path("paths").path(path).path("post");
+            var content = operation.path("requestBody").path("content");
+            assertEquals(1, content.size());
+            var schema = content.path("multipart/form-data").path("schema");
+            assertEquals("object", schema.path("type").asString());
+            assertEquals("string", schema.path("properties").path("file").path("type").asString());
+            assertEquals("binary", schema.path("properties").path("file").path("format").asString());
+            assertTrue(schema.path("required").toString().contains("\"file\""));
+            assertTrue(schema.path("required").toString().contains("\"documentTypeCd\""), schema.toPrettyString());
+            assertEquals(Set.of("file", "documentTypeCd"), schema.path("properties").propertyNames());
+            assertTrue(operation.path("responses").has("413"));
+            var response = operation.path("responses").path("201").path("content")
+                    .path("application/json").path("schema");
+            assertEquals("#/components/schemas/CreateDocumentResponse", response.path("$ref").asString());
+        }
     }
 
     @Test
@@ -192,7 +195,8 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
             assertEquals(CONTRACT_JSON.path("paths").path(path + "/documents").path("get")
                     .at("/responses/200/content/application~1json/schema"), collection);
         }
-        for (String resource : List.of("prohibitions", "impoundments", "documents")) {
+        for (String resource : List.of("prohibitions", "impoundments",
+                "prohibitions/{noticeNo}/documents", "impoundments/{noticeNo}/documents")) {
             var created = api.path("paths").path("/" + resource).path("post").at("/responses/201");
             assertEquals(CONTRACT_JSON.at("/components/headers/Location"), created.at("/headers/Location"));
         }
@@ -242,7 +246,8 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     void publishedCreateSchemasOmitServerOwnedInputsButReadSchemasKeepNoticeCodes() throws Exception {
         var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
         var removed = Map.of(
-                "CreateImpoundment", List.of("priorImpoundmentIds"),
+                "CreateImpoundment", List.of("priorImpoundmentIds", "documentIds"),
+                "CreateProhibition", List.of("documentIds"),
                 "ImpoundmentCreate", List.of("noticeTypeCd", "noticeSubjectCd"),
                 "ProhibitionCreate", List.of("noticeSubjectCd"));
         for (JsonNode contract : List.of(CONTRACT_JSON, api)) {
@@ -265,7 +270,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void documentedRequestEnumsArePublishedForJsonAndMultipart() throws Exception {
+    void documentedRequestEnumsArePublishedForJson() throws Exception {
         var api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
         for (var entry : Map.of(
                 "/components/schemas/ProhibitionCreate/properties/noticeTypeCd", List.of("UL", "IRP", "ADP"),
@@ -276,21 +281,6 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
                         entry.getKey());
             }
         }
-        var publishedUpload = api.path("paths").path("/documents").path("post")
-                .at("/requestBody/content/multipart~1form-data/schema/properties");
-        var canonicalUpload = CONTRACT_JSON.at("/components/schemas/DocumentUpload/properties");
-        for (var entry : Map.of("noticeTypeCd", List.of("IRP", "ADP", "UL", "IMP"),
-                "noticeSubjectCd", List.of("PERS", "VEHI")).entrySet()) {
-            assertEquals(json.valueToTree(entry.getValue()), enumValues(CONTRACT_JSON, canonicalUpload.path(entry.getKey())));
-            assertEquals(json.valueToTree(entry.getValue()), enumValues(api, publishedUpload.path(entry.getKey())));
-        }
-    }
-
-    private static JsonNode enumValues(JsonNode contract, JsonNode schema) {
-        if (schema.has("$ref")) {
-            schema = contract.at(schema.path("$ref").asString().substring(1));
-        }
-        return schema.path("enum");
     }
 
     @Test

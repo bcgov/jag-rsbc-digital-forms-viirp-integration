@@ -190,73 +190,6 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
-  /documents:
-    post:
-      security:
-        - oauth2: []
-      tags:
-      - Documents
-      operationId: storeDocument
-      summary: Upload one PDF document to VIPS
-      description: >
-        Upload exactly one readable PDF with 1 to 99,999 pages in the file part (maximum 10 MiB,
-        10485760 bytes). Other parts are text metadata. The total multipart request
-        limit is 11 MiB. File contents are validated as PDF; the filename and supplied
-        MIME type are not trusted. Password-protected files that cannot be opened
-        without a password are rejected. The page count stored with the document is
-        read from the PDF. Uploading does not associate the document
-        with a notice. JSON/Base64 and raw binary request bodies are not supported.
-      parameters:
-      - $ref: '#/components/parameters/CorrelationId'
-      requestBody:
-        description: One PDF file and its document metadata.
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/DocumentUpload'
-            encoding:
-              file:
-                contentType: application/pdf
-        required: true
-      responses:
-        '201':
-          description: Created
-          headers:
-            Location:
-              $ref: '#/components/headers/Location'
-            X-Correlation-ID:
-              $ref: '#/components/headers/X-Correlation-ID'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreateDocumentResponse'
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '401':
-          $ref: '#/components/responses/401NotAuthorized'
-        '404':
-          $ref: '#/components/responses/404NotFound'
-        '413':
-          description: File exceeds 10 MiB or the multipart request exceeds 11 MiB.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/X-Correlation-ID'
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-        '500':
-          $ref: '#/components/responses/500ServerError'
-        '502':
-          $ref: '#/components/responses/502BadGateway'
-        '503':
-          $ref: '#/components/responses/503ServiceUnavailable'
-        '504':
-          $ref: '#/components/responses/504GatewayTimeout'
-        '406':
-          $ref: '#/components/responses/406NotAcceptable'
-        '415':
-          $ref: '#/components/responses/415UnsupportedMediaType'
   /documents/{documentId}:
     get:
       security:
@@ -349,6 +282,82 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
+    post:
+      security:
+        - oauth2: []
+      tags:
+      - Documents
+      operationId: uploadProhibitionDocument
+      summary: Upload and associate one PDF with an existing prohibition
+      description: >
+        Upload exactly one readable PDF with 1 to 99,999 pages in the file part (maximum 10 MiB,
+        10485760 bytes). Other parts are text metadata. The total multipart request
+        limit is 11 MiB. File contents are validated as PDF; the filename and supplied
+        MIME type are not trusted. Password-protected files that cannot be opened
+        without a password are rejected. The page count stored with the document is
+        read from the PDF. Notice type and subject are determined by the API.
+        Upload and association are separate writes: an error can leave a stored PDF
+        or an association whose outcome is unknown. Do not retry blindly; check the
+        notice document list and use the correlation ID for support. JSON/Base64 and
+        raw binary request bodies are not supported.
+      parameters:
+      - name: noticeNo
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+      - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        description: One PDF file and its document metadata.
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentUpload'
+            encoding:
+              file:
+                contentType: application/pdf
+        required: true
+      responses:
+        '201':
+          description: Document uploaded and associated with the notice
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateDocumentResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401NotAuthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '413':
+          description: File exceeds 10 MiB or the multipart request exceeds 11 MiB.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          $ref: '#/components/responses/500ServerError'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+        '503':
+          $ref: '#/components/responses/503ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/504GatewayTimeout'
+        '406':
+          $ref: '#/components/responses/406NotAcceptable'
+        '415':
+          $ref: '#/components/responses/415UnsupportedMediaType'
   /impoundments/{noticeNo}/documents:
     get:
       security:
@@ -396,15 +405,24 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
-  /prohibitions/{noticeNo}/documents/{documentId}:
-    put:
-      tags:
-      - Documents
-      operationId: associateDocumentToProhibition
+    post:
       security:
         - oauth2: []
-      summary: Associate a document with a prohibition
-      description: Idempotent. Returns 204 whether the document is newly associated or already associated.
+      tags:
+      - Documents
+      operationId: uploadImpoundmentDocument
+      summary: Upload and associate one PDF with an existing impoundment
+      description: >
+        Upload exactly one readable PDF with 1 to 99,999 pages in the file part (maximum 10 MiB,
+        10485760 bytes). Other parts are text metadata. The total multipart request
+        limit is 11 MiB. File contents are validated as PDF; the filename and supplied
+        MIME type are not trusted. Password-protected files that cannot be opened
+        without a password are rejected. The page count stored with the document is
+        read from the PDF. Notice type and subject are determined by the API.
+        Upload and association are separate writes: an error can leave a stored PDF
+        or an association whose outcome is unknown. Do not retry blindly; check the
+        notice document list and use the correlation ID for support. JSON/Base64 and
+        raw binary request bodies are not supported.
       parameters:
       - name: noticeNo
         in: path
@@ -413,31 +431,44 @@ paths:
           type: string
           minLength: 1
           pattern: '.*\S.*'
-        example: "21900123"
-      - name: documentId
-        in: path
-        description: ID of the previously uploaded document
-        required: true
-        schema:
-          type: integer
-          format: int64
-          minimum: 1
-        example: 102220
       - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        description: One PDF file and its document metadata.
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentUpload'
+            encoding:
+              file:
+                contentType: application/pdf
+        required: true
       responses:
-        '204':
-          description: Document is associated with the prohibition, or was already associated
+        '201':
+          description: Document uploaded and associated with the notice
           headers:
+            Location:
+              $ref: '#/components/headers/Location'
             X-Correlation-ID:
               $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateDocumentResponse'
         '400':
           $ref: '#/components/responses/400BadRequest'
         '401':
           $ref: '#/components/responses/401NotAuthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
-        '406':
-          $ref: '#/components/responses/406NotAcceptable'
+        '413':
+          description: File exceeds 10 MiB or the multipart request exceeds 11 MiB.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '500':
           $ref: '#/components/responses/500ServerError'
         '502':
@@ -446,56 +477,10 @@ paths:
           $ref: '#/components/responses/503ServiceUnavailable'
         '504':
           $ref: '#/components/responses/504GatewayTimeout'
-  /impoundments/{noticeNo}/documents/{documentId}:
-    put:
-      tags:
-      - Documents
-      operationId: associateDocumentToImpoundment
-      security:
-        - oauth2: []
-      summary: Associate a document with an impoundment
-      description: Idempotent. Returns 204 whether the document is newly associated or already associated.
-      parameters:
-      - name: noticeNo
-        in: path
-        required: true
-        schema:
-          type: string
-          minLength: 1
-          pattern: '.*\S.*'
-        example: "21900123"
-      - name: documentId
-        in: path
-        description: ID of the previously uploaded document
-        required: true
-        schema:
-          type: integer
-          format: int64
-          minimum: 1
-        example: 102220
-      - $ref: '#/components/parameters/CorrelationId'
-      responses:
-        '204':
-          description: Document is associated with the impoundment, or was already associated
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/X-Correlation-ID'
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '401':
-          $ref: '#/components/responses/401NotAuthorized'
-        '404':
-          $ref: '#/components/responses/404NotFound'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
-        '500':
-          $ref: '#/components/responses/500ServerError'
-        '502':
-          $ref: '#/components/responses/502BadGateway'
-        '503':
-          $ref: '#/components/responses/503ServiceUnavailable'
-        '504':
-          $ref: '#/components/responses/504GatewayTimeout'
+        '415':
+          $ref: '#/components/responses/415UnsupportedMediaType'
   /codetables:
     get:
       tags:
@@ -888,19 +873,10 @@ components:
       type: object
       description: The API supplies the IMP/VEHI notice codes and an empty prior-impoundment placeholder to VIPS.
       required:
-        - documentIds
         - impoundment
         - registrations
         - vehicle
       properties:
-        documentIds:
-          type: array
-          items:
-            type: integer
-            format: int64
-            description: Holds id(s) of stored documents. Required. An empty array is allowed. 
-            example: 102220
-          example: [102220]
         impoundment:
           $ref: '#/components/schemas/ImpoundmentCreate'
         registrations:
@@ -1415,18 +1391,9 @@ components:
     CreateProhibition:
       type: object
       required:
-        - documentIds
         - prohibition
         - registration
       properties:
-        documentIds:
-          type: array
-          items:
-            type: integer
-            format: int64
-            description: Holds id(s) of stored documents. Required. An empty array is allowed. 
-            example: 102220
-          example: [102220]
         prohibition:
           $ref: '#/components/schemas/ProhibitionCreate'
         registration:
@@ -1629,20 +1596,6 @@ components:
           type: string
           format: binary
           description: Exactly one non-empty, readable PDF file with 1 to 99999 pages, at most 10485760 bytes (10 MiB).
-        noticeTypeCd:
-          $ref: '#/components/schemas/UploadNoticeType'
-        noticeSubjectCd:
-          $ref: '#/components/schemas/UploadNoticeSubject'
-    UploadNoticeType:
-      type: string
-      enum: [IRP, ADP, UL, IMP]
-      description: Notice type code for a document upload.
-      example: "IRP"
-    UploadNoticeSubject:
-      type: string
-      enum: [PERS, VEHI]
-      description: Notice subject code for a document upload.
-      example: "PERS"
     CodeTablesResponse:
         type: object
         required:

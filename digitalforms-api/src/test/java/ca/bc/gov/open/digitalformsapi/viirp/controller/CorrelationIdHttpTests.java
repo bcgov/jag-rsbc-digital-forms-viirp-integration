@@ -118,7 +118,7 @@ class CorrelationIdHttpTests extends HttpApiTestSupport {
                 }
             }
         }
-        assertEquals(12, operations);
+        assertEquals(11, operations);
     }
 
     private HttpResponse<String> ping(List<String> ids) throws Exception {

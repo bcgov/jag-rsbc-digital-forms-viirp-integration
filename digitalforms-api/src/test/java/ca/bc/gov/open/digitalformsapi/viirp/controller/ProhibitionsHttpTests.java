@@ -18,7 +18,6 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
     private static final String NOTICE = "21900601";
     static final String BODY = """
             {
-              "documentIds": [123456789012345],
               "prohibition": {
                 "prohibitionNoticeNo": "21900601",
                 "driverLicenceSeized": false,
@@ -55,7 +54,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         checkedNotice("prohibition", NOTICE);
         JsonNode submitted = json.readTree(downstream("POST", "/cases/prohibitions").body());
         assertEquals(NOTICE, submitted.at("/vipsProhibitionCreate/prohibitionNoticeNo").asString());
-        assertEquals(123456789012345L, submitted.at("/vipsDocumentIdArray/0").asLong());
+        assertEquals(json.createArrayNode(), submitted.path("vipsDocumentIdArray"));
         assertEquals("N", submitted.at("/vipsProhibitionCreate/driverLicenceSeizedYN").asString());
         assertEquals("IRP", submitted.at("/vipsProhibitionCreate/noticeTypeCd").asString());
         assertEquals("PERS", submitted.at("/vipsProhibitionCreate/noticeSubjectCd").asString());
@@ -200,13 +199,12 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
 
     @Test
     void legacyVipsPropertyNamesAreNotAcceptedAsAliases() throws Exception {
-        String legacy = BODY.replace("\"documentIds\"", "\"vipsDocumentIdArray\"")
-                .replace("\"prohibition\"", "\"vipsProhibitionCreate\"")
+        String legacy = BODY.replace("\"prohibition\"", "\"vipsProhibitionCreate\"")
                 .replace("\"registration\"", "\"vipsRegistrationCreate\"");
         JsonNode error = responseJson(request("POST", "/prohibitions", legacy, AUTH), 400);
         Set<String> fields = new HashSet<>();
         error.path("errors").forEach(validation -> fields.add(validation.path("field").asString()));
-        assertEquals(Set.of("documentIds", "prohibition", "registration"), fields, error.toString());
+        assertEquals(Set.of("prohibition", "registration"), fields, error.toString());
         assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
     }
 
@@ -274,11 +272,4 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
     }
 
-    @Test
-    void missingRequiredDocumentIdArrayIsRejectedBeforeCallingVips() throws Exception {
-        String body = BODY.replace("\"documentIds\": [123456789012345],", "");
-        int status = request("POST", "/prohibitions", body, AUTH).statusCode();
-        assertEquals(400, status, "documentIds is required by the spec");
-        assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
-    }
 }

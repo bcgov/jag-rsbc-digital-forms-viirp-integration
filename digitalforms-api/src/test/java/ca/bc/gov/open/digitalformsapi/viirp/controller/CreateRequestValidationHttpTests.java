@@ -304,7 +304,6 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     static Stream<Arguments> vipsColumnLengths() {
         return Stream.of(
                 Arguments.of("/prohibitions", "/registration/licence/driverLicenceNo", 20),
-                Arguments.of("/prohibitions", "/prohibition/policeOfficerNm", 60),
                 Arguments.of("/impoundments", "/impoundment/driverLicenceNo", 20),
                 Arguments.of("/impoundments", "/registrations/1/licence/driverLicenceNo", 20),
                 Arguments.of("/impoundments", "/impoundment/policeOfficerNm", 60));

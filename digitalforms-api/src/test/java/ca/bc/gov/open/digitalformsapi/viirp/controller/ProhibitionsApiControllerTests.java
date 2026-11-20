@@ -82,21 +82,16 @@ public class ProhibitionsApiControllerTests {
 		// Mock POST Prohibition body 
 		createProhibition = new CreateProhibition();
 		ProhibitionCreate vipsProhibitionCreate = new ProhibitionCreate();
-		vipsProhibitionCreate.setCityNm("VICTORIA");
 		vipsProhibitionCreate.setDreEvaluationCds(null);
 		vipsProhibitionCreate.setEffectiveDt(LocalDate.parse("2018-10-11"));
-		vipsProhibitionCreate.setExpiryDt(null);
 		vipsProhibitionCreate.setIncidentDtm(OffsetDateTime.parse("2018-11-05T00:00:00.000-07:00"));
 		vipsProhibitionCreate.setNoticeServedDt(LocalDate.parse("2018-10-07"));
 		vipsProhibitionCreate.setNoticeTypeCd(ProhibitionCreate.NoticeTypeCdEnum.UL);
 		vipsProhibitionCreate.setOriginalCauseCd("IRPINDEF");
 		vipsProhibitionCreate.setPoliceDetachmentId(304L);
 		vipsProhibitionCreate.setPoliceFileNo("802");
-		vipsProhibitionCreate.setPoliceOfficerNm("Police Name");
 		vipsProhibitionCreate.setPoliceFileNo("1234");
 		vipsProhibitionCreate.setProhibitionNoticeNo("21900601");
-		vipsProhibitionCreate.setProvinceCd("BC");
-		vipsProhibitionCreate.setStreetDetailsTxt("Some place");
 		vipsProhibitionCreate.setTempDlEffectiveDt(null);
 		vipsProhibitionCreate.setTempDlExpiryDt(null);			
 		
@@ -142,7 +137,6 @@ public class ProhibitionsApiControllerTests {
 		// Mock VIPS WS GET Prohibition response. 
 		vipsProhibition = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse();
 		Prohibition vipsProhibitionObj = new Prohibition();
-		vipsProhibitionObj.setCityNm("VICTORIA");
 		vipsProhibitionObj.setCancelled(false);
 		vipsProhibition.setResult(vipsProhibitionObj);
 		
@@ -238,7 +232,6 @@ public class ProhibitionsApiControllerTests {
         // Create successful search notice number call with prohibitionId and validate response 
         ResponseEntity<Prohibition> controllerResponse = controller.getProhibition(noticeNo, null);
         Prohibition result = controllerResponse.getBody();
-        assertEquals("VICTORIA", result.getCityNm());
         
     }
     

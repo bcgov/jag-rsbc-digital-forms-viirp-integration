@@ -24,8 +24,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 "effectiveDt": "2022-10-11",
                 "noticeServedDt": "2022-10-11",
                 "noticeTypeCd": "IRP",
-                "originalCauseCd": "IRPINDEF", "policeDetachmentId": 304,
-                "cityNm": "VICTORIA", "expiryDt": null
+                "originalCauseCd": "IRPINDEF", "policeDetachmentId": 304
               },
               "registration": {
                 "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
@@ -69,7 +68,6 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertFalse(submitted.path("vipsProhibitionCreate").has("policeDetachmentId"));
         assertFalse(submitted.path("vipsRegistrationCreate").has("licence"));
         assertFalse(submitted.path("vipsRegistrationCreate").has("addresses"));
-        assertTrue(submitted.at("/vipsProhibitionCreate/expiryDt").isNull());
         assertEquals("2022-10-11T00:00:00.000-07:00", submitted.at("/vipsProhibitionCreate/effectiveDt").asString(),
                 "VIPS WS binds dates as timestamps, so a date is sent as B.C. midnight");
         assertTrue(submitted.at("/vipsProhibitionCreate/dreEvaluationCds").isNull(),
@@ -79,17 +77,15 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 {"respCd":0,"resultsCount":null,"result":[{"prohibitionId":123456789012345}]}
                 """);
         vips.enqueue(200, """
-                {"respCd":0,"result":{"prohibitionNoticeNo":"%s","cityNm":"%s",
+                {"respCd":0,"result":{"prohibitionNoticeNo":"%s",
                  "effectiveDt":"%s","cancelled":false,"extraVipsField":"ignored",
                  "policeDetatchmentId":304,"driverLicenceSeizedYN":"Y","noticeTypeCd":"IRP","noticeSubjectCd":"PERS",
                  "registration":{"surnameNm":"HTTP TEST","vipsLicenceObj":{"driverLicenceNo":"00001234"},
                   "vipsAddressArray":[{"cityNm":"VICTORIA"}]},
                  "documents":[{"documentId":7,"disclosureDocumentYN":"N"}]}}
-                """.formatted(NOTICE, submitted.at("/vipsProhibitionCreate/cityNm").asString(),
-                        submitted.at("/vipsProhibitionCreate/effectiveDt").asString()));
+                """.formatted(NOTICE, submitted.at("/vipsProhibitionCreate/effectiveDt").asString()));
         JsonNode result = responseJson(request("GET", resourcePath, null, AUTH), 200);
         assertEquals(NOTICE, result.path("prohibitionNoticeNo").asString());
-        assertEquals("VICTORIA", result.path("cityNm").asString());
         assertEquals("2022-10-11", result.path("effectiveDt").asString());
         assertEquals(json.readTree("false"), result.path("cancelled"));
         assertEquals(304L, result.path("policeDetachmentId").asLong());
@@ -127,7 +123,6 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         vips.enqueue(200, """
                 {"respCd":0,"result":{"prohibitionNoticeNo":"%s",
                  "effectiveDt":"2025-12-15T00:00:00.000-08:00",
-                 "expiryDt":"2025-12-15T00:00:00.000-07:00",
                  "noticeServedDt":"2026-12-15T00:00:00.000-07:00",
                  "tempDlEffectiveDt":"2026-11-05",
                  "tempDlExpiryDt":null,
@@ -136,9 +131,8 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 """.formatted(NOTICE));
         JsonNode result = responseJson(request("GET", "/prohibitions/" + NOTICE, null, AUTH), 200);
         assertEquals("2025-12-15", result.path("effectiveDt").asString());
-        assertEquals("2025-12-15", result.path("expiryDt").asString(),
+        assertEquals("2026-12-15", result.path("noticeServedDt").asString(),
                 "A VIPS server on a fixed -07:00 offset must not move a winter date to the previous day");
-        assertEquals("2026-12-15", result.path("noticeServedDt").asString());
         assertEquals("2026-11-05", result.path("tempDlEffectiveDt").asString());
         assertTrue(result.path("tempDlExpiryDt").isNull());
         assertEquals("2025-12-15T23:30:00.000-08:00", result.path("incidentDtm").asString(),
@@ -264,12 +258,30 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void prohibitionCityLongerThanVipsColumnIsRejectedBeforeCallingVips() throws Exception {
-        String tooLongCity = "\"" + "X".repeat(31) + "\"";
-        int status = request("POST", "/prohibitions",
-                BODY.replace("\"VICTORIA\"", tooLongCity), AUTH).statusCode();
-        assertEquals(400, status, "31-character cityNm must be rejected; VIPS city_nm is VARCHAR2(30)");
-        assertTrue(vips.requests.isEmpty(), "Invalid requests must not reach VIPS");
+    void retiredProhibitionFieldsAreNotForwardedOrReturned() throws Exception {
+        String retired = """
+                "cityNm":"VICTORIA","provinceCd":"BC","streetDetailsTxt":"MAIN ST",
+                "policeOfficerNm":"J SMITH","policeOfficerNo":"1234","expiryDt":"legacy date"
+                """.strip();
+        var fields = json.readTree("{" + retired + "}").propertyNames();
+
+        availableNotice();
+        vips.enqueue(200, "{\"respCd\":0,\"prohibitionId\":123456789012345}");
+        responseJson(request("POST", "/prohibitions",
+                BODY.replace("\"policeDetachmentId\": 304", "\"policeDetachmentId\": 304," + retired), AUTH), 201);
+        checkedNotice("prohibition", NOTICE);
+        JsonNode submitted = json.readTree(downstream("POST", "/cases/prohibitions").body());
+        fields.forEach(field -> assertFalse(submitted.path("vipsProhibitionCreate").has(field), field));
+
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"prohibitionId\":123456789012345}]}");
+        vips.enqueue(200, """
+                {"respCd":0,"result":{"prohibitionNoticeNo":"%s","tempDlExpiryDt":"2026-11-26",%s}}
+                """.formatted(NOTICE, retired));
+        JsonNode result = responseJson(request("GET", "/prohibitions/" + NOTICE, null, AUTH), 200);
+        fields.forEach(field -> assertFalse(result.has(field), field));
+        assertEquals("2026-11-26", result.path("tempDlExpiryDt").asString());
+        checkedNotice("prohibition", NOTICE);
+        downstream("GET", "/cases/prohibitions/123456789012345");
     }
 
 }

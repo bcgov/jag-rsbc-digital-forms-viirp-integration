@@ -299,7 +299,7 @@ are unchanged.
 | Upload parts `type_code`, `notice_type_code`, `notice_subject_code` | `documentTypeCd`, `noticeTypeCd`, `noticeSubjectCd` |
 | Upload response `{"document_id":"102220"}` | `{"documentId":102220}` (int64) |
 | Impoundment `driverLicenceNo` maximum 8; licence `driverLicenceNo` maximum 10 | Both maximum 20 |
-| Impoundment `policeOfficerNm` maximum 100 | Maximum 60, matching prohibitions and the VIPS column |
+| Impoundment `policeOfficerNm` maximum 100 | Maximum 60, matching the VIPS column |
 
 OpenAPI schema names also drop the VIPS naming, which changes generated client type
 names:
@@ -366,6 +366,14 @@ Dynamic code-table values and all GET response types are unchanged.
 **Caller migration:** remove the four server-owned fields, use the exact enum
 values above, and regenerate clients from the updated specification.
 
+#### Retired prohibition fields
+
+`cityNm`, `provinceCd`, `streetDetailsTxt`, `policeOfficerNm`, `policeOfficerNo`,
+and `expiryDt` are no longer part of prohibition creation or retrieval. Remove
+them from create payloads and stop reading them from GET responses. Registration
+addresses, impoundment fields, and the prohibition's temporary-licence dates are
+unchanged.
+
 #### Upstream failures and retries
 
 All business operations distinguish dependency failures from local VI/IRP errors.
@@ -391,6 +399,9 @@ Create the notice first, without `documentIds`, then upload each PDF using
 `POST /prohibitions/{noticeNo}/documents` or `POST /impoundments/{noticeNo}/documents`.
 These replace the standalone `POST /documents` and both document-association PUTs.
 The new POSTs accept **multipart/form-data only**, with exactly one PDF file.
+When importing the OpenAPI YAML into Postman, generate request parameters from
+**Examples**, not the schema. This uses the sample `noticeNo` and `documentTypeCd`
+instead of generating text from their validation patterns.
 In Postman, choose **Body > form-data**, set `file` to **File**, and use **Text**
 for the other parts. Let Postman set the Content-Type header and multipart boundary.
 Send the OAuth2 bearer token and the optional `X-Correlation-ID` header as for other operations.

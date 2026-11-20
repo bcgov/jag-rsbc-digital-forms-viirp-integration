@@ -369,10 +369,10 @@ values above, and regenerate clients from the updated specification.
 #### Retired prohibition fields
 
 `cityNm`, `provinceCd`, `streetDetailsTxt`, `policeOfficerNm`, `policeOfficerNo`,
-and `expiryDt` are no longer part of prohibition creation or retrieval. Remove
-them from create payloads and stop reading them from GET responses. Registration
-addresses, impoundment fields, and the prohibition's temporary-licence dates are
-unchanged.
+`expiryDt`, `tempDlEffectiveDt`, and `tempDlExpiryDt` are no longer part of
+prohibition creation or retrieval. Remove them from create payloads and stop
+reading them from GET responses. Registration addresses and impoundment fields
+are unchanged.
 
 #### Upstream failures and retries
 

@@ -124,8 +124,6 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 {"respCd":0,"result":{"prohibitionNoticeNo":"%s",
                  "effectiveDt":"2025-12-15T00:00:00.000-08:00",
                  "noticeServedDt":"2026-12-15T00:00:00.000-07:00",
-                 "tempDlEffectiveDt":"2026-11-05",
-                 "tempDlExpiryDt":null,
                  "incidentDtm":"2025-12-15T23:30:00.000-08:00",
                  "fieldAddedByVips":"ignored"}}
                 """.formatted(NOTICE));
@@ -133,8 +131,6 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertEquals("2025-12-15", result.path("effectiveDt").asString());
         assertEquals("2026-12-15", result.path("noticeServedDt").asString(),
                 "A VIPS server on a fixed -07:00 offset must not move a winter date to the previous day");
-        assertEquals("2026-11-05", result.path("tempDlEffectiveDt").asString());
-        assertTrue(result.path("tempDlExpiryDt").isNull());
         assertEquals("2025-12-15T23:30:00.000-08:00", result.path("incidentDtm").asString(),
                 "Timestamps keep the instant and offset VIPS returned");
         assertFalse(result.has("fieldAddedByVips"), "The VIPS codec must still ignore unknown fields");
@@ -261,7 +257,8 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
     void retiredProhibitionFieldsAreNotForwardedOrReturned() throws Exception {
         String retired = """
                 "cityNm":"VICTORIA","provinceCd":"BC","streetDetailsTxt":"MAIN ST",
-                "policeOfficerNm":"J SMITH","policeOfficerNo":"1234","expiryDt":"legacy date"
+                "policeOfficerNm":"J SMITH","policeOfficerNo":"1234","expiryDt":"legacy date",
+                "tempDlEffectiveDt":"2026-11-05","tempDlExpiryDt":"2026-11-26"
                 """.strip();
         var fields = json.readTree("{" + retired + "}").propertyNames();
 
@@ -275,11 +272,10 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
 
         vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"prohibitionId\":123456789012345}]}");
         vips.enqueue(200, """
-                {"respCd":0,"result":{"prohibitionNoticeNo":"%s","tempDlExpiryDt":"2026-11-26",%s}}
+                {"respCd":0,"result":{"prohibitionNoticeNo":"%s",%s}}
                 """.formatted(NOTICE, retired));
         JsonNode result = responseJson(request("GET", "/prohibitions/" + NOTICE, null, AUTH), 200);
         fields.forEach(field -> assertFalse(result.has(field), field));
-        assertEquals("2026-11-26", result.path("tempDlExpiryDt").asString());
         checkedNotice("prohibition", NOTICE);
         downstream("GET", "/cases/prohibitions/123456789012345");
     }

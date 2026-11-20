@@ -92,8 +92,6 @@ public class ProhibitionsApiControllerTests {
 		vipsProhibitionCreate.setPoliceFileNo("802");
 		vipsProhibitionCreate.setPoliceFileNo("1234");
 		vipsProhibitionCreate.setProhibitionNoticeNo("21900601");
-		vipsProhibitionCreate.setTempDlEffectiveDt(null);
-		vipsProhibitionCreate.setTempDlExpiryDt(null);			
 		
 		RegistrationCreate vipsRegistrationCreate = new RegistrationCreate();
 		vipsRegistrationCreate.setDataSourceCd("VIPS");

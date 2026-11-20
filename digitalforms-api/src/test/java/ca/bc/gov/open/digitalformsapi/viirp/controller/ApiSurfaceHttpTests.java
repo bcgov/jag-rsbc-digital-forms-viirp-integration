@@ -239,7 +239,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
                         field + " must rely on its format rather than a legacy timestamp pattern");
             }
         }
-        assertEquals(19, temporalFields, "Every VIPS date and timestamp field must declare its format");
+        assertEquals(15, temporalFields, "Every VIPS date and timestamp field must declare its format");
     }
 
     @Test
@@ -249,11 +249,9 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
             for (JsonNode contract : List.of(CONTRACT_JSON, api)) {
                 var properties = contract.path("components").path("schemas").path(model).path("properties");
                 for (String field : List.of("cityNm", "provinceCd", "streetDetailsTxt",
-                        "policeOfficerNm", "policeOfficerNo", "expiryDt")) {
+                        "policeOfficerNm", "policeOfficerNo", "expiryDt", "tempDlEffectiveDt", "tempDlExpiryDt")) {
                     assertFalse(properties.has(field), model + "." + field);
                 }
-                assertTrue(properties.has("tempDlEffectiveDt"));
-                assertTrue(properties.has("tempDlExpiryDt"));
             }
         }
     }

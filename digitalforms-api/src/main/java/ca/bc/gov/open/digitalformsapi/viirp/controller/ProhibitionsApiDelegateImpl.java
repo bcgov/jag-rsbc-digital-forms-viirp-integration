@@ -41,6 +41,7 @@ public class ProhibitionsApiDelegateImpl implements ProhibitionsApiDelegate{
 		
 		logger.info("Heard a call to the endpoint 'createProhibition'");
 
+		RegistrationValidation.requireName(createProhibition.getRegistration(), "registration");
 		noticeConflicts.checkProhibition(createProhibition.getProhibition().getProhibitionNoticeNo());
 		
 		CreateProhibitionResponse resp = new CreateProhibitionResponse();

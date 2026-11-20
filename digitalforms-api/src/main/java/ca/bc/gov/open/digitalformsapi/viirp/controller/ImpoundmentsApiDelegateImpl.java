@@ -59,6 +59,7 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 			if (reg == null) {
 				throw new BadRequestException(field, "registrations must not contain null entries.");
 			}
+			RegistrationValidation.requireName(reg, field);
 			if (null != reg.getLicence()) {
 				if (!StringUtils.hasText(reg.getLicence().getDriverLicenceNo())) {
 					throw new BadRequestException(field + ".licence.driverLicenceNo",

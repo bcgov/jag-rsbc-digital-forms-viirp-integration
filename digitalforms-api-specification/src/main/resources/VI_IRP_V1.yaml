@@ -730,6 +730,7 @@ components:
   schemas:
     RegistrationCreate:
       type: object
+      description: Provide at least one nonblank value in firstGivenNm, secondGivenNm, surnameNm, or organizationNm. The API returns 400 if none is supplied.
       required:
         - addresses
         - dataSourceCd
@@ -750,7 +751,6 @@ components:
           type: string
           maxLength: 35
           example: "JANE"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         icbcEnterpriseId:
           type: string
           maxLength: 50
@@ -761,7 +761,6 @@ components:
           type: string
           maxLength: 200
           example: "ACME LEASING LTD"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         registrationRoleCd:
           type: string
           pattern: '.*\S.*'
@@ -772,12 +771,10 @@ components:
           type: string
           maxLength: 35
           example: "MARIE"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         surnameNm:
           type: string
           maxLength: 35
           example: "DOE"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         thirdGivenNm:
           type: string
           maxLength: 35

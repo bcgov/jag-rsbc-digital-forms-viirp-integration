@@ -126,11 +126,9 @@ public class ProhibitionsApiControllerTests {
 		vipsRegistrationCreate.setLicence(vipsLicenceCreateObj);
 		vipsRegistrationCreate.setAddresses(vipsAddressArray);
 		
-		List<Long> vipsDocumentIdArray = new ArrayList<>();
 		
 		createProhibition.setProhibition(vipsProhibitionCreate); // 1
 		createProhibition.setRegistration(vipsRegistrationCreate); // 2
-		createProhibition.setDocumentIds(vipsDocumentIdArray); // 3
 		
 		
 		//Mock VIPS WS Notice number for Prohibition Search response

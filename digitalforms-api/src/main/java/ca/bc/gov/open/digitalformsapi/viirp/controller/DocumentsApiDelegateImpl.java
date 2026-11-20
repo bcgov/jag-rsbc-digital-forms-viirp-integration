@@ -6,12 +6,12 @@ import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Objects;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.pdfbox.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -33,8 +33,6 @@ import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CreateDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Document;
-import ca.bc.gov.open.digitalformsapi.viirp.model.UploadNoticeSubject;
-import ca.bc.gov.open.digitalformsapi.viirp.model.UploadNoticeType;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetImpoundmentServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetProhibitionServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse;
@@ -78,17 +76,19 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 	}
 
 	@Override
-	public ResponseEntity<Void> associateDocumentToProhibition(
-	        String noticeNo, Long documentId, String xCorrelationID) {
-		Long prohibitionId = findProhibitionId(noticeNo);
-		return associateDocument(noticeNo, documentId, null, prohibitionId);
+	public ResponseEntity<CreateDocumentResponse> uploadProhibitionDocument(
+	        String noticeNo, String documentTypeCd, MultipartFile file, String xCorrelationID) {
+		PdfUpload upload = readPdfUpload(file);
+		String noticeType = findProhibitionNoticeType(findProhibitionId(noticeNo));
+		return uploadAndAssociate(noticeNo, noticeType, "PERS", documentTypeCd, upload);
 	}
 
 	@Override
-	public ResponseEntity<Void> associateDocumentToImpoundment(
-	        String noticeNo, Long documentId, String xCorrelationID) {
-		Long impoundmentId = findImpoundmentId(noticeNo);
-		return associateDocument(noticeNo, documentId, impoundmentId, null);
+	public ResponseEntity<CreateDocumentResponse> uploadImpoundmentDocument(
+	        String noticeNo, String documentTypeCd, MultipartFile file, String xCorrelationID) {
+		PdfUpload upload = readPdfUpload(file);
+		String noticeType = findImpoundmentNoticeType(findImpoundmentId(noticeNo));
+		return uploadAndAssociate(noticeNo, noticeType, "VEHI", documentTypeCd, upload);
 	}
 
 	private Long findImpoundmentId(String noticeNo) {
@@ -131,15 +131,7 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		return upstream.getResults() == null ? List.of() : upstream.getResults();
 	}
 
-	private ResponseEntity<Void> associateDocument(
-	        String noticeNo, Long documentId, Long impoundmentId, Long prohibitionId) {
-		if (containsDocument(getNoticeDocuments(noticeNo, impoundmentId, prohibitionId), documentId)) {
-			return ResponseEntity.noContent().build();
-		}
-
-		String noticeTypeCd = impoundmentId != null
-				? findImpoundmentNoticeType(impoundmentId)
-				: findProhibitionNoticeType(prohibitionId);
+	private void associateDocument(String noticeNo, String noticeTypeCd, long documentId) {
 		VipsNoticeObj notice = new VipsNoticeObj();
 		notice.setNoticeNo(noticeNo);
 		notice.setNoticeTypeCd(noticeTypeCd);
@@ -149,17 +141,13 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			throw UpstreamServiceException.invalidResponse("VIPS returned an empty document-association response.");
 		}
 		if (result.getRespCd() == DigitalFormsConstants.VIPSWS_SUCCESS_CD) {
-			return ResponseEntity.noContent().build();
+			return;
 		}
 		if (result.getRespCd() == DigitalFormsConstants.VIPSWS_GENERAL_FAILURE_CD
 				&& DigitalFormsConstants.VIPS_NOTICE_NOT_FOUND.equalsIgnoreCase(result.getRespMsg())) {
 			throw new ResourceNotFoundException("Notice " + noticeNo + " not found.");
 		}
-		if (containsDocument(getNoticeDocuments(noticeNo, impoundmentId, prohibitionId), documentId)) {
-			return ResponseEntity.noContent().build();
-		}
-		logger.error("VIPS document association failed with response code {} and message {}",
-				result.getRespCd(), result.getRespMsg());
+		logger.error("VIPS document association failed with response code {}", result.getRespCd());
 		throw UpstreamServiceException.invalidResponse("Failed to associate document " + documentId
 				+ " with notice " + noticeNo);
 	}
@@ -184,36 +172,28 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 		return response.getResult().getNoticeTypeCd();
 	}
 
-	private boolean containsDocument(List<Document> documents, Long documentId) {
-		return documents.stream().filter(Objects::nonNull)
-				.anyMatch(document -> Objects.equals(documentId, document.getDocumentId()));
-	}
-	
-	/**
-	 * POST Document (Store document in VIPS) 
-	 * 
-	 * Possible Response codes:
-	 * 	201. created. 
-	 * 	400. invalid upload (not exactly one readable PDF with 1 to 99,999 pages, or invalid metadata)
-	 * 	401. invalid or missing bearer token
-	 * 	502/503/504. VIPS response failure, unavailability or timeout.
-	 * 	500. local VI/IRP processing failure.
-	 * 
-	 * The page count stored in VIPS is read from the PDF, not supplied by the client. 
-	 */
-	@Override
-	public ResponseEntity<CreateDocumentResponse> storeDocument(
-	        String documentTypeCd, MultipartFile file, String xCorrelationID,
-	        UploadNoticeType noticeTypeCd, UploadNoticeSubject noticeSubjectCd) {
-		
-		logger.info("Heard a call to the endpoint 'storeDocument'");
-		
-		PdfUpload upload = readPdfUpload(file);
+	private ResponseEntity<CreateDocumentResponse> uploadAndAssociate(String noticeNo, String noticeTypeCd,
+	        String noticeSubjectCd, String documentTypeCd, PdfUpload upload) {
+		long documentId = storeDocument(documentTypeCd, noticeTypeCd, noticeSubjectCd, upload);
+		boolean associated = false;
+		try {
+			associateDocument(noticeNo, noticeTypeCd, documentId);
+			associated = true;
+		} finally {
+			if (!associated) {
+				logger.warn("Uploaded VIPS document {} but association was not confirmed; correlationId={}",
+						documentId, MDC.get(DigitalFormsConstants.REQUEST_CORRELATION_ID));
+			}
+		}
 		CreateDocumentResponse resp = new CreateDocumentResponse();
-	
+		resp.setDocumentId(documentId);
+		return ResponseEntity.created(UriComponentsBuilder.fromPath(request.getContextPath())
+				.pathSegment("documents", Long.toString(documentId)).build().encode().toUri()).body(resp);
+	}
+
+	private long storeDocument(String documentTypeCd, String noticeTypeCd, String noticeSubjectCd, PdfUpload upload) {
 		VipsDocumentOrdsResponse _resp = vipsOrdsService.storeDocument(
-				documentTypeCd, upload.content(), noticeTypeCd == null ? null : noticeTypeCd.getValue(),
-				noticeSubjectCd == null ? null : noticeSubjectCd.getValue(), upload.pageCount());
+				documentTypeCd, upload.content(), noticeTypeCd, noticeSubjectCd, upload.pageCount());
 		if (_resp == null) {
 			throw UpstreamServiceException.invalidResponse("VIPS ORDS returned an empty document-upload response.");
 		}
@@ -231,13 +211,11 @@ public class DocumentsApiDelegateImpl implements DocumentsApiDelegate{
 			if (documentId < 1) {
 				throw UpstreamServiceException.invalidResponse("VIPS ORDS returned a nonpositive document ID.");
 			}
-			resp.setDocumentId(documentId);
+			return documentId;
 		} else {
 			logger.error("VIPS ORDS error response code: {}, response msg: {}", _resp.getStatusCode(), _resp.getStatusMessage());
 			throw UpstreamServiceException.invalidResponse("VIPS ORDS document upload failed. Document type code: " + documentTypeCd);
 		}
-		return ResponseEntity.created(UriComponentsBuilder.fromPath(request.getContextPath())
-				.pathSegment("documents", String.valueOf(resp.getDocumentId())).build().encode().toUri()).body(resp);
 	}
 
 	private record PdfUpload(byte[] content, int pageCount) { }

@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -38,15 +37,19 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @ValueSource(strings = {"1", "123", "9223372036854775807"})
     void storesDocumentWith201AndReadsTheLocation(String documentId) throws Exception {
         byte[] pdf = UnitTestUtilities.samplePdf();
+        queueNotice("prohibition", "IRP");
         vips.enqueue(200, "{\"status_code\":\"0\",\"status_message\":\"success\",\"document_id\":\"" + documentId + "\"}");
+        vips.enqueue(200, "{\"respCd\":0}");
         var created = upload(pdf);
         assertEquals(json.readTree("{\"documentId\":" + documentId + "}"), responseJson(created, 201));
         String resourcePath = createdResourcePath(created, "/documents/" + documentId);
+        checkUploadNotice("prohibition");
         var stored = ords("POST", "/ords/storeDocument");
         assertEquals("application/pdf", stored.headers().getFirst("Content-Type"));
         assertArrayEquals(pdf, stored.bodyBytes());
         assertEquals("type_code=MV2702A&mime_type=application&mime_sub_type=pdf&auth_guid=route-test-guid"
-                + "&page_count=1", stored.uri().getRawQuery());
+                + "&notice_type_code=IRP&notice_subject_code=PERS&page_count=1", stored.uri().getRawQuery());
+        checkAssociation(documentId, "IRP");
 
         responseJson(request("GET", resourcePath, null, null, null, "application/pdf"), 401);
         vips.enqueue(200, stored.bodyBytes(), "application/x-download");
@@ -56,51 +59,44 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         downstream("GET", "/documents/" + documentId + "?b64=false&url=false");
     }
 
-    @Test
-    void forwardsNoticeMetadataAndPageCountReadFromPdfWithoutAssociating() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"prohibition,IRP,PERS", "prohibition,ADP,PERS", "prohibition,UL,PERS", "impoundment,IMP,VEHI"})
+    void uploadsAndAssociatesUsingServerOwnedNoticeMetadata(String kind, String type, String subject) throws Exception {
+        byte[] pdf = UnitTestUtilities.samplePdf(3);
+        var files = List.of(pdfPart(pdf));
+        var fields = Map.of("documentTypeCd", "MV2723", "noticeTypeCd", "IGNORED",
+                "noticeSubjectCd", "IGNORED", "pageCount", "999");
+        responseJson(upload(kind, files, fields, null), 401);
+        queueNotice(kind, type);
         vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
-        responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf(3))),
-                Map.of("documentTypeCd", "MV2723", "noticeTypeCd", "IRP",
-                        "noticeSubjectCd", "PERS", "pageCount", "abc")), 201);
+        vips.enqueue(200, "{\"respCd\":0}");
+        var response = upload(kind, files, fields, AUTH);
+        assertEquals(json.readTree("{\"documentId\":123}"), responseJson(response, 201));
+        createdResourcePath(response, "/documents/123");
+        checkUploadNotice(kind);
         var stored = ords("POST", "/ords/storeDocument");
+        assertArrayEquals(pdf, stored.bodyBytes());
         assertEquals("type_code=MV2723&mime_type=application&mime_sub_type=pdf&auth_guid=route-test-guid"
-                + "&notice_type_code=IRP&notice_subject_code=PERS&page_count=3", stored.uri().getRawQuery());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "noticeTypeCd, notice_type_code, IRP|ADP|UL|IMP",
-            "noticeSubjectCd, notice_subject_code, PERS|VEHI"})
-    void everyDocumentedUploadCodeIsForwardedUnchanged(String field, String ordsField, String codes)
-            throws Exception {
-        for (String code : codes.split("\\|")) {
-            vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
-            responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf())),
-                    Map.of("documentTypeCd", "MV2723", field, code)), 201);
-            assertTrue(ords("POST", "/ords/storeDocument").uri().getRawQuery()
-                    .contains("&" + ordsField + "=" + code + "&page_count=1"));
-        }
-    }
-
-    @ParameterizedTest
-    @CsvSource({"noticeTypeCd, IRP|ADP|UL|IMP", "noticeSubjectCd, PERS|VEHI"})
-    void invalidUploadCodeIsRejectedForItsFieldWithoutCallingOrds(String field, String codes) throws Exception {
-        String first = codes.split("\\|")[0];
-        for (String invalid : List.of("XYZ", first.toLowerCase(Locale.ROOT), " " + first, first + " ", "", "0")) {
-            var problem = responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf())),
-                    Map.of("documentTypeCd", "MV2723", field, invalid)), 400);
-            assertEquals(json.createArrayNode().add(json.createObjectNode().put("field", field)
-                    .put("message", "Must be one of: " + codes.replace("|", ", ") + ".")),
-                    problem.path("errors"));
-            assertTrue(vips.requests.isEmpty(), "Invalid upload metadata must not reach ORDS");
-        }
+                + "&notice_type_code=" + type + "&notice_subject_code=" + subject + "&page_count=3",
+                stored.uri().getRawQuery());
+        checkAssociation("123", type);
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + kind + "Id\":321}]}");
+        vips.enqueue(200, "{\"respCd\":0,\"results\":[{\"documentId\":123,\"documentTypeCd\":\"MV2723\"}]}");
+        assertEquals(123, responseJson(request("GET", documentListPath(kind), null, AUTH), 200)
+                .at("/0/documentId").asInt());
+        checkedNotice(kind, "81000029");
+        downstream("GET", "/documents?" + kind + "Id=321");
     }
 
     @Test
     void acceptsVipsMaximumPageCountAndRejectsOnePageMore() throws Exception {
+        queueNotice("prohibition", "IRP");
         vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+        vips.enqueue(200, "{\"respCd\":0}");
         responseJson(upload(UnitTestUtilities.samplePdf(99_999)), 201);
+        checkUploadNotice("prohibition");
         assertTrue(ords("POST", "/ords/storeDocument").uri().getRawQuery().endsWith("&page_count=99999"));
+        checkAssociation("123", "IRP");
         responseJson(upload(UnitTestUtilities.samplePdf(100_000)), 400);
     }
 
@@ -142,10 +138,14 @@ class DocumentsHttpTests extends HttpApiTestSupport {
 
     @Test
     void identifiesPdfFromContentRatherThanTrustingFilenameOrMime() throws Exception {
+        queueNotice("prohibition", "IRP");
         vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+        vips.enqueue(200, "{\"respCd\":0}");
         responseJson(upload(List.of(new UploadPart("file", "upload.bin", "application/octet-stream",
                 UnitTestUtilities.samplePdf())), Map.of("documentTypeCd", "MV2723")), 201);
+        checkUploadNotice("prohibition");
         assertEquals("application/pdf", ords("POST", "/ords/storeDocument").headers().getFirst("Content-Type"));
+        checkAssociation("123", "IRP");
     }
 
     @Test
@@ -154,9 +154,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         for (var invalid : List.of(Map.entry("documentTypeCd", Map.<String, String>of()),
                 Map.entry("documentTypeCd", Map.of("type_code", "MV2723")),
                 Map.entry("documentTypeCd", Map.of("documentTypeCd", " ")),
-                Map.entry("documentTypeCd", Map.of("documentTypeCd", "x".repeat(11))),
-                Map.entry("noticeTypeCd", Map.of("documentTypeCd", "MV2723", "noticeTypeCd", "LONG")),
-                Map.entry("noticeSubjectCd", Map.of("documentTypeCd", "MV2723", "noticeSubjectCd", "LONGER")))) {
+                Map.entry("documentTypeCd", Map.of("documentTypeCd", "x".repeat(11))))) {
             var problem = responseJson(upload(file, invalid.getValue()), 400);
             assertEquals(invalid.getKey(), problem.at("/errors/0/field").asString(), problem.toString());
         }
@@ -165,9 +163,13 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     @Test
     void acceptsExactlyTenMiBAndRejectsOneByteMore() throws Exception {
         byte[] pdf = pdfOfSize(MAX_FILE_BYTES);
+        queueNotice("prohibition", "IRP");
         vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"123\"}");
+        vips.enqueue(200, "{\"respCd\":0}");
         responseJson(upload(pdf), 201);
+        checkUploadNotice("prohibition");
         assertArrayEquals(pdf, ords("POST", "/ords/storeDocument").bodyBytes());
+        checkAssociation("123", "IRP");
         responseJson(upload(pdfOfSize(MAX_FILE_BYTES + 1)), 413);
     }
 
@@ -175,62 +177,72 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     void rejectsOversizedMultipartRequestAndMalformedMultipart() throws Exception {
         responseJson(upload(List.of(pdfPart(UnitTestUtilities.samplePdf())),
                 Map.of("documentTypeCd", "x".repeat(11 * 1024 * 1024))), 413);
-        responseJson(requestBytes("POST", "/documents", new byte[0], AUTH, "multipart/form-data"), 400);
+        responseJson(requestBytes("POST", documentListPath("prohibition"), new byte[0], AUTH, "multipart/form-data"), 400);
     }
 
     @Test
     void rejectsLegacyJsonAndRawBinaryUploads() throws Exception {
-        responseJson(request("POST", "/documents", """
+        responseJson(request("POST", documentListPath("prohibition"), """
                 {"type_code":"MV2723","mime_type":"application","mime_sub_type":"pdf","file_object":"YWJj"}
                 """, AUTH), 415);
-        responseJson(requestBytes("POST", "/documents", UnitTestUtilities.samplePdf(), AUTH,
+        responseJson(requestBytes("POST", documentListPath("prohibition"), UnitTestUtilities.samplePdf(), AUTH,
                 "application/pdf"), 415);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"1", "99", "unexpected"})
     void unsuccessfulOrdsStatusIs502(String status) throws Exception {
+        queueNotice("prohibition", "IRP");
         vips.enqueue(200, "{\"status_code\":\"" + status + "\",\"status_message\":\"internal detail\"}");
         assertEquals("Invalid response from VIPS.",
                 responseJson(upload(UnitTestUtilities.samplePdf()), 502)
                         .path("detail").asString());
+        checkUploadNotice("prohibition");
         ords("POST", "/ords/storeDocument");
     }
 
     @Test
     void uploadWithoutReturnedDocumentIdIsNot201() throws Exception {
+        queueNotice("prohibition", "IRP");
         vips.enqueue(200, "{\"status_code\":\"0\"}");
         responseJson(upload(UnitTestUtilities.samplePdf()), 502);
+        checkUploadNotice("prohibition");
         ords("POST", "/ords/storeDocument");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"0", "-1", "not-an-id", "1/2", "9223372036854775808"})
     void uploadWithUnusableDocumentIdDoesNotReturnACreatedLocation(String documentId) throws Exception {
+        queueNotice("prohibition", "IRP");
         vips.enqueue(200, "{\"status_code\":\"0\",\"document_id\":\"" + documentId + "\"}");
         var response = upload(UnitTestUtilities.samplePdf());
         responseJson(response, 502);
         assertTrue(response.headers().allValues("Location").isEmpty());
+        checkUploadNotice("prohibition");
         ords("POST", "/ords/storeDocument");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "null", "{", "[]", "{}", "{\"status_code\":{}}"})
     void malformedOrdsUploadResponseIs502(String body) throws Exception {
+        queueNotice("prohibition", "IRP");
         vips.enqueue(200, body);
         responseJson(upload(UnitTestUtilities.samplePdf()), 502);
+        checkUploadNotice("prohibition");
         ords("POST", "/ords/storeDocument");
     }
 
     @ParameterizedTest
     @CsvSource({"500,502", "503,503", "504,504"})
     void ordsUploadHttpFailureUsesTheUpstreamStatusContract(int upstreamStatus, int expectedStatus) throws Exception {
+        queueNotice("prohibition", "IRP");
         vips.enqueue(upstreamStatus, "{\"error\":\"sensitive upstream information\"}");
         var response = upload(UnitTestUtilities.samplePdf());
         responseJson(response, expectedStatus);
         assertFalse(response.body().contains("sensitive upstream information"));
         assertEquals(expectedStatus == 503 ? List.of("30") : List.of(),
                 response.headers().allValues("Retry-After"));
+        checkUploadNotice("prohibition");
         ords("POST", "/ords/storeDocument");
     }
 
@@ -239,10 +251,12 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         int readTimeout = ordsClient.getReadTimeout();
         try {
             ordsClient.setReadTimeout(200);
+            queueNotice("prohibition", "IRP");
             vips.responses.add(new StubResponse(200,
                     "{\"status_code\":\"0\",\"document_id\":\"123\"}".getBytes(StandardCharsets.UTF_8),
                     "application/json", Map.of(), 1000, 0));
             responseJson(upload(UnitTestUtilities.samplePdf()), 504);
+            checkUploadNotice("prohibition");
             ords("POST", "/ords/storeDocument");
         } finally {
             ordsClient.setReadTimeout(readTimeout);
@@ -254,8 +268,17 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         String authGuid = properties.getVipsRestApiCredentialsGuid();
         try {
             properties.setVipsRestApiCredentialsGuid(null);
+            queueNotice("prohibition", "IRP");
             var response = upload(UnitTestUtilities.samplePdf());
             assertEquals("Internal Server Error", responseJson(response, 500).path("detail").asString());
+            for (String path : List.of("/cases/prohibitions/search?prohibitionNoticeNo=81000029",
+                    "/cases/prohibitions/321")) {
+                var lookup = vips.requests.poll(2, TimeUnit.SECONDS);
+                assertNotNull(lookup);
+                assertEquals("GET", lookup.method());
+                assertEquals(path, lookup.uri().toString());
+                assertNull(lookup.headers().getFirst("smgov_userguid"));
+            }
             assertTrue(response.headers().allValues("Retry-After").isEmpty());
         } finally {
             properties.setVipsRestApiCredentialsGuid(authGuid);
@@ -368,51 +391,44 @@ class DocumentsHttpTests extends HttpApiTestSupport {
 
     @ParameterizedTest
     @ValueSource(strings = {"impoundment", "prohibition"})
-    void putAssociationIsIdempotentAndUsesNoticeTypeFromVips(String type) throws Exception {
-        String path = documentListPath(type) + "/123";
-        String noticeType = type.equals("impoundment") ? "IMP" : "IRP";
-
-        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":321}]}");
-        vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
-        vips.enqueue(200, "{\"respCd\":0,\"result\":{\"noticeTypeCd\":\"" + noticeType + "\"}}");
-        vips.enqueue(200, "{\"respCd\":0}");
-        var created = request("PUT", path, null, AUTH, null, "application/json");
-        assertEquals(204, created.statusCode(), created.body());
-        assertTrue(created.body().isEmpty());
-        checkedNotice(type, "81000029");
-        downstream("GET", "/documents?" + type + "Id=321");
-        downstream("GET", "/cases/" + type + "s/321");
-        var association = downstream("POST", "/document-association/notice/123");
-        var body = json.readTree(new String(association.bodyBytes(), StandardCharsets.UTF_8));
-        assertEquals("81000029", body.path("noticeNo").asString());
-        assertEquals(noticeType, body.path("noticeTypeCd").asString());
-
-        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + type + "Id\":321}]}");
-        vips.enqueue(200, "{\"respCd\":0,\"results\":[{\"documentId\":123}]}");
-        var repeated = request("PUT", path, null, AUTH);
-        assertEquals(204, repeated.statusCode(), repeated.body());
-        assertTrue(repeated.body().isEmpty());
-        checkedNotice(type, "81000029");
-        downstream("GET", "/documents?" + type + "Id=321");
+    void missingNoticeDoesNotUpload(String kind) throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[]}");
+        responseJson(upload(kind, List.of(pdfPart(UnitTestUtilities.samplePdf())),
+                Map.of("documentTypeCd", "MV2723"), AUTH), 404);
+        checkedNotice(kind, "81000029");
     }
 
-    @Test
-    void associationWithMissingNoticeIs404AndFailuresAreNotSuccess() throws Exception {
-        vips.enqueue(200, "{\"respCd\":0,\"result\":[]}");
-        responseJson(request("PUT", "/prohibitions/81000029/documents/123", null, AUTH), 404);
-        checkedNotice("prohibition", "81000029");
+    @ParameterizedTest
+    @CsvSource({"200,502", "503,503", "504,504"})
+    void associationFailureDoesNotReturnTheUploadedIdOrRetryTheUpload(int vipsStatus, int status) throws Exception {
+        queueNotice("prohibition", "IRP");
+        vips.enqueue(201, "{\"status_code\":\"0\",\"document_id\":\"7654321\"}");
+        vips.enqueue(vipsStatus, "{\"respCd\":1,\"respMsg\":\"association failed\"}");
+        var response = upload(UnitTestUtilities.samplePdf());
+        responseJson(response, status);
+        assertFalse(response.body().contains("7654321"));
+        assertTrue(response.headers().allValues("Location").isEmpty());
+        assertEquals(status == 503 ? List.of("30") : List.of(), response.headers().allValues("Retry-After"));
+        checkUploadNotice("prohibition");
+        ords("POST", "/ords/storeDocument");
+        checkAssociation("7654321", "IRP");
+    }
 
-        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"impoundmentId\":321}]}");
-        vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
-        vips.enqueue(200, "{\"respCd\":0,\"result\":{\"noticeTypeCd\":\"IMP\"}}");
-        vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"association failed\"}");
-        vips.enqueue(200, "{\"respCd\":0,\"results\":null}");
-        responseJson(request("PUT", "/impoundments/81000029/documents/123", null, AUTH), 502);
-        checkedNotice("impoundment", "81000029");
-        downstream("GET", "/documents?impoundmentId=321");
-        downstream("GET", "/cases/impoundments/321");
-        downstream("POST", "/document-association/notice/123");
-        downstream("GET", "/documents?impoundmentId=321");
+    private void queueNotice(String kind, String noticeType) {
+        vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"" + kind + "Id\":321}]}");
+        vips.enqueue(200, "{\"respCd\":0,\"result\":{\"noticeTypeCd\":\"" + noticeType + "\"}}");
+    }
+
+    private void checkUploadNotice(String kind) throws Exception {
+        checkedNotice(kind, "81000029");
+        downstream("GET", "/cases/" + kind + "s/321");
+    }
+
+    private void checkAssociation(String id, String type) throws Exception {
+        var association = downstream("POST", "/document-association/notice/" + id);
+        var body = json.readTree(association.bodyBytes());
+        assertEquals("81000029", body.path("noticeNo").asString());
+        assertEquals(type, body.path("noticeTypeCd").asString());
     }
 
     private static String documentListPath(String type) {
@@ -459,6 +475,11 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     }
 
     private HttpResponse<String> upload(List<UploadPart> files, Map<String, String> fields) throws Exception {
+        return upload("prohibition", files, fields, AUTH);
+    }
+
+    private HttpResponse<String> upload(String kind, List<UploadPart> files, Map<String, String> fields, String auth)
+            throws Exception {
         String boundary = "test-" + correlationId;
         List<UploadPart> parts = new ArrayList<>();
         fields.forEach((name, value) -> parts.add(
@@ -474,7 +495,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
             body.write("\r\n".getBytes(StandardCharsets.UTF_8));
         }
         body.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
-        return requestBytes("POST", "/documents", body.toByteArray(), AUTH,
+        return requestBytes("POST", documentListPath(kind), body.toByteArray(), auth,
                 "multipart/form-data; boundary=" + boundary);
     }
 

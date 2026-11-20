@@ -14,7 +14,6 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
     private static final String NOTICE = "00123456";
     static final String BODY = """
             {
-              "documentIds": [123456789012345],
               "impoundment": {
                 "impoundmentNoticeNo": "00123456", "dlJurisdictionCd": "BC",
                 "impoundmentDt": "2022-10-11",
@@ -46,7 +45,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         checkedNotice("impoundment", NOTICE);
         JsonNode submitted = json.readTree(downstream("POST", "/cases/impoundments").body());
         assertEquals(NOTICE, submitted.at("/vipsImpoundCreate/impoundmentNoticeNo").asString());
-        assertEquals(123456789012345L, submitted.at("/vipsDocumentIdArray/0").asLong());
+        assertEquals(json.createArrayNode(), submitted.path("vipsDocumentIdArray"));
         assertEquals(json.readTree("[\"STUNT\"]"), submitted.at("/vipsImpoundCreate/originalCauseCds"));
         assertEquals("00001234", submitted.at("/vipsRegistrationCreateArray/0/vipsLicenceObj/driverLicenceNo").asString());
         assertFalse(submitted.at("/vipsRegistrationCreateArray/0").has("vipsLicenceCreateObj"),

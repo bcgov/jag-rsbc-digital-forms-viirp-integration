@@ -3,16 +3,13 @@ package ca.bc.gov.open.digitalformsapi.viirp.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.mock.web.MockPart;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,14 +34,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.DigitalFormsException;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.ResourceNotFoundException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Document;
-import ca.bc.gov.open.digitalformsapi.viirp.model.CreateDocumentResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.ProhibitionSearchResponseType;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsImpoundmentBasicsObj;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsRestService;
-import ca.bc.gov.open.digitalformsapi.viirp.service.VipsOrdsService;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.UnitTestUtilities;
-import ca.bc.gov.open.jag.ordsvipsclient.api.model.VipsDocumentOrdsResponse;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(value = "test")
@@ -60,18 +54,8 @@ public class DocumentsApiControllerTests {
     @InjectMocks
     private DocumentsApiDelegateImpl controller;
     
-    @Mock
-    private VipsOrdsService vipsOrdsService;
-    
-    private VipsDocumentOrdsResponse goodOrds; //200
-    
-    private VipsDocumentOrdsResponse badOrds; //200 but ORDS sent 1 which indicates failure. 
-    
     private MockMultipartFile pdfFile;
 
-    @Mock
-    private HttpServletRequest request;
-    
     private ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse vipsSearch;
     
     private ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchProhibitionsServiceResponse vipsProhibitionSearch;
@@ -82,22 +66,8 @@ public class DocumentsApiControllerTests {
 	public void init() throws Exception {
     	
 		MockitoAnnotations.openMocks(this);
-		when(request.getContextPath()).thenReturn("");
+        pdfFile = new MockMultipartFile("file", "notice.pdf", "application/pdf", UnitTestUtilities.samplePdf());
 
-		// Mock ORDS good response
-		goodOrds = new VipsDocumentOrdsResponse();
-		goodOrds.setDocumentId("567");
-		goodOrds.setStatusCode(DigitalFormsConstants.VIPSORDS_SUCCESS_CD); 
-		goodOrds.setStatusMessage("Success"); 
-		
-		// Mock ORDS bad response
-		badOrds = new VipsDocumentOrdsResponse();
-		badOrds.setStatusCode(DigitalFormsConstants.VIPSORDS_GENERAL_FAILURE_CD); 
-		
-		byte[] pdf = UnitTestUtilities.samplePdf();
-		pdfFile = new MockMultipartFile("file", "notice.pdf", "application/pdf", pdf);
-		when(request.getParts()).thenReturn(List.of(new MockPart("file", "notice.pdf", pdf)));
-		
 		//Mock VIPS WS Notice number for Impoundment Search response
 		vipsSearch = new ca.bc.gov.open.digitalformsapi.viirp.model.vips.SearchImpoundmentsServiceResponse();
 		List<VipsImpoundmentBasicsObj> results = new ArrayList<VipsImpoundmentBasicsObj>();
@@ -126,41 +96,11 @@ public class DocumentsApiControllerTests {
 		
 	}
     
-    @DisplayName("POST, Success - Store Document")
-    @Test
-    public void testStoreDocumentSuccess() {
-        
-		when(vipsOrdsService.storeDocument(any(), any(), any(), any(), anyInt()))
-		.thenReturn(goodOrds);
-		
-		// Create successful call and validate response 
-        ResponseEntity<CreateDocumentResponse> controllerResponse =
-                controller.storeDocument("MV2702A", pdfFile, null, null, null);
-        CreateDocumentResponse result = controllerResponse.getBody();
-        Assertions.assertEquals(567L, result.getDocumentId());
-        assertEquals("/documents/567", controllerResponse.getHeaders().getLocation().toString());
-        
-    }
-    
-    @DisplayName("POST, Failure - Bad ORDS response, 502 expected")
-    @Test
-    public void testStoreDocumentOrdsFailure() {
-        
-		when(vipsOrdsService.storeDocument(any(), any(), any(), any(), anyInt()))
-		.thenReturn(badOrds);
-		
-		// Ensure Digital Form Exception type is thrown in this case
-		assertThrows(DigitalFormsException.class, () -> {
-			controller.storeDocument("MV2702A", pdfFile, null, null, null);
-		});
-	    
-    }
-    
     @DisplayName("POST, Failure - Data missing from the store document request body, 400 expected")
     @Test
     public void testStoreDocumentBadRequest() throws Exception {
         
-        mvc.perform(MockMvcRequestBuilders.multipart("/documents")
+        mvc.perform(MockMvcRequestBuilders.multipart("/prohibitions/81000029/documents")
                 .file(pdfFile)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());

@@ -11,14 +11,18 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.RegistrationCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.VehicleCreate;
 
 public record CreateImpoundmentServiceRequest(
-        @JsonProperty("vipsDocumentIdArray") List<Long> documentIds,
         @JsonProperty("vipsImpoundCreate") ImpoundmentDetails impoundment,
         @JsonProperty("vipsRegistrationCreateArray") List<RegistrationCreate> registrations,
         @JsonProperty("vipsVehicleCreate") VehicleCreate vehicle) {
 
     public CreateImpoundmentServiceRequest(CreateImpoundment request) {
-        this(request.getDocumentIds(), new ImpoundmentDetails(request.getImpoundment()),
+        this(new ImpoundmentDetails(request.getImpoundment()),
                 request.getRegistrations(), request.getVehicle());
+    }
+
+    @JsonProperty("vipsDocumentIdArray")
+    public List<Long> documentIds() {
+        return List.of();
     }
 
     @JsonProperty("vipsImpoundmentArray")

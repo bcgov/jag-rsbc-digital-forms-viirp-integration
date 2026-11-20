@@ -153,7 +153,6 @@ today it drops them. Share the YAML itself with API consumers.
 |---|---|
 | 200 | Successful GET; notices are resources without a `result` wrapper, and document collections are arrays (`[]` when empty). |
 | 201 | Successful prohibition, impoundment or document POST, with a `Location` header and the saved resource ID. |
-| 204 | Successful idempotent PUT document association, with no response body. |
 | 400 | Missing/malformed JSON or multipart data, invalid parameter types or failed request constraints. |
 | 401 | Missing, invalid or expired bearer token, with a `WWW-Authenticate: Bearer` challenge. |
 | 404 | Unknown route or missing requested notice/document. |
@@ -223,7 +222,7 @@ origin without depending on an internal host, scheme or proxy-forwarded headers:
 |---|---|
 | `POST /prohibitions` | `/digitalforms-viirp/v1/prohibitions/21900601` |
 | `POST /impoundments` | `/digitalforms-viirp/v1/impoundments/00123456` |
-| `POST /documents` | `/digitalforms-viirp/v1/documents/102220` |
+| `POST /prohibitions/{noticeNo}/documents` or `POST /impoundments/{noticeNo}/documents` | `/digitalforms-viirp/v1/documents/102220` |
 
 Resolve `Location` against the request URL and GET that URI using the same bearer
 authentication. Notice resources use the **notice number**, not the internal ID.
@@ -248,7 +247,6 @@ warning in a successful create response.
 
 These response changes do not alter approval rules, upstream calls or retry policies.
 Uploads return the integer `{"documentId":102220}`.
-Idempotent document associations remain bodyless 204 responses.
 
 #### Dates and timestamps
 
@@ -288,7 +286,7 @@ are unchanged.
 
 | Before | Now |
 |---|---|
-| `vipsDocumentIdArray` | `documentIds` |
+| `vipsDocumentIdArray` | No public field; create the notice before uploading its documents |
 | `vipsProhibitionCreate`, `vipsRegistrationCreate` | `prohibition`, `registration` |
 | `vipsImpoundCreate`, `vipsRegistrationCreateArray`, `vipsVehicleCreate` | `impoundment`, `registrations`, `vehicle` |
 | `vipsImpoundmentArray` (later `priorImpoundmentIds`) | Removed from create requests; the API supplies `[]` to VIPS |
@@ -355,15 +353,11 @@ The remaining documented fixed code sets are enforced as OpenAPI enums:
 |---|---|
 | `prohibition.noticeTypeCd` | `UL`, `IRP`, `ADP` |
 | Each create address's `registrationAddressTypeCd` | `RES`, `MAIL`, `BUSI` |
-| Upload `noticeTypeCd` | `IRP`, `ADP`, `UL`, `IMP` |
-| Upload `noticeSubjectCd` | `PERS`, `VEHI` |
 
 Codes are case-sensitive and are not trimmed. Unsupported codes, blank values,
 and non-string JSON values return 400 Problem Details with the public field path
 and the allowed values, without echoing the rejected value or calling VIPS/ORDS.
-Required JSON enums still reject missing/null values. Both upload codes remain
-optional: omit the part rather than send an empty value. Generated clients use
-`UploadNoticeType` and `UploadNoticeSubject` for the upload enums.
+Required JSON enums still reject missing/null values.
 
 `dataSourceCd` remains a required registration field with the existing four-character
 limit; the separate Digital Forms source-lifecycle change is not included here.
@@ -393,7 +387,10 @@ resubmitting. Do not blindly repeat a document upload, which can create a duplic
 
 #### Uploading a document
 
-`POST /documents` accepts **multipart/form-data only**, with exactly one PDF file.
+Create the notice first, without `documentIds`, then upload each PDF using
+`POST /prohibitions/{noticeNo}/documents` or `POST /impoundments/{noticeNo}/documents`.
+These replace the standalone `POST /documents` and both document-association PUTs.
+The new POSTs accept **multipart/form-data only**, with exactly one PDF file.
 In Postman, choose **Body > form-data**, set `file` to **File**, and use **Text**
 for the other parts. Let Postman set the Content-Type header and multipart boundary.
 Send the OAuth2 bearer token and the optional `X-Correlation-ID` header as for other operations.
@@ -402,10 +399,8 @@ Send the OAuth2 bearer token and the optional `X-Correlation-ID` header as for o
 |---|---|---|
 | `file` | Yes | A non-empty, readable PDF with 1 to 99,999 pages; at most 10 MiB (10,485,760 bytes). |
 | `documentTypeCd` | Yes | Document classification, e.g. `MV2723`; nonblank, at most 10 characters. |
-| `noticeTypeCd` | No | Exactly one of `IRP`, `ADP`, `UL`, `IMP`. |
-| `noticeSubjectCd` | No | Exactly one of `PERS`, `VEHI`. |
 
-The response is **HTTP 201** with a `Location` header pointing to the PDF download
+After both upload and association succeed, the response is **HTTP 201** with a `Location` header pointing to the PDF download
 (for example, `/digitalforms-viirp/v1/documents/102220`) and an integer (int64) document ID:
 
 ```json
@@ -441,9 +436,14 @@ The delegate also enforces the 10 MiB file cap. Tomcat's bounded
 the JSON 413 response; much larger rejected uploads may have their connection closed.
 Deployment overrides must not lower these limits unintentionally.
 
-Uploading still **only stores a document**: the notice classifications do not associate
-it with a notice. Use the association endpoint or the create-request `documentIds`
-property to associate it.
+The API looks up the notice before uploading. It obtains the notice type from VIPS
+and derives the subject from the route (`PERS` for prohibitions; `VEHI` for impoundments).
+The ORDS upload and VIPS WS association are separate writes until an atomic database
+operation is available. If association fails, the API returns the error, not a document
+ID or `Location`, and logs the uploaded ID with the correlation ID for reconciliation.
+The PDF may already be stored, and a timed-out association may have succeeded. Check
+the notice's document list and contact support with the correlation ID before retrying;
+repeating the POST can create a duplicate.
 
 `GET /documents/{documentId}` downloads the original document as `application/pdf`
 with an attachment filename. VI/IRP requests the raw PDF from VIPS and forwards its
@@ -537,7 +537,7 @@ They cover:
   a 500 when DIAM's keys cannot be downloaded; the protected-resource metadata; the
   client allow-list parsing; and the published `oauth2` scheme matching the YAML.
 - Null or absent search pagination metadata, which must not break Jackson 3 decoding.
-- All ten public operations, including document upload/retrieval/association/listing,
+- All public operations, including notice-scoped document uploads, retrieval, and listing,
   code tables and ORDS ping.
 - Single-PDF multipart upload, optional metadata and exact binary forwarding to ORDS;
   rejection of multiple files, invalid PDFs, malformed multipart data and legacy JSON.

@@ -303,11 +303,13 @@ paths:
       parameters:
       - name: noticeNo
         in: path
+        description: Prohibition notice number
         required: true
         schema:
           type: string
           minLength: 1
           pattern: '.*\S.*'
+        example: "81000032"
       - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: One PDF file and its document metadata.
@@ -426,11 +428,13 @@ paths:
       parameters:
       - name: noticeNo
         in: path
+        description: Impoundment notice number
         required: true
         schema:
           type: string
           minLength: 1
           pattern: '.*\S.*'
+        example: "22013033"
       - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: One PDF file and its document metadata.
@@ -726,6 +730,7 @@ components:
   schemas:
     RegistrationCreate:
       type: object
+      description: Provide at least one nonblank value in firstGivenNm, secondGivenNm, surnameNm, or organizationNm. The API returns 400 if none is supplied.
       required:
         - addresses
         - dataSourceCd
@@ -746,7 +751,6 @@ components:
           type: string
           maxLength: 35
           example: "JANE"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         icbcEnterpriseId:
           type: string
           maxLength: 50
@@ -757,7 +761,6 @@ components:
           type: string
           maxLength: 200
           example: "ACME LEASING LTD"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         registrationRoleCd:
           type: string
           pattern: '.*\S.*'
@@ -768,12 +771,10 @@ components:
           type: string
           maxLength: 35
           example: "MARIE"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         surnameNm:
           type: string
           maxLength: 35
           example: "DOE"
-          description: At least one of firstGivenNm, secondGivenNm, surnameNm, or organizationNm is required.
         thirdGivenNm:
           type: string
           maxLength: 35
@@ -1292,9 +1293,6 @@ components:
         cancelled:
           type: boolean
           nullable: true
-        cityNm:
-          type: string
-          nullable: true
         documents:
           type: array
           nullable: true
@@ -1313,12 +1311,6 @@ components:
           format: date
           nullable: true
           example: "2026-11-05"
-          description: Calendar date in YYYY-MM-DD format.
-        expiryDt:
-          type: string
-          format: date
-          nullable: true
-          example: "2027-02-03"
           description: Calendar date in YYYY-MM-DD format.
         icbcTransmissionCd:
           type: string
@@ -1355,12 +1347,6 @@ components:
         policeFileNo:
           type: string
           nullable: true
-        policeOfficerNm:
-          type: string
-          nullable: true
-        policeOfficerNo:
-          type: string
-          nullable: true
         prohibitionId:
           type: integer
           nullable: true
@@ -1368,26 +1354,8 @@ components:
         prohibitionNoticeNo:
           type: string
           nullable: true
-        provinceCd:
-          type: string
-          nullable: true
         registration:
           $ref: '#/components/schemas/Registration'
-        streetDetailsTxt:
-          type: string
-          nullable: true
-        tempDlEffectiveDt:
-          type: string
-          format: date
-          nullable: true
-          example: "2026-11-05"
-          description: Calendar date in YYYY-MM-DD format.
-        tempDlExpiryDt:
-          type: string
-          format: date
-          nullable: true
-          example: "2026-11-26"
-          description: Calendar date in YYYY-MM-DD format.
     CreateProhibition:
       type: object
       required:
@@ -1410,10 +1378,6 @@ components:
         - policeDetachmentId
         - prohibitionNoticeNo
       properties:
-        cityNm:
-          type: string
-          maxLength: 30
-          example: "VANCOUVER"
         dreEvaluationCds:
           type: array
           items:
@@ -1427,11 +1391,6 @@ components:
           type: string
           format: date
           example: "2026-11-05"
-          description: Calendar date in YYYY-MM-DD format.
-        expiryDt:
-          type: string
-          format: date
-          example: "2027-02-03"
           description: Calendar date in YYYY-MM-DD format.
         incidentDtm:
           type: string
@@ -1467,14 +1426,6 @@ components:
           type: string
           maxLength: 15
           example: "26-123456"
-        policeOfficerNm:
-          type: string
-          maxLength: 60
-          example: "J SMITH"
-        policeOfficerNo:
-          type: string
-          maxLength: 30
-          example: "1234"
         prohibitionNoticeNo:
           type: string
           minLength: 1
@@ -1482,24 +1433,6 @@ components:
           maxLength: 12
           example: "21900123"
           description: Notice Number beginning with 21, 22, or 80-89 for Prohibitions.
-        provinceCd:
-          type: string
-          maxLength: 2
-          example: "BC"
-        streetDetailsTxt:
-          type: string
-          maxLength: 4000
-          example: "1200 BLOCK GRANVILLE ST"
-        tempDlEffectiveDt:
-          type: string
-          format: date
-          example: "2026-11-05"
-          description: Calendar date in YYYY-MM-DD format.
-        tempDlExpiryDt:
-          type: string
-          format: date
-          example: "2026-11-26"
-          description: Calendar date in YYYY-MM-DD format.
     CreateProhibitionResponse:
       type: object
       required:

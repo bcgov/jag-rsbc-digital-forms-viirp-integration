@@ -302,24 +302,21 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     @Test
     void codeTablesReturnConfigurationWithoutUpstreamStatusStrings() throws Exception {
         vips.enqueue(200, """
-                {"configuration":{"countries":[{"objectCd":"CAN","objectDsc":"Canada","activeYN":"Y"}]},
+                {"respCd":0,"configuration":{"impoundLotOperatorDetails":[],"countries":[{"objectCd":"CAN","objectDsc":"Canada","activeYN":"Y"}]},
                  "respMsg":"sensitive upstream status text"}
                 """);
         var response = responseJson(request("GET", "/codetables", null, AUTH), 200);
         assertEquals(Set.of("configuration"), response.propertyNames());
         assertEquals("CAN", response.at("/configuration/countries/0/objectCd").asString());
         assertEquals("Canada", response.at("/configuration/countries/0/objectDsc").asString());
-        var upstream = vips.requests.poll(2, TimeUnit.SECONDS);
-        assertNotNull(upstream);
-        assertEquals("GET", upstream.method());
-        assertEquals("/configuration", upstream.uri().toString());
-        assertEquals(basicAuth("vips-test", "vips-test-password"), upstream.headers().getFirst("Authorization"));
+        downstream("GET", "/configuration?includeImpoundLotOperatorDetails=true");
     }
 
     @Test
     void codeTablesOnlyReturnActiveEntriesAndHideActiveFlags() throws Exception {
         vips.enqueue(200, """
                 {"respCd":0,"configuration":{
+                 "impoundLotOperatorDetails":[],
                  "data_sources":[{"objectCd":"VIPS","objectDsc":"VIPS","activeYN":"Y","internalYN":"N"}],
                  "registration_roles":[{"objectCd":"REGOWN","objectDsc":"Owner","activeYN":"N","internalYN":"Y"}],
                  "policeDetachments":[{"identityId":304,"identityNm":"Victoria","activeYN":"Y"},
@@ -354,7 +351,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
                 "\"active\"", "\"noticeActive\"", "\"documentActive\"", "\"reviewAppActive\"")) {
             assertFalse(response.toString().contains(vipsName), vipsName);
         }
-        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
+        downstream("GET", "/configuration?includeImpoundLotOperatorDetails=true");
     }
 
     @Test
@@ -378,6 +375,9 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         var upstreamConfiguration = json.createObjectNode();
         var schemas = CONTRACT_JSON.at("/components/schemas/CodeTables/properties");
         for (var table : schemas.properties()) {
+            if (table.getKey().equals("impoundLotOperators")) {
+                continue;
+            }
             String upstreamName = switch (table.getKey()) {
                 case "dataSources" -> "data_sources";
                 case "registrationRoles" -> "registration_roles";
@@ -409,13 +409,17 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
                     .add(json.createObjectNode())
                     .addNull();
         }
-        vips.enqueue(200, json.createObjectNode().set("configuration", upstreamConfiguration).toString());
+        var operator = upstreamConfiguration.putArray("impoundLotOperatorDetails").addObject();
+        operator.put("identityId", 42);
+        operator.putArray("phoneNumbers");
+        operator.putArray("faxNumbers");
+        vips.enqueue(200, json.createObjectNode().put("respCd", 0).set("configuration", upstreamConfiguration).toString());
         var configuration = responseJson(request("GET", "/codetables", null, AUTH), 200).path("configuration");
         for (var table : schemas.properties()) {
             var entries = configuration.path(table.getKey());
             assertEquals(1, entries.size(), table.getKey());
             String type = table.getValue().at("/items/$ref").asString();
-            if (type.endsWith("/IdentityName")) {
+            if (type.endsWith("/IdentityName") || type.endsWith("/ImpoundLotOperator")) {
                 assertEquals(42, entries.get(0).path("identityId").asInt(), table.getKey());
             } else if (type.endsWith("/CodeDescription")) {
                 assertEquals("KEEP", entries.get(0).path("objectCd").asString(), table.getKey());
@@ -424,7 +428,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
                 assertEquals("KEEP", entries.get(0).path("codes").get(0).path("objectCd").asString(), table.getKey());
             }
         }
-        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
+        downstream("GET", "/configuration?includeImpoundLotOperatorDetails=true");
     }
 
     @ParameterizedTest
@@ -437,7 +441,9 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
             "{\"documents\":[{\"noticeActiveYN\":\"Y\",\"codes\":{}}]}"
     })
     void malformedCodeTableActivityOrArraysFailAsUpstreamErrors(String configuration) throws Exception {
-        vips.enqueue(200, "{\"configuration\":" + configuration + "}");
+        var upstreamConfiguration = (tools.jackson.databind.node.ObjectNode) json.readTree(configuration);
+        upstreamConfiguration.putArray("impoundLotOperatorDetails");
+        vips.enqueue(200, json.createObjectNode().put("respCd", 0).set("configuration", upstreamConfiguration).toString());
         responseJson(request("GET", "/codetables", null, AUTH), 502);
         assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
     }
@@ -445,7 +451,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     @ParameterizedTest
     @ValueSource(strings = {"\"y\"", "\"Yes\"", "\"\"", "true", "1"})
     void invalidCodeTableFlagIsAnInvalidUpstreamResponse(String flag) throws Exception {
-        vips.enqueue(200, "{\"configuration\":{\"countries\":[{\"objectCd\":\"CAN\",\"activeYN\":%s}]}}"
+        vips.enqueue(200, "{\"respCd\":0,\"configuration\":{\"impoundLotOperatorDetails\":[],\"countries\":[{\"objectCd\":\"CAN\",\"activeYN\":%s}]}}"
                 .formatted(flag));
         var error = responseJson(request("GET", "/codetables", null, AUTH), 502);
         assertEquals("Invalid response from VIPS.", error.path("detail").asString());

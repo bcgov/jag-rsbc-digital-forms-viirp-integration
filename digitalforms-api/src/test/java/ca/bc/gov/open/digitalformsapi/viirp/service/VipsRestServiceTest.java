@@ -49,6 +49,8 @@ public class VipsRestServiceTest {
 	WebClient.RequestBodyUriSpec requestBodyUriMock;
 	@Mock
 	WebClient.ResponseSpec responseMock;
+	@Mock
+	WebClient.Builder webClientBuilderMock;
 
 	@Autowired
 	VipsRestService service;
@@ -69,15 +71,22 @@ public class VipsRestServiceTest {
 
 		CodeTablesResponse codeTablesServiceResponse = new CodeTablesResponse();
 		CodeTables configuration = new CodeTables();
+		configuration.setImpoundLotOperators(java.util.List.of());
 
 		codeTablesServiceResponse.setConfiguration(configuration);
 
 		when(this.webClient.get()).thenReturn(this.requestHeadersUriMock);
-		when(this.requestHeadersUriMock.uri("/configuration")).thenReturn(this.requestHeadersMock);
+		when(this.requestHeadersUriMock.uri("/configuration?includeImpoundLotOperatorDetails=true"))
+				.thenReturn(this.requestHeadersMock);
+		when(this.webClient.mutate()).thenReturn(this.webClientBuilderMock);
+		when(this.webClientBuilderMock.codecs(any())).thenReturn(this.webClientBuilderMock);
+		when(this.webClientBuilderMock.build()).thenReturn(this.webClient);
 		when(this.requestHeadersMock.headers(any(Consumer.class))).thenReturn(this.requestHeadersMock);
+		when(this.requestHeadersMock.header(any(String.class), any(String.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.retrieve()).thenReturn(this.responseMock);
 		when(this.responseMock.bodyToMono(JsonNode.class))
-				.thenReturn(Mono.just(JsonMapper.builder().build().readTree("{\"configuration\":{}}")));
+				.thenReturn(Mono.just(JsonMapper.builder().build().readTree(
+						"{\"respCd\":0,\"configuration\":{\"impoundLotOperatorDetails\":[]}}")));
 
 		var result = service.getCodeTableValues();
 

@@ -213,9 +213,21 @@ GETs return a JSON array rather than `{"results": [...]}`; a known notice with n
 documents returns `[]`. Nested resources use the names and types in
 [Consistent names and types](#consistent-names-and-types).
 `GET /codetables` returns only active entries and active groups in `configuration`.
-Entries with a missing or null activity flag are excluded. Activity flags are omitted
+Configuration entries with a missing or null activity flag are excluded. Activity flags are omitted
 from the response; callers should stop reading `active`, `noticeActive`,
 `documentActive` and `reviewAppActive`. VIPS `respMsg` is not exposed.
+
+`configuration.impoundLotOperators` contains active operators with `identityId`,
+`legalNm`, `businessNm`, address lines, `cityNm`, `provinceCd`, `postalCodeTxt`,
+and `phoneNumbers` and `faxNumbers` arrays. Missing name/address fields are null;
+the number arrays contain all available active values, or `[]`. These structured
+fields replace the former combined `identityNm` label. The API retrieves them
+using the VIPS WS `GET /configuration?includeImpoundLotOperatorDetails=true`
+opt-in, with an 8 MiB response limit. VIPS WS uses its existing operator
+lookup and authorization internally; an upstream failure, oversized response
+or invalid result fails the entire code-table request rather than returning a
+partial list. Deploy the VIPS WS extension first and verify the service
+account's operator lookup access.
 
 All three create operations return **201 Created** and **Location**. The header is a
 root-relative URI that includes the servlet context path, so it works on the caller's

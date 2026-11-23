@@ -300,7 +300,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     @Test
     void codeTablesReturnConfigurationWithoutUpstreamStatusStrings() throws Exception {
         vips.enqueue(200, """
-                {"configuration":{"countries":[{"objectCd":"CAN","objectDsc":"Canada"}]},
+                {"configuration":{"countries":[{"objectCd":"CAN","objectDsc":"Canada","activeYN":"Y"}]},
                  "respMsg":"sensitive upstream status text"}
                 """);
         var response = responseJson(request("GET", "/codetables", null, AUTH), 200);
@@ -315,36 +315,128 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void codeTablesUseConsistentNamesAndJsonBooleans() throws Exception {
+    void codeTablesOnlyReturnActiveEntriesAndHideActiveFlags() throws Exception {
         vips.enqueue(200, """
                 {"respCd":0,"configuration":{
                  "data_sources":[{"objectCd":"VIPS","objectDsc":"VIPS","activeYN":"Y","internalYN":"N"}],
                  "registration_roles":[{"objectCd":"REGOWN","objectDsc":"Owner","activeYN":"N","internalYN":"Y"}],
-                 "policeDetachments":[{"identityId":304,"identityNm":"Victoria","activeYN":"Y"}],
+                 "policeDetachments":[{"identityId":304,"identityNm":"Victoria","activeYN":"Y"},
+                    {"identityId":305,"activeYN":"N"},{"identityId":306,"activeYN":null},{"identityId":307}],
                  "originalCauses":[{"noticeTypeCd":"IRP","noticeActiveYN":"Y",
-                  "codes":[{"objectCd":"IRPINDEF","objectAbbrev":"IND","activeYN":"N"}]}],
+                  "codes":[{"objectCd":"YES","objectAbbrev":"Y","activeYN":"Y"},
+                           {"objectCd":"NO","activeYN":"N"},{"objectCd":"UNKNOWN","activeYN":null}]},
+                  {"noticeTypeCd":"ADP","noticeActiveYN":"N","codes":[{"objectCd":"HIDDEN","activeYN":"Y"}]},
+                  {"noticeTypeCd":"UL","noticeActiveYN":null,"codes":[{"objectCd":"HIDDEN","activeYN":"Y"}]}],
                  "documentNotices":[{"documentTypeCd":"MV2702A","documentActiveYN":"N"}],
-                 "groundsDecisions":[{"reviewAppTypeCd":"IRP","reviewAppActiveYN":"Y","codes":[]}],
+                 "groundsDecisions":[{"reviewAppTypeCd":"IRP","reviewAppActiveYN":"Y",
+                    "codes":[{"objectCd":"YES","activeYN":"Y"},{"objectCd":"NO","activeYN":"N"}]},
+                    {"reviewAppTypeCd":"INACTIVE","reviewAppActiveYN":"N","codes":[]}],
                  "countries":[{"objectCd":"CAN","activeYN":null}],
                  "iloDocumentTypes":[{"objectCd":"ignored"}]}}
                 """);
         var response = responseJson(request("GET", "/codetables", null, AUTH), 200);
         var configuration = response.path("configuration");
-        var yes = json.readTree("true");
         var no = json.readTree("false");
-        assertEquals(yes, configuration.at("/dataSources/0/active"));
         assertEquals(no, configuration.at("/dataSources/0/internal"));
-        assertEquals(no, configuration.at("/registrationRoles/0/active"));
-        assertEquals(yes, configuration.at("/registrationRoles/0/internal"));
-        assertEquals(yes, configuration.at("/policeDetachments/0/active"));
-        assertEquals(yes, configuration.at("/originalCauses/0/noticeActive"));
-        assertEquals(no, configuration.at("/originalCauses/0/codes/0/active"));
-        assertEquals(no, configuration.at("/documentNotices/0/documentActive"));
-        assertEquals(yes, configuration.at("/groundsDecisions/0/reviewAppActive"));
-        assertTrue(configuration.at("/countries/0/active").isNull());
-        for (String vipsName : List.of("data_sources", "registration_roles", "YN\"", "iloDocumentTypes")) {
+        assertEquals(0, configuration.path("registrationRoles").size());
+        assertEquals(1, configuration.path("policeDetachments").size());
+        assertEquals(304, configuration.at("/policeDetachments/0/identityId").asInt());
+        assertEquals(1, configuration.path("originalCauses").size());
+        assertEquals("YES", configuration.at("/originalCauses/0/codes/0/objectCd").asString());
+        assertEquals(1, configuration.at("/originalCauses/0/codes").size());
+        assertEquals(0, configuration.path("documentNotices").size());
+        assertEquals(1, configuration.path("groundsDecisions").size());
+        assertEquals(1, configuration.at("/groundsDecisions/0/codes").size());
+        assertEquals(0, configuration.path("countries").size());
+        for (String vipsName : List.of("data_sources", "registration_roles", "YN\"", "iloDocumentTypes",
+                "\"active\"", "\"noticeActive\"", "\"documentActive\"", "\"reviewAppActive\"")) {
             assertFalse(response.toString().contains(vipsName), vipsName);
         }
+        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void codeTableActivityFlagsAreAbsentFromThePublishedContract() throws Exception {
+        JsonNode runtime = responseJson(request("GET", "/v3/api-docs", null, null), 200);
+        for (JsonNode contract : List.of(CONTRACT_JSON, runtime)) {
+            for (String schema : List.of("CodeDescription", "AbbreviatedCodeDescription", "IdentityName",
+                    "NoticeTypeCodes", "NoticeTypeAbbreviatedCodes", "DocumentTypeCodes",
+                    "ReviewApplicationTypeCodes")) {
+                var properties = contract.at("/components/schemas/" + schema + "/properties");
+                assertTrue(properties.isObject(), schema);
+                for (String flag : List.of("active", "noticeActive", "documentActive", "reviewAppActive")) {
+                    assertFalse(properties.has(flag), schema + "." + flag);
+                }
+            }
+        }
+    }
+
+    @Test
+    void everyPublishedCodeTableFiltersRowsAndGroups() throws Exception {
+        var upstreamConfiguration = json.createObjectNode();
+        var schemas = CONTRACT_JSON.at("/components/schemas/CodeTables/properties");
+        for (var table : schemas.properties()) {
+            String upstreamName = switch (table.getKey()) {
+                case "dataSources" -> "data_sources";
+                case "registrationRoles" -> "registration_roles";
+                default -> table.getKey();
+            };
+            String type = table.getValue().at("/items/$ref").asString();
+            String flag = switch (type.substring(type.lastIndexOf('/') + 1)) {
+                case "NoticeTypeCodes", "NoticeTypeAbbreviatedCodes" -> "noticeActiveYN";
+                case "DocumentTypeCodes" -> "documentActiveYN";
+                case "ReviewApplicationTypeCodes" -> "reviewAppActiveYN";
+                default -> "activeYN";
+            };
+            boolean grouped = !flag.equals("activeYN");
+            var active = json.createObjectNode().put(flag, "Y");
+            if (grouped) {
+                active.putArray("codes")
+                        .addObject().put("objectCd", "KEEP").put("activeYN", "Y");
+                active.withArray("codes").addObject().put("objectCd", "DROP").put("activeYN", "N");
+                active.withArray("codes").addObject().put("objectCd", "UNKNOWN");
+            } else if (type.endsWith("/IdentityName")) {
+                active.put("identityId", 42);
+            } else {
+                active.put("objectCd", "KEEP");
+            }
+            upstreamConfiguration.putArray(upstreamName)
+                    .add(active)
+                    .add(json.createObjectNode().put(flag, "N"))
+                    .add(json.createObjectNode().putNull(flag))
+                    .add(json.createObjectNode())
+                    .addNull();
+        }
+        vips.enqueue(200, json.createObjectNode().set("configuration", upstreamConfiguration).toString());
+        var configuration = responseJson(request("GET", "/codetables", null, AUTH), 200).path("configuration");
+        for (var table : schemas.properties()) {
+            var entries = configuration.path(table.getKey());
+            assertEquals(1, entries.size(), table.getKey());
+            String type = table.getValue().at("/items/$ref").asString();
+            if (type.endsWith("/IdentityName")) {
+                assertEquals(42, entries.get(0).path("identityId").asInt(), table.getKey());
+            } else if (type.endsWith("/CodeDescription")) {
+                assertEquals("KEEP", entries.get(0).path("objectCd").asString(), table.getKey());
+            } else {
+                assertEquals(1, entries.get(0).path("codes").size(), table.getKey());
+                assertEquals("KEEP", entries.get(0).path("codes").get(0).path("objectCd").asString(), table.getKey());
+            }
+        }
+        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{\"documents\":[{\"noticeActiveYN\":\"bad\",\"codes\":[]}]}",
+            "{\"documentNotices\":[{\"documentActiveYN\":true,\"codes\":[]}]}",
+            "{\"groundsDecisions\":[{\"reviewAppActiveYN\":1,\"codes\":[]}]}",
+            "{\"documents\":[{\"noticeActiveYN\":\"Y\",\"codes\":[{\"activeYN\":\"bad\"}]}]}",
+            "{\"countries\":{}}",
+            "{\"documents\":[{\"noticeActiveYN\":\"Y\",\"codes\":{}}]}"
+    })
+    void malformedCodeTableActivityOrArraysFailAsUpstreamErrors(String configuration) throws Exception {
+        vips.enqueue(200, "{\"configuration\":" + configuration + "}");
+        responseJson(request("GET", "/codetables", null, AUTH), 502);
         assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
     }
 

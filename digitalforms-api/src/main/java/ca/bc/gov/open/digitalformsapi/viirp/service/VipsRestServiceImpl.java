@@ -23,6 +23,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.vips.VipsNoticeObj;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.JsonNode;
 
 /**
  * 
@@ -50,7 +51,8 @@ public class VipsRestServiceImpl implements VipsRestService {
                 .uri("/configuration")
                 .headers(headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()))
                 .retrieve()
-                .bodyToMono(CodeTablesResponse.class));
+                .bodyToMono(JsonNode.class)
+                .map(VipsCodeTables::fromVips));
 	}
 
 	/**

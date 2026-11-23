@@ -26,6 +26,8 @@ import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTables;
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 //@RunWith(SpringRunner.class)
 @SpringBootTest
@@ -74,8 +76,8 @@ public class VipsRestServiceTest {
 		when(this.requestHeadersUriMock.uri("/configuration")).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.headers(any(Consumer.class))).thenReturn(this.requestHeadersMock);
 		when(this.requestHeadersMock.retrieve()).thenReturn(this.responseMock);
-		when(this.responseMock.bodyToMono(CodeTablesResponse.class))
-				.thenReturn(Mono.just(codeTablesServiceResponse));
+		when(this.responseMock.bodyToMono(JsonNode.class))
+				.thenReturn(Mono.just(JsonMapper.builder().build().readTree("{\"configuration\":{}}")));
 
 		var result = service.getCodeTableValues();
 

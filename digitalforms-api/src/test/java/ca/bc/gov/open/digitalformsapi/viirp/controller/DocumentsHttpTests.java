@@ -445,11 +445,9 @@ class DocumentsHttpTests extends HttpApiTestSupport {
         responseJson(request("GET", "/utility/ords/ping", null, AUTH), 502);
         ords("GET", "/ords/health");
 
-        vips.enqueue(200, "{\"configuration\":{},\"respMsg\":\"Success\"}");
+        vips.enqueue(200, "{\"respCd\":0,\"configuration\":{\"impoundLotOperatorDetails\":[]},\"respMsg\":\"Success\"}");
         responseJson(request("GET", "/codetables", null, AUTH), 200);
-        var codeTablesRequest = vips.requests.poll(2, TimeUnit.SECONDS);
-        assertNotNull(codeTablesRequest);
-        assertEquals("/configuration", codeTablesRequest.uri().getPath());
+        downstream("GET", "/configuration?includeImpoundLotOperatorDetails=true");
         vips.enqueue(200, "{\"respCd\":1,\"respMsg\":\"Failure\"}");
         responseJson(request("GET", "/codetables", null, AUTH), 502);
         assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));

@@ -22,7 +22,7 @@ final class VipsCodeTables {
 
     private static final List<String> TABLES = List.of(
             "addresses", "contactMethods", "countries", "data_sources", "disposalActs", "disposalDecisions",
-            "driverLicenceOffices", "impoundLotOperators", "jurisdictions", "noticeTypes", "policeDetachments",
+            "driverLicenceOffices", "jurisdictions", "noticeTypes", "policeDetachments",
             "provinces", "registration_roles", "releaseReasons", "reviewStatuses", "scheduleAppTypes",
             "unavailabilityReasons", "vehicleTypes");
 
@@ -42,14 +42,22 @@ final class VipsCodeTables {
     }
 
     static CodeTablesResponse fromVips(JsonNode response) {
+        JsonNode resultCode = response.path("respCd");
+        if (!resultCode.isIntegralNumber() || !resultCode.canConvertToLong() || resultCode.longValue() != 0) {
+            throw UpstreamServiceException.invalidResponse("VIPS returned a failed code-table response.");
+        }
         JsonNode configuration = response.path("configuration");
         if (!(configuration instanceof ObjectNode object)) {
             throw UpstreamServiceException.invalidResponse("VIPS returned no code-table configuration.");
         }
+        object.remove("impoundLotOperators");
+        var operators = VipsImpoundLotOperators.fromVips(object.remove("impoundLotOperatorDetails"));
         TABLES.forEach(table -> filter(object, table, "activeYN", false));
         GROUPED_TABLES.forEach((table, flag) -> filter(object, table, flag, true));
         try {
-            return MAPPER.treeToValue(response, CodeTablesResponse.class);
+            CodeTablesResponse result = MAPPER.treeToValue(response, CodeTablesResponse.class);
+            result.getConfiguration().setImpoundLotOperators(operators);
+            return result;
         } catch (JacksonException ex) {
             throw UpstreamServiceException.invalidResponse("VIPS returned invalid code-table configuration.", ex);
         }

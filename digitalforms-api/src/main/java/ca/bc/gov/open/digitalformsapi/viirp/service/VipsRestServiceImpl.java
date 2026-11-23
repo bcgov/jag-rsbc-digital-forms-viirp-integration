@@ -46,10 +46,16 @@ public class VipsRestServiceImpl implements VipsRestService {
 
 	@Override
 	public CodeTablesResponse getCodeTableValues() {
-		return readResponse(webClient
+		WebClient configurationClient = webClient.mutate()
+				.codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(8 * 1024 * 1024))
+				.build();
+		return readResponse(configurationClient
                 .get()
-                .uri("/configuration")
+                .uri("/configuration?includeImpoundLotOperatorDetails=true")
                 .headers(headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()))
+                .header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid())
+                .header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
+                .header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .map(VipsCodeTables::fromVips));

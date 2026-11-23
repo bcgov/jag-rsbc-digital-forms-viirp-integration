@@ -1670,9 +1670,9 @@ components:
               $ref: '#/components/schemas/ReviewApplicationTypeCodes'
           impoundLotOperators:
             type: array
-            nullable: true
+            description: Active impound-lot operators and their active phone and fax numbers.
             items:
-              $ref: '#/components/schemas/IdentityName'
+              $ref: '#/components/schemas/ImpoundLotOperator'
           jurisdictions:
             type: array
             nullable: true
@@ -1806,6 +1806,51 @@ components:
         documentTypeDsc:
           type: string        
           nullable: true
+    ImpoundLotOperator:
+      type: object
+      required:
+        - identityId
+        - phoneNumbers
+        - faxNumbers
+      properties:
+        identityId:
+          type: integer
+          format: int64
+          description: Operator ID used by impoundment requests.
+        legalNm:
+          type: string
+          nullable: true
+        businessNm:
+          type: string
+          nullable: true
+        addressFirstLineTxt:
+          type: string
+          nullable: true
+        addressSecondLineTxt:
+          type: string
+          nullable: true
+        addressThirdLineTxt:
+          type: string
+          nullable: true
+        cityNm:
+          type: string
+          nullable: true
+        provinceCd:
+          type: string
+          nullable: true
+        postalCodeTxt:
+          type: string
+          nullable: true
+        phoneNumbers:
+          type: array
+          description: All available active phone numbers; empty when none are available.
+          items:
+            type: string
+        faxNumbers:
+          type: array
+          description: All available active fax numbers; empty when none are available.
+          items:
+            type: string
     IdentityName:
       type: object
       nullable: true

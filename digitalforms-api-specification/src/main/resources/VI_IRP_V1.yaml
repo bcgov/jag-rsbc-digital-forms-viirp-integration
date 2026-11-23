@@ -995,6 +995,13 @@ components:
           maxLength: 12
           example: "00900123"
           description: Notice Number beginning with 00 for impoundments. 
+        judicialOrder:
+          type: boolean
+          nullable: true
+          description: >-
+            Whether the impoundment was issued by judicial order. Required when any
+            original cause is classified as FVPA. When omitted or null, the API checks the
+            VIPS configuration; an unrecognized cause must be corrected or this field supplied.
         originalCauseCds:
           type: array
           items:
@@ -1890,6 +1897,10 @@ components:
         objectDsc:
           type: string
           nullable: true
+        objectType:
+          type: string
+          nullable: true
+          description: For impoundment original causes, FVPA or MV.
     PingResponse:
       type: object
       required:

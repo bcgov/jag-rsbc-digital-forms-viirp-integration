@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.JsonNode;
 
 class ImpoundmentsHttpTests extends HttpApiTestSupport {
@@ -17,7 +19,8 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
               "impoundment": {
                 "impoundmentNoticeNo": "00123456", "dlJurisdictionCd": "BC",
                 "impoundmentDt": "2022-10-11",
-                "originalCauseCds": ["STUNT"], "policeDetachmentId": 304, "policeFileNo": "HTTP-TEST"
+                "originalCauseCds": ["STUNT"], "policeDetachmentId": 304, "policeFileNo": "HTTP-TEST",
+                "judicialOrder": false
               },
               "registrations": [{
                 "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
@@ -165,5 +168,90 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         assertEquals("registrations[0].licence.driverLicenceNo",
                 error.at("/errors/0/field").asString());
         assertEquals("Invalid license object - DL is a required field.", error.at("/errors/0/message").asString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void judicialOrderIsForwardedAsVipsYesOrNo(boolean value) throws Exception {
+        availableNotice();
+        vips.enqueue(200, "{\"respCd\":0,\"impoundmentId\":123}");
+        String body = BODY.replace("\"STUNT\"", "\"FLTPOL\"")
+                .replace("\"judicialOrder\": false", "\"judicialOrder\": " + value);
+        responseJson(request("POST", "/impoundments", body, AUTH), 201);
+        checkedNotice("impoundment", NOTICE);
+        JsonNode submitted = json.readTree(downstream("POST", "/cases/impoundments").body());
+        assertEquals(value ? "Y" : "N", submitted.at("/vipsImpoundCreate/judicialOrderYN").asString());
+        assertFalse(submitted.path("vipsImpoundCreate").has("judicialOrder"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void fvpaCauseRequiresJudicialOrderBeforeCreating(boolean explicitNull) throws Exception {
+        causesConfiguration();
+        String body = (explicitNull ? BODY.replace("\"judicialOrder\": false", "\"judicialOrder\": null")
+                : withoutJudicialOrder()).replace("[\"STUNT\"]", "[\"STUNT\", \"FLTPOL\"]");
+        JsonNode error = responseJson(request("POST", "/impoundments", body, AUTH), 400);
+        assertEquals("impoundment.judicialOrder", error.at("/errors/0/field").asString());
+        downstream("GET", "/configuration");
+    }
+
+    @Test
+    void nonFvpaCauseMayOmitJudicialOrder() throws Exception {
+        causesConfiguration();
+        availableNotice();
+        vips.enqueue(200, "{\"respCd\":0,\"impoundmentId\":123}");
+        responseJson(request("POST", "/impoundments", withoutJudicialOrder(), AUTH), 201);
+        downstream("GET", "/configuration");
+        checkedNotice("impoundment", NOTICE);
+        JsonNode value = json.readTree(downstream("POST", "/cases/impoundments").body())
+                .at("/vipsImpoundCreate/judicialOrderYN");
+        assertTrue(value.isMissingNode() || value.isNull());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"true\"", "1", "[]"})
+    void judicialOrderMustBeAJsonBoolean(String value) throws Exception {
+        JsonNode error = responseJson(request("POST", "/impoundments",
+                BODY.replace("\"judicialOrder\": false", "\"judicialOrder\": " + value), AUTH), 400);
+        assertEquals("impoundment.judicialOrder", error.at("/errors/0/field").asString());
+    }
+
+    @Test
+    void unknownCauseCannotBypassFvpaValidation() throws Exception {
+        causesConfiguration();
+        JsonNode error = responseJson(request("POST", "/impoundments",
+                withoutJudicialOrder().replace("STUNT", "UNKNOWN"), AUTH), 400);
+        assertEquals("impoundment.originalCauseCds", error.at("/errors/0/field").asString());
+        downstream("GET", "/configuration");
+    }
+
+    @Test
+    void malformedCauseConfigurationCannotBypassFvpaValidation() throws Exception {
+        vips.enqueue(200, """
+                {"respCd":0,"configuration":{"originalCauses":[
+                  {"noticeTypeCd":"IMP","codes":[{"objectCd":"STUNT"}]}]}}
+                """);
+        responseJson(request("POST", "/impoundments", withoutJudicialOrder(), AUTH), 502);
+        downstream("GET", "/configuration");
+    }
+
+    @Test
+    void unavailableConfigurationPreventsCreation() throws Exception {
+        vips.enqueue(503, "{}");
+        responseJson(request("POST", "/impoundments", withoutJudicialOrder(), AUTH), 503);
+        downstream("GET", "/configuration");
+    }
+
+    private String withoutJudicialOrder() {
+        return BODY.replace(",\n    \"judicialOrder\": false", "");
+    }
+
+    private void causesConfiguration() {
+        vips.enqueue(200, """
+                {"respCd":0,"configuration":{"originalCauses":[
+                  {"noticeTypeCd":"IMP","noticeActiveYN":"Y","codes":[
+                    {"objectCd":"STUNT","objectType":"MV","activeYN":"Y"},
+                    {"objectCd":"FLTPOL","objectType":"FVPA","activeYN":"Y"}]}]}}
+                """);
     }
 }

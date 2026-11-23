@@ -1,5 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.service;
 
+import java.util.List;
+
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -46,19 +48,28 @@ public class VipsRestServiceImpl implements VipsRestService {
 
 	@Override
 	public CodeTablesResponse getCodeTableValues() {
+		return readResponse(configuration(true).map(VipsCodeTables::fromVips));
+	}
+
+	@Override
+	public boolean hasFvpaImpoundmentCause(List<String> originalCauseCds) {
+		return readResponse(configuration(false)
+				.map(response -> VipsImpoundmentCauses.hasFvpa(response, originalCauseCds)));
+	}
+
+	private Mono<JsonNode> configuration(boolean includeOperatorDetails) {
 		WebClient configurationClient = webClient.mutate()
 				.codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(8 * 1024 * 1024))
 				.build();
-		return readResponse(configurationClient
+		return configurationClient
                 .get()
-                .uri("/configuration?includeImpoundLotOperatorDetails=true")
+                .uri(includeOperatorDetails ? "/configuration?includeImpoundLotOperatorDetails=true" : "/configuration")
                 .headers(headers -> headers.setBasicAuth(properties.getVipsRestApiUsername(), properties.getVipsRestApiPassword()))
                 .header(DigitalFormsConstants.VIPS_API_HEADER_GUID, properties.getVipsRestApiCredentialsGuid())
                 .header(DigitalFormsConstants.VIPS_API_HEADER_DISPLAYNAME, properties.getVipsRestApiCredentialsDisplayname())
                 .header(DigitalFormsConstants.VIPS_API_HEADER_USER, properties.getVipsRestApiCredentialsUser())
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .map(VipsCodeTables::fromVips));
+                .bodyToMono(JsonNode.class);
 	}
 
 	/**

@@ -67,6 +67,13 @@ public class ImpoundmentsApiDelegateImpl implements ImpoundmentsApiDelegate{
 				}
 			}
 		}
+
+		if (createImpoundment.getImpoundment().getJudicialOrder() == null
+				&& digitalformsApiService.hasFvpaImpoundmentCause(
+						createImpoundment.getImpoundment().getOriginalCauseCds())) {
+			throw new BadRequestException("impoundment.judicialOrder",
+					"Judicial order is required for an FVPA impoundment.");
+		}
 		
 		noticeConflicts.checkImpoundment(createImpoundment.getImpoundment().getImpoundmentNoticeNo());
 

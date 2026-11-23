@@ -1,5 +1,7 @@
 package ca.bc.gov.open.digitalformsapi.viirp.service;
 
+import java.util.List;
+
 import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTablesResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.AssociateDocumentToNoticeServiceResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.model.vips.GetDocumentsListServiceResponse;
@@ -27,6 +29,8 @@ public interface VipsRestService {
 	 * @return
 	 */
 	public CodeTablesResponse getCodeTableValues();
+
+	boolean hasFvpaImpoundmentCause(List<String> originalCauseCds);
 	
 	/**
 	 * 

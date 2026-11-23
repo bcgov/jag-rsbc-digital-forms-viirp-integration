@@ -369,13 +369,15 @@ Dynamic code-table values and all GET response types are unchanged.
 **Caller migration:** remove the four server-owned fields, use the exact enum
 values above, and regenerate clients from the updated specification.
 
-#### Retired prohibition fields
+#### Optional prohibition fields
 
 `cityNm`, `provinceCd`, `streetDetailsTxt`, `policeOfficerNm`, `policeOfficerNo`,
-`expiryDt`, `tempDlEffectiveDt`, and `tempDlExpiryDt` are no longer part of
-prohibition creation or retrieval. Remove them from create payloads and stop
-reading them from GET responses. Registration addresses and impoundment fields
-are unchanged.
+`expiryDt`, `tempDlEffectiveDt`, and `tempDlExpiryDt` are optional on prohibition
+creation and returned on retrieval. Dates use `YYYY-MM-DD`.
+
+The VIPS UI does not currently display these fields. A subsequent edit in VIPS
+may clear them; coordinate preservation with the VIPS team before relying on
+their values after an edit.
 
 #### Upstream failures and retries
 

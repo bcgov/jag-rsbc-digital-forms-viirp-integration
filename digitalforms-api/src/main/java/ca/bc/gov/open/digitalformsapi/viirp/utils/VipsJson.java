@@ -4,25 +4,19 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import ca.bc.gov.open.digitalformsapi.viirp.model.AbbreviatedCodeDescription;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Address;
 import ca.bc.gov.open.digitalformsapi.viirp.model.AddressCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CodeDescription;
 import ca.bc.gov.open.digitalformsapi.viirp.model.CodeTables;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Document;
-import ca.bc.gov.open.digitalformsapi.viirp.model.DocumentTypeCodes;
-import ca.bc.gov.open.digitalformsapi.viirp.model.IdentityName;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Impoundment;
 import ca.bc.gov.open.digitalformsapi.viirp.model.ImpoundmentCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Licence;
 import ca.bc.gov.open.digitalformsapi.viirp.model.LicenceCreate;
-import ca.bc.gov.open.digitalformsapi.viirp.model.NoticeTypeAbbreviatedCodes;
-import ca.bc.gov.open.digitalformsapi.viirp.model.NoticeTypeCodes;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Prohibition;
 import ca.bc.gov.open.digitalformsapi.viirp.model.ProhibitionCreate;
 import ca.bc.gov.open.digitalformsapi.viirp.model.Registration;
 import ca.bc.gov.open.digitalformsapi.viirp.model.RegistrationCreate;
-import ca.bc.gov.open.digitalformsapi.viirp.model.ReviewApplicationTypeCodes;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
@@ -57,13 +51,7 @@ public final class VipsJson {
                 .setMixInAnnotation(Impoundment.class, ImpoundmentMixIn.class)
                 .setMixInAnnotation(Document.class, DocumentMixIn.class)
                 .setMixInAnnotation(CodeTables.class, CodeTablesMixIn.class)
-                .setMixInAnnotation(CodeDescription.class, CodeDescriptionMixIn.class)
-                .setMixInAnnotation(IdentityName.class, ActiveMixIn.class)
-                .setMixInAnnotation(AbbreviatedCodeDescription.class, ActiveMixIn.class)
-                .setMixInAnnotation(NoticeTypeCodes.class, NoticeActiveMixIn.class)
-                .setMixInAnnotation(NoticeTypeAbbreviatedCodes.class, NoticeActiveMixIn.class)
-                .setMixInAnnotation(DocumentTypeCodes.class, DocumentActiveMixIn.class)
-                .setMixInAnnotation(ReviewApplicationTypeCodes.class, ReviewAppActiveMixIn.class);
+                .setMixInAnnotation(CodeDescription.class, CodeDescriptionMixIn.class);
     }
 
     /** Writes {@code true}/{@code false} as {@code "Y"}/{@code "N"}. */
@@ -141,28 +129,9 @@ public final class VipsJson {
         @JsonProperty("registration_roles") void setRegistrationRoles(List<CodeDescription> value);
     }
 
-    private interface ActiveMixIn {
-        @JsonProperty("activeYN") @JsonSerialize(using = YesNoSerializer.class) Boolean getActive();
-        @JsonProperty("activeYN") @JsonDeserialize(using = YesNoDeserializer.class) void setActive(Boolean value);
-    }
-
-    private interface CodeDescriptionMixIn extends ActiveMixIn {
+    private interface CodeDescriptionMixIn {
         @JsonProperty("internalYN") @JsonSerialize(using = YesNoSerializer.class) Boolean getInternal();
         @JsonProperty("internalYN") @JsonDeserialize(using = YesNoDeserializer.class) void setInternal(Boolean value);
     }
 
-    private interface NoticeActiveMixIn {
-        @JsonProperty("noticeActiveYN") @JsonSerialize(using = YesNoSerializer.class) Boolean getNoticeActive();
-        @JsonProperty("noticeActiveYN") @JsonDeserialize(using = YesNoDeserializer.class) void setNoticeActive(Boolean value);
-    }
-
-    private interface DocumentActiveMixIn {
-        @JsonProperty("documentActiveYN") @JsonSerialize(using = YesNoSerializer.class) Boolean getDocumentActive();
-        @JsonProperty("documentActiveYN") @JsonDeserialize(using = YesNoDeserializer.class) void setDocumentActive(Boolean value);
-    }
-
-    private interface ReviewAppActiveMixIn {
-        @JsonProperty("reviewAppActiveYN") @JsonSerialize(using = YesNoSerializer.class) Boolean getReviewAppActive();
-        @JsonProperty("reviewAppActiveYN") @JsonDeserialize(using = YesNoDeserializer.class) void setReviewAppActive(Boolean value);
-    }
 }

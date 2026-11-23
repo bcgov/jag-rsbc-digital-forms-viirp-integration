@@ -212,7 +212,10 @@ notice fields directly, without `{"result": ...}`. The two typed document collec
 GETs return a JSON array rather than `{"results": [...]}`; a known notice with no
 documents returns `[]`. Nested resources use the names and types in
 [Consistent names and types](#consistent-names-and-types).
-`GET /codetables` retains its `configuration` data but no longer exposes VIPS `respMsg`.
+`GET /codetables` returns only active entries and active groups in `configuration`.
+Entries with a missing or null activity flag are excluded. Activity flags are omitted
+from the response; callers should stop reading `active`, `noticeActive`,
+`documentActive` and `reviewAppActive`. VIPS `respMsg` is not exposed.
 
 All three create operations return **201 Created** and **Location**. The header is a
 root-relative URI that includes the servlet context path, so it works on the caller's
@@ -295,7 +298,7 @@ are unchanged.
 | `driverLicenceSeizedYN: "Y"` / `"N"` | `driverLicenceSeized: true` / `false` |
 | `disclosureDocumentYN` | `disclosureDocument` (boolean) |
 | Code tables `data_sources`, `registration_roles` | `dataSources`, `registrationRoles` |
-| Code-table `activeYN`, `internalYN`, `noticeActiveYN`, `documentActiveYN`, `reviewAppActiveYN` | `active`, `internal`, `noticeActive`, `documentActive`, `reviewAppActive` (booleans) |
+| Code-table `internalYN` | `internal` (boolean) |
 | Upload parts `type_code`, `notice_type_code`, `notice_subject_code` | `documentTypeCd`, `noticeTypeCd`, `noticeSubjectCd` |
 | Upload response `{"document_id":"102220"}` | `{"documentId":102220}` (int64) |
 | Impoundment `driverLicenceNo` maximum 8; licence `driverLicenceNo` maximum 10 | Both maximum 20 |

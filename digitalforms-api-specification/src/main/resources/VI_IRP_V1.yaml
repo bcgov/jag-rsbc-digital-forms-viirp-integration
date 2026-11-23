@@ -492,7 +492,8 @@ paths:
       operationId: getCodeTables
       security:
         - oauth2: []
-      summary: Get code table values
+      summary: Get active code table values
+      description: Returns only active code values and active groups. Entries with unknown activity are excluded.
       parameters:
       - $ref: '#/components/parameters/CorrelationId'
       responses:
@@ -1688,9 +1689,6 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/CodeDescription'
-        reviewAppActive:
-          type: boolean
-          nullable: true
         reviewAppTypeCd:
           type: string
           nullable: true
@@ -1701,9 +1699,6 @@ components:
       type: object
       nullable: true
       properties:
-        active:
-          type: boolean
-          nullable: true
         internal:
           type: boolean
           nullable: true
@@ -1722,9 +1717,6 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/CodeDescription'
-        noticeActive:
-          type: boolean
-          nullable: true
         noticeTypeCd:
           type: string
           nullable: true
@@ -1740,9 +1732,6 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/CodeDescription'
-        documentActive:
-          type: boolean
-          nullable: true
         documentTypeCd:
           type: string
           nullable: true
@@ -1753,9 +1742,6 @@ components:
       type: object
       nullable: true
       properties:
-        active:
-          type: boolean
-          nullable: true
         identityId:
           type: integer
           nullable: true
@@ -1772,9 +1758,6 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/AbbreviatedCodeDescription'
-        noticeActive:
-          type: boolean
-          nullable: true
         noticeTypeCd:
           type: string
           nullable: true
@@ -1785,9 +1768,6 @@ components:
       type: object
       nullable: true
       properties:
-        active:
-          type: boolean
-          nullable: true
         objectAbbrev:
           type: string
           nullable: true

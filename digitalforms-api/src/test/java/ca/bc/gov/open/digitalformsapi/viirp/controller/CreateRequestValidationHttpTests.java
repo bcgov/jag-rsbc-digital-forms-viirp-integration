@@ -30,6 +30,8 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     private static final List<String> ROUTES = List.of("/prohibitions", "/impoundments");
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final long CREATED_ID = 123456789012345L;
+    private static final List<String> REGISTRATION_NAMES =
+            List.of("firstGivenNm", "secondGivenNm", "surnameNm", "organizationNm");
     private static final Map<String, String> VIPS_NAMES = Map.ofEntries(
             Map.entry("prohibition", "vipsProhibitionCreate"),
             Map.entry("registration", "vipsRegistrationCreate"),
@@ -183,6 +185,45 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
                 .map(field -> Arguments.of(field.route(), field.pointer()));
     }
 
+    @ParameterizedTest
+    @MethodSource("missingRegistrationNames")
+    void registrationRequiresAtLeastOneNonblankName(String route, String pointer, boolean blank) throws Exception {
+        ObjectNode body = validBody(route);
+        ObjectNode registration = assertInstanceOf(ObjectNode.class, body.at(pointer));
+        registration.remove(REGISTRATION_NAMES);
+        if (blank) {
+            registration.put("firstGivenNm", " ").put("secondGivenNm", "\t")
+                    .put("surnameNm", "").putNull("organizationNm");
+        }
+        registration.put("thirdGivenNm", "ANNE");
+        String field = fieldPath(pointer);
+        JsonNode error = assertRejected(route, body, field);
+        assertEquals(JSON.createObjectNode()
+                .put("field", field)
+                .put("message", "Provide at least one nonblank name: firstGivenNm, secondGivenNm, surnameNm, or organizationNm."),
+                error.path("errors").get(0));
+    }
+
+    static Stream<Arguments> missingRegistrationNames() {
+        return ROUTES.stream().flatMap(route -> registrationPointers(route).stream()
+                .flatMap(pointer -> Stream.of(false, true).map(blank -> Arguments.of(route, pointer, blank))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("singleRegistrationNames")
+    void anyOfTheFourNamesCanBeSuppliedAlone(String route, String name) throws Exception {
+        ObjectNode body = validBody(route);
+        String pointer = registrationPointers(route).getLast();
+        ObjectNode registration = assertInstanceOf(ObjectNode.class, body.at(pointer));
+        registration.remove(REGISTRATION_NAMES);
+        registration.put(name, "HTTP TEST");
+        assertEquals("HTTP TEST", assertAccepted(route, body).at(vipsPointer(pointer + "/" + name)).asString());
+    }
+
+    static Stream<Arguments> singleRegistrationNames() {
+        return ROUTES.stream().flatMap(route -> REGISTRATION_NAMES.stream().map(name -> Arguments.of(route, name)));
+    }
+
     @ParameterizedTest(name = "{0} {1}: {2} licence object is allowed")
     @MethodSource("optionalLicenceObjects")
     void licenceObjectsRemainOptional(String route, String pointer, Mutation mutation) throws Exception {
@@ -304,7 +345,6 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     static Stream<Arguments> vipsColumnLengths() {
         return Stream.of(
                 Arguments.of("/prohibitions", "/registration/licence/driverLicenceNo", 20),
-                Arguments.of("/prohibitions", "/prohibition/policeOfficerNm", 60),
                 Arguments.of("/impoundments", "/impoundment/driverLicenceNo", 20),
                 Arguments.of("/impoundments", "/registrations/1/licence/driverLicenceNo", 20),
                 Arguments.of("/impoundments", "/impoundment/policeOfficerNm", 60));

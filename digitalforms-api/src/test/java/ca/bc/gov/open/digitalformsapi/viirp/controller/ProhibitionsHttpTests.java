@@ -12,6 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 class ProhibitionsHttpTests extends HttpApiTestSupport {
 
@@ -254,30 +255,63 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void retiredProhibitionFieldsAreNotForwardedOrReturned() throws Exception {
-        String retired = """
+    void restoredProhibitionFieldsAreForwardedAndReturned() throws Exception {
+        String fields = """
                 "cityNm":"VICTORIA","provinceCd":"BC","streetDetailsTxt":"MAIN ST",
-                "policeOfficerNm":"J SMITH","policeOfficerNo":"1234","expiryDt":"legacy date",
+                "policeOfficerNm":"J SMITH","policeOfficerNo":"1234","expiryDt":"2027-02-03",
                 "tempDlEffectiveDt":"2026-11-05","tempDlExpiryDt":"2026-11-26"
                 """.strip();
-        var fields = json.readTree("{" + retired + "}").propertyNames();
+        JsonNode expected = json.readTree("{" + fields + "}");
+        Set<String> dates = Set.of("expiryDt", "tempDlEffectiveDt", "tempDlExpiryDt");
 
         availableNotice();
         vips.enqueue(200, "{\"respCd\":0,\"prohibitionId\":123456789012345}");
         responseJson(request("POST", "/prohibitions",
-                BODY.replace("\"policeDetachmentId\": 304", "\"policeDetachmentId\": 304," + retired), AUTH), 201);
+                BODY.replace("\"policeDetachmentId\": 304", "\"policeDetachmentId\": 304," + fields), AUTH), 201);
         checkedNotice("prohibition", NOTICE);
         JsonNode submitted = json.readTree(downstream("POST", "/cases/prohibitions").body());
-        fields.forEach(field -> assertFalse(submitted.path("vipsProhibitionCreate").has(field), field));
+        expected.propertyNames().forEach(field -> {
+            String value = submitted.at("/vipsProhibitionCreate/" + field).asString();
+            if (dates.contains(field)) {
+                assertTrue(value.startsWith(expected.path(field).asString() + "T00:00:00.000"), field + ": " + value);
+            } else {
+                assertEquals(expected.path(field), submitted.at("/vipsProhibitionCreate/" + field), field);
+            }
+        });
 
         vips.enqueue(200, "{\"respCd\":0,\"result\":[{\"prohibitionId\":123456789012345}]}");
+        String vipsFields = fields.replace("2027-02-03", "2027-02-03T00:00:00.000-08:00")
+                .replace("2026-11-05", "2026-11-05T00:00:00.000-08:00")
+                .replace("2026-11-26", "2026-11-26T00:00:00.000-08:00");
         vips.enqueue(200, """
                 {"respCd":0,"result":{"prohibitionNoticeNo":"%s",%s}}
-                """.formatted(NOTICE, retired));
+                """.formatted(NOTICE, vipsFields));
         JsonNode result = responseJson(request("GET", "/prohibitions/" + NOTICE, null, AUTH), 200);
-        fields.forEach(field -> assertFalse(result.has(field), field));
+        expected.propertyNames().forEach(field -> assertEquals(expected.path(field), result.path(field), field));
         checkedNotice("prohibition", NOTICE);
         downstream("GET", "/cases/prohibitions/123456789012345");
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void restoredFieldsCanBeOmittedOrNull(boolean explicitlyNull) throws Exception {
+        ObjectNode body = (ObjectNode) json.readTree(BODY);
+        ObjectNode prohibition = (ObjectNode) body.path("prohibition");
+        for (String field : Set.of("cityNm", "provinceCd", "streetDetailsTxt", "policeOfficerNm",
+                "policeOfficerNo", "expiryDt", "tempDlEffectiveDt", "tempDlExpiryDt")) {
+            if (explicitlyNull) {
+                prohibition.putNull(field);
+            }
+        }
+        availableNotice();
+        vips.enqueue(200, "{\"respCd\":0,\"prohibitionId\":123456789012345}");
+        responseJson(request("POST", "/prohibitions", body.toString(), AUTH), 201);
+        checkedNotice("prohibition", NOTICE);
+        JsonNode submitted = json.readTree(downstream("POST", "/cases/prohibitions").body());
+        for (String field : Set.of("cityNm", "provinceCd", "streetDetailsTxt", "policeOfficerNm",
+                "policeOfficerNo", "expiryDt", "tempDlEffectiveDt", "tempDlExpiryDt")) {
+            assertTrue(submitted.at("/vipsProhibitionCreate/" + field).isNull(), field);
+        }
     }
 
 }

@@ -540,6 +540,22 @@ mvn spring-boot:run
 git submodule update --remote --merge
 ```
 
+### Dependency boundaries
+
+VI/IRP uses Jackson 3 for JSON and `java.time` for search-date formatting,
+preserving milliseconds and the runtime time zone (including B.C.'s permanent
+UTC-7 rules in the JDK timezone data). The ORDS ping response uses Jackson rather
+than json-simple; its route and response shape are unchanged.
+
+The application excludes the shared ORDS client's unused legacy `jackson-jaxrs-*`,
+`jackson-datatype-joda` and Joda-Time dependencies without modifying the submodule.
+Do not exclude json-simple or Commons Codec: the shared client's disclosure code
+still uses them. Jackson 2 core/databind are also retained transitively for the
+shared client's XML/Jakarta Jersey stack and OpenAPI support. SnakeYAML remains
+available transitively for Spring Boot YAML configuration, OpenAPI and contract
+tests. Their redundant direct declarations have been removed from this module;
+Jackson annotations remain a direct dependency because VI/IRP source uses them.
+
 ### Regression tests
 
 With `JAVA_HOME` pointing to JDK 21, run from the repository root:

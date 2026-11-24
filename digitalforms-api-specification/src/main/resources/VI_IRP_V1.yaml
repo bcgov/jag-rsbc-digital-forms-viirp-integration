@@ -739,6 +739,7 @@ components:
       properties:
         addresses:
           type: array
+          maxItems: 5
           items:
             $ref: '#/components/schemas/AddressCreate'
         dataSourceCd:
@@ -886,6 +887,7 @@ components:
           items:
             $ref: '#/components/schemas/RegistrationCreate'
           minItems: 1
+          maxItems: 10
         vehicle:
           $ref: '#/components/schemas/VehicleCreate'
     CreateImpoundmentResponse:

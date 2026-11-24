@@ -996,7 +996,11 @@ components:
           minLength: 1
           maxLength: 12
           example: "00900123"
-          description: Notice Number beginning with 00 for impoundments. 
+          description: >-
+            Full impoundment notice number, including its prefix and any leading zeroes.
+            Retrieve current prefixes from GET /codetables at
+            configuration.noticePrefixNos[].codes[].objectCd in the group whose
+            noticeTypeCd is IMP. Prefixes may change over time.
         judicialOrder:
           type: boolean
           nullable: true
@@ -1492,7 +1496,11 @@ components:
           pattern: '.*\S.*'
           maxLength: 12
           example: "21900123"
-          description: Notice Number beginning with 21, 22, or 80-89 for Prohibitions.
+          description: >-
+            Full prohibition notice number, including its prefix and any leading zeroes.
+            Retrieve current prefixes from GET /codetables at
+            configuration.noticePrefixNos[].codes[].objectCd in the group matching
+            this prohibition's noticeTypeCd. Prefixes may change over time.
         provinceCd:
           type: string
           maxLength: 2

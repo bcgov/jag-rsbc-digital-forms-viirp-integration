@@ -157,6 +157,8 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         var ui = request("GET", "/swagger-ui/index.html", null, null, null, "text/html");
         assertEquals(200, ui.statusCode());
         assertTrue(ui.body().contains("swagger-ui"));
+        var bundle = request("GET", "/swagger-ui/swagger-ui-bundle.js", null, null, null, "*/*");
+        assertEquals(200, bundle.statusCode());
     }
 
     @Test

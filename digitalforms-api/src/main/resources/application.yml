@@ -90,3 +90,5 @@ springdoc:
       version: openapi_3_0
     swagger-ui:
       enabled: ${DIGITALFORMS_SWAGGER_ENABLED:false}
+      # springdoc 3.2.0 needs the version of the overridden Swagger UI webjar.
+      version: 5.35.1

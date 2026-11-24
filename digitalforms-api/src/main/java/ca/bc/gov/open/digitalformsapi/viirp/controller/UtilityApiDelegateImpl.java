@@ -1,6 +1,5 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
-import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +11,7 @@ import ca.bc.gov.open.digitalformsapi.viirp.api.UtilityApiDelegate;
 import ca.bc.gov.open.digitalformsapi.viirp.exception.UpstreamServiceException;
 import ca.bc.gov.open.digitalformsapi.viirp.model.PingResponse;
 import ca.bc.gov.open.digitalformsapi.viirp.service.VipsOrdsService;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 /**
  * 
@@ -28,7 +28,6 @@ public class UtilityApiDelegateImpl implements UtilityApiDelegate{
 	@Autowired
 	private VipsOrdsService vipsOrdsService;
 		
-	@SuppressWarnings("unchecked")
 	@Override
 	public ResponseEntity<PingResponse> pingOrds(String xCorrelationID) {
 		
@@ -39,9 +38,8 @@ public class UtilityApiDelegateImpl implements UtilityApiDelegate{
 		if (health == null || health.getStatus() == null || health.getStatus().isBlank()) {
 			throw UpstreamServiceException.invalidResponse("VIPS ORDS returned no health status.");
 		}
-		JSONObject jsonResponse = new JSONObject();
-		jsonResponse.put("VIPS ORDS Health Status", health.getStatus());
-		resp.setResponseMessage(jsonResponse);
+		resp.setResponseMessage(JsonNodeFactory.instance.objectNode()
+				.put("VIPS ORDS Health Status", health.getStatus()));
 		return new ResponseEntity<>(resp, HttpStatus.OK);
 	}
 }

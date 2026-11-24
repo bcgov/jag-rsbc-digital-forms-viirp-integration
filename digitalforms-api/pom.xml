@@ -25,15 +25,9 @@
 	<!--
 		The shared jag-vips-client submodule pins older versions of these libraries and cannot be
 		changed here. Spring Boot does not manage them, so pin current versions for this application.
-		joda-time 2.15.1 carries the B.C. permanent UTC-7 timezone rules (2.12.5 does not).
 	-->
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>joda-time</groupId>
-				<artifactId>joda-time</artifactId>
-				<version>2.15.1</version>
-			</dependency>
 			<dependency>
 				<groupId>com.squareup.okhttp3</groupId>
 				<artifactId>okhttp</artifactId>
@@ -181,6 +175,24 @@
 			<version>0.2.3</version>
 			<scope>compile</scope>
 			<exclusions>
+				<!-- The ORDS client uses Gson/Jakarta Jersey, not these legacy javax providers. -->
+				<exclusion>
+					<groupId>com.fasterxml.jackson.jaxrs</groupId>
+					<artifactId>jackson-jaxrs-base</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.jaxrs</groupId>
+					<artifactId>jackson-jaxrs-json-provider</artifactId>
+				</exclusion>
+				<!-- VI/IRP uses java.time; the ORDS client has no Joda-Time types. -->
+				<exclusion>
+					<groupId>joda-time</groupId>
+					<artifactId>joda-time</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.datatype</groupId>
+					<artifactId>jackson-datatype-joda</artifactId>
+				</exclusion>
 				<!-- json-simple declares junit as a compile dependency -->
 				<exclusion>
 					<groupId>junit</groupId>
@@ -206,66 +218,16 @@
 			<version>1.11.11</version>
 		</dependency>
 	
-		<!--  Jackson  -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
+			<artifactId>jackson-annotations</artifactId>
 		</dependency>
-		
-		<dependency>
-            <groupId>com.fasterxml.jackson.jaxrs</groupId>
-            <artifactId>jackson-jaxrs-base</artifactId>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-           
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.jaxrs</groupId>
-            <artifactId>jackson-jaxrs-json-provider</artifactId>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-joda</artifactId>
-        </dependency>
-        
-        <!-- misc -->
-        <dependency>
-		    <groupId>org.yaml</groupId>
-		    <artifactId>snakeyaml</artifactId>
-		</dependency>
-		
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
-        
-		<dependency>
-		    <groupId>com.googlecode.json-simple</groupId>
-		    <artifactId>json-simple</artifactId>
-		    <version>1.1.1</version>
-		    <exclusions>
-		        <exclusion>
-		            <groupId>junit</groupId>
-		            <artifactId>junit</artifactId>
-		        </exclusion>
-		    </exclusions>
-		</dependency>
-	
-		<dependency>
-		    <groupId>commons-codec</groupId>
-		    <artifactId>commons-codec</artifactId>
-		</dependency>
-	
 	</dependencies>
 
 	<build>

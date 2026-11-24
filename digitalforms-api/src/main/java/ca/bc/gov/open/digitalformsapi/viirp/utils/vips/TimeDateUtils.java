@@ -1,14 +1,12 @@
 package ca.bc.gov.open.digitalformsapi.viirp.utils.vips;
 
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 
 import jakarta.xml.bind.DatatypeConverter;
-
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 
 import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
 
@@ -26,6 +24,9 @@ import ca.bc.gov.open.digitalformsapi.viirp.utils.DigitalFormsConstants;
  */
 public class TimeDateUtils {
 
+	private static final DateTimeFormatter ISO_TIMESTAMP =
+			DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSXXX");
+
 	/**
 	 * Java Date object to ISO 8601
 	 * 
@@ -33,9 +34,7 @@ public class TimeDateUtils {
 	 * @return
 	 */
 	public static String getISO8601FromDate(Date date) {
-		DateTime dateTime = new DateTime(date);
-		DateTimeFormatter isoFormat = ISODateTimeFormat.dateTime();
-		return dateTime.toString(isoFormat);
+		return ISO_TIMESTAMP.format(date.toInstant().atZone(ZoneId.systemDefault()));
 	}
 
 	/**

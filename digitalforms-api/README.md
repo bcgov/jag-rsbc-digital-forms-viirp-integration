@@ -592,6 +592,10 @@ They cover:
   return 400 identifying the field without reaching VIPS. Positive controls preserve
   optional licence objects and allowed empty arrays; separate cases cover the
   impoundment-only requirement for a licence number when a licence object is supplied.
+- Oracle collection boundaries: at most five addresses per registration on either
+  create endpoint, and at most ten registrations per impoundment. Requests at the
+  limits reach VIPS intact; one-over requests return field-specific 400 responses
+  without reaching VIPS.
 - Every date and timestamp field in both create requests, found from the YAML's
   formats: impossible, partial, legacy-timestamp, blank and non-string values return a
   field-specific 400 without reaching VIPS. Dates reach VIPS as B.C. midnight, including

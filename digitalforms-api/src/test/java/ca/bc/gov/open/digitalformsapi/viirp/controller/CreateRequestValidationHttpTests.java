@@ -83,6 +83,52 @@ class CreateRequestValidationHttpTests extends HttpApiTestSupport {
     }
 
     @ParameterizedTest
+    @MethodSource("boundedCollections")
+    void collectionAtOracleLimitReachesVipsUnchanged(String route, String pointer, int limit) throws Exception {
+        ObjectNode body = validBody(route);
+        ArrayNode values = fillCollection(body, pointer, limit);
+        JsonNode submitted = assertAccepted(route, body).at(vipsPointer(pointer));
+        assertEquals(limit, submitted.size());
+        for (int i = 0; i < limit; i++) {
+            if (pointer.equals("/registrations")) {
+                assertEquals(values.get(i).path("surnameNm"), submitted.get(i).path("surnameNm"));
+                assertEquals(values.get(i).path("addresses").size(),
+                        submitted.get(i).path("vipsAddressArray").size());
+            } else {
+                for (var field : values.get(i).properties()) {
+                    assertEquals(field.getValue(), submitted.get(i).path(field.getKey()));
+                }
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("boundedCollections")
+    void collectionAboveOracleLimitIsRejectedWithoutCallingVips(String route, String pointer, int limit)
+            throws Exception {
+        ObjectNode body = validBody(route);
+        fillCollection(body, pointer, limit + 1);
+        assertRejected(route, body, fieldPath(pointer));
+    }
+
+    static Stream<Arguments> boundedCollections() {
+        return Stream.of(
+                Arguments.of("/prohibitions", "/registration/addresses", 5),
+                Arguments.of("/impoundments", "/registrations/1/addresses", 5),
+                Arguments.of("/impoundments", "/registrations", 10));
+    }
+
+    private static ArrayNode fillCollection(ObjectNode body, String pointer, int size) {
+        ArrayNode values = assertInstanceOf(ArrayNode.class, body.at(pointer));
+        JsonNode entry = values.get(0).deepCopy();
+        values.removeAll();
+        for (int i = 0; i < size; i++) {
+            values.add(entry.deepCopy());
+        }
+        return values;
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"/prohibitions", "/impoundments"})
     void serverOwnedInputsCanBeOmitted(String route) throws Exception {
         ObjectNode body = validBody(route);

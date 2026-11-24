@@ -321,8 +321,8 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
                  "registration_roles":[{"objectCd":"REGOWN","objectDsc":"Owner","activeYN":"N","internalYN":"Y"}],
                  "policeDetachments":[{"identityId":304,"identityNm":"Victoria","activeYN":"Y"},
                     {"identityId":305,"activeYN":"N"},{"identityId":306,"activeYN":null},{"identityId":307}],
-                 "originalCauses":[{"noticeTypeCd":"IRP","noticeActiveYN":"Y",
-                  "codes":[{"objectCd":"YES","objectAbbrev":"Y","activeYN":"Y"},
+                 "originalCauses":[{"noticeTypeCd":"IMP","noticeActiveYN":"Y",
+                  "codes":[{"objectCd":"YES","objectAbbrev":"Y","objectType":"FVPA","activeYN":"Y"},
                            {"objectCd":"NO","activeYN":"N"},{"objectCd":"UNKNOWN","activeYN":null}]},
                   {"noticeTypeCd":"ADP","noticeActiveYN":"N","codes":[{"objectCd":"HIDDEN","activeYN":"Y"}]},
                   {"noticeTypeCd":"UL","noticeActiveYN":null,"codes":[{"objectCd":"HIDDEN","activeYN":"Y"}]}],
@@ -342,6 +342,7 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertEquals(304, configuration.at("/policeDetachments/0/identityId").asInt());
         assertEquals(1, configuration.path("originalCauses").size());
         assertEquals("YES", configuration.at("/originalCauses/0/codes/0/objectCd").asString());
+        assertEquals("FVPA", configuration.at("/originalCauses/0/codes/0/objectType").asString());
         assertEquals(1, configuration.at("/originalCauses/0/codes").size());
         assertEquals(0, configuration.path("documentNotices").size());
         assertEquals(1, configuration.path("groundsDecisions").size());

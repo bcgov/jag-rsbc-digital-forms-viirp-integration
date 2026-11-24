@@ -87,6 +87,7 @@ public class ImpoundmentsApiControllerTests {
 		vipsImpoundmentCreate.setImpoundmentNoticeNo("12345678");
 		List<String> originalCauseCds = Arrays.asList("STUNT");
 		vipsImpoundmentCreate.setOriginalCauseCds(originalCauseCds);
+		vipsImpoundmentCreate.setJudicialOrder(false);
 		vipsImpoundmentCreate.setPoliceDetachmentId(304L);
 		vipsImpoundmentCreate.setPoliceOfficerNm("Jones");
 		vipsImpoundmentCreate.setPoliceOfficerNo("420");

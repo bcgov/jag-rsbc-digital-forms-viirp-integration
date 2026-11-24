@@ -115,6 +115,8 @@ public final class VipsJson {
     private interface ImpoundmentMixIn {
         @JsonProperty("policeDetatchmentId") Long getPoliceDetachmentId();
         @JsonProperty("policeDetatchmentId") void setPoliceDetachmentId(Long value);
+        @JsonProperty("judicialOrderYN") @JsonSerialize(using = YesNoSerializer.class) Boolean getJudicialOrder();
+        @JsonProperty("judicialOrderYN") @JsonDeserialize(using = YesNoDeserializer.class) void setJudicialOrder(Boolean value);
     }
 
     private interface DocumentMixIn {

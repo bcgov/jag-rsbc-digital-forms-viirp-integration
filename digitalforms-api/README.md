@@ -217,6 +217,15 @@ Configuration entries with a missing or null activity flag are excluded. Activit
 from the response; callers should stop reading `active`, `noticeActive`,
 `documentActive` and `reviewAppActive`. VIPS `respMsg` is not exposed.
 
+For an impoundment, `judicialOrder` is a JSON boolean and is required when any
+original cause has `objectType: "FVPA"` in the `IMP` group of
+`configuration.originalCauses`. Either `true` or `false` satisfies the requirement.
+It is optional for other causes. When omitted or null, the API reads the VIPS
+configuration to classify the causes before creating the notice; if a cause cannot
+be classified, correct it or supply `judicialOrder`. A failed or invalid
+configuration response prevents creation rather than bypassing validation.
+If `judicialOrder` is supplied, no configuration lookup is needed.
+
 `configuration.impoundLotOperators` contains active operators with `identityId`,
 `legalNm`, `businessNm`, address lines, `cityNm`, `provinceCd`, `postalCodeTxt`,
 and `phoneNumbers` and `faxNumbers` arrays. Missing name/address fields are null;

@@ -1,5 +1,7 @@
 name: CI Checks for API
-
+permissions:
+  contents: read
+  
 on: [push, pull_request]
 
 jobs:

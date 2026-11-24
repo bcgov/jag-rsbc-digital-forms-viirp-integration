@@ -10,7 +10,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring-boot-version>4.1.2</spring-boot-version>
+        <spring-boot-version>4.2.0</spring-boot-version>
         <springdoc-openapi-version>3.2.0</springdoc-openapi-version>
         <jackson-databind-nullable>0.2.13</jackson-databind-nullable>
     </properties>

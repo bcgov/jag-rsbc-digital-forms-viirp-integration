@@ -52,7 +52,7 @@ RUN  mvn clean package \
 #### Stage where Docker is running a java process to run a service built in previous stage ###
 ##############################################################################################
 # Pinned so the JDK and its timezone data (tzdata 2026e) only change on purpose; bump via Dependabot.
-FROM eclipse-temurin:21.0.13_9-jre-alpine
+FROM eclipse-temurin:21.0.13.1_2-jre-alpine
 
 # Apply Alpine security fixes published after the base image was built (the JDK is not apk-managed,
 # so it stays pinned) and remove GnuPG, which the base image only needs to verify the JDK download.

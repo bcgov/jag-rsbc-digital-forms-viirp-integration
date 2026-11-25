@@ -72,8 +72,22 @@ runtime document when you want an operational Postman collection.
 
 - **`GET /actuator/health` is public.** It returns the aggregate `status` without
   `components` or `details`, even for authenticated requests. Spring Boot may also
-  include probe group names such as `liveness` and `readiness`. No disk-space values,
+  include health group names (`ords`, `liveness` and `readiness`). No disk-space values,
   filesystem paths, or other component details are returned.
+- **`GET /actuator/health/ords` is public, status-only ORDS monitoring.** It replaces
+  `/utility/ords/ping`, which is removed from the business API and its OpenAPI contract.
+  The VIPS ORDS `/health` response must contain `status: "success"` (the value returned
+  by `VIPS_REST.health_check`) for HTTP 200 `{"status":"UP"}`. Missing, malformed,
+  unsuccessful, timed-out or unavailable responses return HTTP 503 `{"status":"DOWN"}`.
+  Failures are logged server-side; upstream hosts, instances, error bodies and credentials
+  are never included in the health response. Actuator health errors are not Problem Details
+  and do not forward upstream `Retry-After` headers. The existing shared client's timeouts
+  and HTTP-408 retry remain unchanged.
+- **`GET /actuator/health/liveness` and `/actuator/health/readiness` are public,
+  status-only OpenShift probes.** They are enabled in every environment and contain only
+  `livenessState` and `readinessState`, respectively. Neither calls ORDS or VIPS WS.
+  Readiness follows application traffic availability; ORDS failures are monitored
+  separately and do not restart pods or remove them from service.
 - **`GET /actuator/info` requires the same OAuth2 bearer token as the business API.** The relevant fields are:
 
   | Field | Source |
@@ -87,14 +101,22 @@ runtime document when you want an operational Postman collection.
   In Postman, use **GET** with the OAuth 2.0 authorization described under *Security*.
   Missing/invalid tokens return 401 with a Bearer challenge. Java information comes from the live JVM, not the compiler
   target, Maven build JDK or a hard-coded Docker image version.
-- **`/actuator` discovery and health subpaths also require authentication.**
+- **`/actuator` discovery and other health subpaths require authentication.**
   Other endpoints, including `env`, `beans`, `metrics`, `configprops` and `heapdump`,
   are not exposed, even to authenticated callers. Only the build and Java info
   contributors are enabled; environment, Git and OS information are not published.
 
 Disk-space checks remain active internally: a failing check still changes the
-aggregate health status to `DOWN` with HTTP 503. Existing OpenShift probes use
-`/digitalforms-viirp/v1/actuator/health` and do not need authentication or path changes.
+aggregate health status to `DOWN` with HTTP 503. ORDS also contributes to aggregate health.
+**Before deploying this change, migrate the existing OpenShift probes away from
+`/digitalforms-viirp/v1/actuator/health`:** use
+`/digitalforms-viirp/v1/actuator/health/liveness` for liveness and
+`/digitalforms-viirp/v1/actuator/health/readiness` for readiness. If a startup probe
+also uses aggregate health, move it to the liveness URL. Otherwise an ORDS
+outage can cause unnecessary restarts or remove pods from service. Configure a separate
+ORDS availability monitor against `/digitalforms-viirp/v1/actuator/health/ords`.
+The health group URLs are documented here; springdoc's runtime document publishes
+the aggregate health operation rather than separate operations for each group.
 The Actuator endpoints remain available when `SPRINGDOC_APIDOCS_ENABLED=false`.
 
 The Spring Boot Maven `build-info` goal generates `META-INF/build-info.properties`
@@ -544,8 +566,8 @@ git submodule update --remote --merge
 
 VI/IRP uses Jackson 3 for JSON and `java.time` for search-date formatting,
 preserving milliseconds and the runtime time zone (including B.C.'s permanent
-UTC-7 rules in the JDK timezone data). The ORDS ping response uses Jackson rather
-than json-simple; its route and response shape are unchanged.
+UTC-7 rules in the JDK timezone data). ORDS health monitoring now uses Actuator's
+standard health payload rather than a custom ping response.
 
 The application excludes the shared ORDS client's unused legacy `jackson-jaxrs-*`,
 `jackson-datatype-joda` and Joda-Time dependencies without modifying the submodule.
@@ -627,6 +649,9 @@ They cover:
 - Published JSON/YAML contract equality and Swagger UI's canonical document URL.
 - Minimal public health output for both UP/200 and disk-space DOWN/503, protected
   build/runtime information, and non-exposure of other Actuator endpoints.
+- ORDS health success, malformed/unhealthy responses, HTTP errors, read timeout and
+  connection/configuration failures; public status-only output and ORDS-independent
+  liveness/readiness, including application availability transitions.
 
 These are HTTP contract tests, not proof of persistence in Oracle. Live VIPS/ORDS
 connectivity, database persistence and container deployment require environment validation.
@@ -640,7 +665,8 @@ The `/dfpayloads/*` API, its local delegate/models/helpers, and the
 `DIGITALFORMS_ORDS_*` variables are no longer used by this application; remove them
 only from VI/IRP-specific deployment secrets, not secrets shared by other applications.
 The ORDS client repositories and database packages have not been changed.
-`/utility/ords/ping` now checks VIPS ORDS only.
+`/utility/ords/ping` has been replaced by `/actuator/health/ords`; update monitors
+and OpenShift probe URLs as described above.
 
 The retained `/prohibitions/*` and `/impoundments/*` routes still call the existing
 VIPS WS `/cases/...` APIs through `VipsRestServiceImpl`. This cleanup/Java 21/Spring

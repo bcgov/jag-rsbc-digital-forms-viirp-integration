@@ -7,6 +7,15 @@ management:
     health:
       show-components: never
       show-details: never
+      probes:
+        enabled: true
+      group:
+        ords:
+          include: vipsOrds
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
   endpoints:
     web:
       exposure:

@@ -29,8 +29,8 @@ import tools.jackson.databind.JsonNode;
 class CorrelationIdHttpTests extends HttpApiTestSupport {
 
     private static final String HEADER = CorrelationIdFilter.HEADER;
-    private static final String PING = "/utility/ords/ping";
-    private static final String PING_LOG = "Heard a call to 'pingOrds'";
+    private static final String CODE_TABLES = "/codetables";
+    private static final String CODE_TABLES_LOG = "Heard a call to the endpoint 'getCodeTables'";
 
     private final Logger rootLogger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
     private final ListAppender<ILoggingEvent> logs = new ListAppender<>();
@@ -49,8 +49,8 @@ class CorrelationIdHttpTests extends HttpApiTestSupport {
 
     @Test
     void omittedHeaderIsReplacedByAGeneratedUuidThatIsEchoedAndLogged() throws Exception {
-        String generated = generatedId(ping(List.of()));
-        assertLogged(PING_LOG, generated);
+        String generated = generatedId(codeTables(List.of()));
+        assertLogged(CODE_TABLES_LOG, generated);
     }
 
     static Stream<String> validIds() {
@@ -60,8 +60,8 @@ class CorrelationIdHttpTests extends HttpApiTestSupport {
     @ParameterizedTest
     @MethodSource("validIds")
     void validHeaderIsEchoedAndLogged(String id) throws Exception {
-        assertEquals(List.of(id), ping(List.of(id)).headers().allValues(HEADER));
-        assertLogged(PING_LOG, id);
+        assertEquals(List.of(id), codeTables(List.of(id)).headers().allValues(HEADER));
+        assertLogged(CODE_TABLES_LOG, id);
     }
 
     static Stream<List<String>> invalidHeaders() {
@@ -118,14 +118,14 @@ class CorrelationIdHttpTests extends HttpApiTestSupport {
                 }
             }
         }
-        assertEquals(11, operations);
+        assertEquals(10, operations);
     }
 
-    private HttpResponse<String> ping(List<String> ids) throws Exception {
-        vips.enqueue(200, "{\"status\":\"UP\"}");
-        var response = requestWithCorrelationIds("GET", PING, null, AUTH, null, "application/json", ids);
+    private HttpResponse<String> codeTables(List<String> ids) throws Exception {
+        vips.enqueue(200, "{\"respCd\":0,\"configuration\":{\"impoundLotOperatorDetails\":[]}}");
+        var response = requestWithCorrelationIds("GET", CODE_TABLES, null, AUTH, null, "application/json", ids);
         responseJson(response, 200);
-        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS), "Missing downstream ping");
+        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS), "Missing downstream configuration request");
         return response;
     }
 

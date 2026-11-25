@@ -1,6 +1,9 @@
 package ca.bc.gov.open.digitalformsapi.viirp.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,7 +27,11 @@ class ApiDocsDisabledHttpTests extends HttpApiTestSupport {
 
     @Test
     void apiRemainsAvailableAndSecured() throws Exception {
-        assertEquals("UP", responseJson(request("GET", "/actuator/health", null, null), 200).path("status").asString());
+        assertEquals("UP", responseJson(request("GET", "/actuator/health/liveness", null, null), 200).path("status").asString());
+        assertEquals("UP", responseJson(request("GET", "/actuator/health/readiness", null, null), 200).path("status").asString());
+        vips.enqueue(200, "{\"status\":\"success\"}");
+        assertEquals("UP", responseJson(request("GET", "/actuator/health/ords", null, null), 200).path("status").asString());
+        assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
         responseJson(request("GET", "/codetables", null, null), 401);
         responseJson(request("GET", "/actuator/info", null, null), 401);
         responseJson(request("GET", "/actuator/info", null, AUTH), 200);

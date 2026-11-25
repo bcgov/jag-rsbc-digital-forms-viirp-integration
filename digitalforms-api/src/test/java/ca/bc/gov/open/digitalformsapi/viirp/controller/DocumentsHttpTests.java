@@ -437,14 +437,7 @@ class DocumentsHttpTests extends HttpApiTestSupport {
     }
 
     @Test
-    void pingAndCodeTablesHaveDocumentedSuccessAndFailureResponses() throws Exception {
-        vips.enqueue(200, "{\"status\":\"UP\"}");
-        responseJson(request("GET", "/utility/ords/ping", null, AUTH), 200);
-        ords("GET", "/ords/health");
-        vips.enqueue(500, "{\"internal\":\"details\"}");
-        responseJson(request("GET", "/utility/ords/ping", null, AUTH), 502);
-        ords("GET", "/ords/health");
-
+    void codeTablesHaveDocumentedSuccessAndFailureResponses() throws Exception {
         vips.enqueue(200, "{\"respCd\":0,\"configuration\":{\"impoundLotOperatorDetails\":[]},\"respMsg\":\"Success\"}");
         responseJson(request("GET", "/codetables", null, AUTH), 200);
         downstream("GET", "/configuration?includeImpoundLotOperatorDetails=true");

@@ -520,44 +520,6 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '406':
           $ref: '#/components/responses/406NotAcceptable'
-  /utility/ords/ping:
-    get:
-      tags:
-      - Utility
-      operationId: pingOrds
-      security:
-        - oauth2: []
-      summary: ORDS Health Check Ping
-      parameters:
-      - $ref: '#/components/parameters/CorrelationId'
-      responses:
-        '200':
-          description: Successful operation
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/X-Correlation-ID'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PingResponse'
-        '401':
-          $ref: '#/components/responses/401NotAuthorized'
-        '403':
-          $ref: '#/components/responses/403Forbidden'
-        '404':
-          $ref: '#/components/responses/404NotFound'          
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '406':
-          $ref: '#/components/responses/406NotAcceptable'
-        '500':
-          $ref: '#/components/responses/500ServerError'
-        '502':
-          $ref: '#/components/responses/502BadGateway'
-        '503':
-          $ref: '#/components/responses/503ServiceUnavailable'
-        '504':
-          $ref: '#/components/responses/504GatewayTimeout'
 components:
   securitySchemes:
     oauth2:
@@ -1911,11 +1873,3 @@ components:
           type: string
           nullable: true
           description: For impoundment original causes, FVPA or MV.
-    PingResponse:
-      type: object
-      required:
-        - responseMessage
-      properties:
-        responseMessage:
-          type: object
-      title: PingResponse

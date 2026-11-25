@@ -17,6 +17,6 @@ class OAuth2KeysUnavailableHttpTests extends HttpApiTestSupport {
         assertTrue(identityProvider.jwksRequests.get() > 0, "The API must try to download DIAM's keys");
 
         responseJson(request("GET", "/codetables", null, null), 401);
-        assertEquals("UP", responseJson(request("GET", "/actuator/health", null, null), 200).path("status").asString());
+        assertEquals("UP", responseJson(request("GET", "/actuator/health/liveness", null, null), 200).path("status").asString());
     }
 }

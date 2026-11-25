@@ -14,8 +14,8 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
 
     @Test
     void preferringProblemDetailsDoesNotMislabelSuccessfulJson() throws Exception {
-        vips.enqueue(200, "{\"status\":\"UP\"}");
-        responseJson(request("GET", "/utility/ords/ping", null, AUTH, null,
+        vips.enqueue(200, "{\"respCd\":0,\"configuration\":{\"impoundLotOperatorDetails\":[]}}");
+        responseJson(request("GET", "/codetables", null, AUTH, null,
                 "application/problem+json, application/json;q=0.5"), 200);
         assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
     }
@@ -44,7 +44,7 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
     @Test
     void upstreamFailuresUseSafeProblemDetailsWithoutQueryParameters() throws Exception {
         vips.enqueue(500, "{\"error\":\"ORA-20011: hidden-database-details\"}");
-        var response = request("GET", "/utility/ords/ping?diagnostic=not-for-response", null, AUTH);
+        var response = request("GET", "/codetables?diagnostic=not-for-response", null, AUTH);
         assertEquals(502, response.statusCode());
         assertEquals("application/problem+json", response.headers().firstValue("Content-Type").orElseThrow());
         var problem = json.readTree(response.body());
@@ -57,7 +57,7 @@ class RequestErrorsHttpTests extends HttpApiTestSupport {
         assertFalse(response.body().contains("not-for-response"));
         var upstream = vips.requests.poll(2, TimeUnit.SECONDS);
         assertNotNull(upstream);
-        assertEquals("/ords/health", upstream.uri().getPath());
+        assertEquals("/configuration", upstream.uri().getPath());
     }
 
     @ParameterizedTest

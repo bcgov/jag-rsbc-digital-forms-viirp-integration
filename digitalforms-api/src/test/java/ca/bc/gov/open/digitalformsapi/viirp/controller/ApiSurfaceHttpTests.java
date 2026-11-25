@@ -41,17 +41,17 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
 
     @Test
     void publicDiscoveryRetainsSupportedRoutesAndExcludesDfPayloads() throws Exception {
-        assertEquals("UP", responseJson(request("GET", "/actuator/health", null, null), 200).path("status").asString());
+        assertEquals("UP", responseJson(request("GET", "/actuator/health/liveness", null, null), 200).path("status").asString());
         JsonNode api = responseJson(request("GET", "/v3/api-docs", null, null), 200);
         assertEquals(CONTRACT_JSON.path("openapi"), api.path("openapi"),
                 "Runtime docs must use the contract's OpenAPI version; 3.1 deprecates the models' schema examples");
         assertEquals(CONTRACT_JSON.path("info"), api.path("info"), "API metadata must come from the contract");
         assertEquals(apiBaseUrl(), api.path("servers").path(0).path("url").asString(),
                 "The server URL must be absolute so that clients such as Postman resolve it correctly");
-        assertEquals(9, CONTRACT_JSON.path("paths").size(),
+        assertEquals(8, CONTRACT_JSON.path("paths").size(),
                 "The canonical YAML remains the business API contract and excludes Actuator");
         JsonNode paths = api.path("paths");
-        assertEquals(12, paths.size(),
+        assertEquals(11, paths.size(),
                 "Runtime docs should include the exposed Actuator endpoints and authenticated discovery: "
                         + paths.propertyNames());
         for (String route : new String[] {"prohibitions", "impoundments"}) {
@@ -71,7 +71,9 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
         assertFalse(paths.has("/documents/list/{noticeNo}"));
         assertFalse(paths.has("/documents/association/notice/{documentId}"));
         assertTrue(paths.path("/codetables").has("get"));
-        assertTrue(paths.path("/utility/ords/ping").has("get"));
+        assertFalse(paths.has("/utility/ords/ping"));
+        assertFalse(api.path("components").path("schemas").has("PingResponse"));
+        responseJson(request("GET", "/utility/ords/ping", null, AUTH), 404);
         assertTrue(paths.path("/actuator/health").has("get"));
         assertTrue(paths.path("/actuator/info").has("get"));
         assertTrue(paths.path("/actuator").has("get"));
@@ -103,9 +105,11 @@ class ApiSurfaceHttpTests extends HttpApiTestSupport {
     @Test
     void healthOnlyReturnsStatusAndOptionalProbeGroupNamesEvenWhenAuthenticated() throws Exception {
         for (String authorization : new String[] {null, AUTH}) {
+            vips.enqueue(200, "{\"status\":\"success\"}");
             var health = responseJson(request("GET", "/actuator/health", null, authorization), 200);
             assertEquals("UP", health.path("status").asString());
             assertTrue(Set.of("status", "groups").containsAll(health.propertyNames()), health.toString());
+            assertNotNull(vips.requests.poll(2, TimeUnit.SECONDS));
         }
         responseJson(request("GET", "/actuator/health/diskSpace", null, null), 401);
     }

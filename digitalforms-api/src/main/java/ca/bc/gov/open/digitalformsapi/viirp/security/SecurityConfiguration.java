@@ -47,6 +47,9 @@ class SecurityConfiguration {
                                 , "/webjars/**"
                                 , "/swagger-config/**"
                                 , "/actuator/health"
+                                , "/actuator/health/ords"
+                                , "/actuator/health/liveness"
+                                , "/actuator/health/readiness"
                         ).permitAll().anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(withDefaults())

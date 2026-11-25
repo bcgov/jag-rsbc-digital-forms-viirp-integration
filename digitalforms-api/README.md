@@ -111,7 +111,8 @@ aggregate health status to `DOWN` with HTTP 503. ORDS also contributes to aggreg
 **Before deploying this change, migrate the existing OpenShift probes away from
 `/digitalforms-viirp/v1/actuator/health`:** use
 `/digitalforms-viirp/v1/actuator/health/liveness` for liveness and
-`/digitalforms-viirp/v1/actuator/health/readiness` for readiness. Otherwise an ORDS
+`/digitalforms-viirp/v1/actuator/health/readiness` for readiness. If a startup probe
+also uses aggregate health, move it to the liveness URL. Otherwise an ORDS
 outage can cause unnecessary restarts or remove pods from service. Configure a separate
 ORDS availability monitor against `/digitalforms-viirp/v1/actuator/health/ords`.
 The health group URLs are documented here; springdoc's runtime document publishes
@@ -565,8 +566,8 @@ git submodule update --remote --merge
 
 VI/IRP uses Jackson 3 for JSON and `java.time` for search-date formatting,
 preserving milliseconds and the runtime time zone (including B.C.'s permanent
-UTC-7 rules in the JDK timezone data). The ORDS ping response uses Jackson rather
-than json-simple; its route and response shape are unchanged.
+UTC-7 rules in the JDK timezone data). ORDS health monitoring now uses Actuator's
+standard health payload rather than a custom ping response.
 
 The application excludes the shared ORDS client's unused legacy `jackson-jaxrs-*`,
 `jackson-datatype-joda` and Joda-Time dependencies without modifying the submodule.

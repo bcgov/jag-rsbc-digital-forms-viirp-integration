@@ -37,6 +37,7 @@ public final class DigitalFormsConstants {
 	public static final String DIGITALFORMS_VALIDATION_FAILURE_MISSING_DL = "Invalid license object - DL is a required field.";
 	
 	//VIPS WS Constants
+	public static final String DIGITAL_FORMS_DATA_SOURCE_CD = "DGTLFRM";
 	public static final String ICBC_DATE_FORMAT = "yyyy-MM-dd";
 	public static final String ICBC_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	public static final String VIPS_DISPLAY_DATE_FORMAT = "yyyy-MM-dd";

@@ -28,7 +28,7 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 "originalCauseCd": "IRPINDEF", "policeDetachmentId": 304
               },
               "registration": {
-                "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
+                "registrationRoleCd": "REGOWN",
                 "surnameNm": "HTTP TEST", "addresses": [],
                 "licence": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
               }
@@ -58,7 +58,9 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
         assertEquals("N", submitted.at("/vipsProhibitionCreate/driverLicenceSeizedYN").asString());
         assertEquals("IRP", submitted.at("/vipsProhibitionCreate/noticeTypeCd").asString());
         assertEquals("PERS", submitted.at("/vipsProhibitionCreate/noticeSubjectCd").asString());
+        assertEquals("DGTLFRM", submitted.at("/vipsProhibitionCreate/dataSourceCd").asString());
         assertEquals("00001234", submitted.at("/vipsRegistrationCreate/vipsLicenceObj/driverLicenceNo").asString());
+        assertEquals("DGTLFRM", submitted.at("/vipsRegistrationCreate/dataSourceCd").asString());
         assertFalse(submitted.at("/vipsRegistrationCreate").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertEquals(304L, submitted.at("/vipsProhibitionCreate/policeDetatchmentId").asLong());
@@ -312,6 +314,18 @@ class ProhibitionsHttpTests extends HttpApiTestSupport {
                 "policeOfficerNo", "expiryDt", "tempDlEffectiveDt", "tempDlExpiryDt")) {
             assertTrue(submitted.at("/vipsProhibitionCreate/" + field).isNull(), field);
         }
+    }
+
+    @Test
+    void callerCannotOverrideHardcodedRegistrationSource() throws Exception {
+        availableNotice();
+        vips.enqueue(200, "{\"respCd\":0,\"prohibitionId\":123456789012345}");
+        String body = BODY.replace("\"registrationRoleCd\": \"REGOWN\",",
+                "\"dataSourceCd\": \"ICBC\", \"registrationRoleCd\": \"REGOWN\",");
+        responseJson(request("POST", "/prohibitions", body, AUTH), 201);
+        checkedNotice("prohibition", NOTICE);
+        JsonNode submitted = json.readTree(downstream("POST", "/cases/prohibitions").body());
+        assertEquals("DGTLFRM", submitted.at("/vipsRegistrationCreate/dataSourceCd").asString());
     }
 
 }

@@ -696,7 +696,6 @@ components:
       description: Provide at least one nonblank value in firstGivenNm, secondGivenNm, surnameNm, or organizationNm. The API returns 400 if none is supplied.
       required:
         - addresses
-        - dataSourceCd
         - registrationRoleCd
       properties:
         addresses:
@@ -704,13 +703,6 @@ components:
           maxItems: 5
           items:
             $ref: '#/components/schemas/AddressCreate'
-        dataSourceCd:
-          type: string
-          pattern: '.*\S.*'
-          minLength: 1
-          maxLength: 4
-          example: "VIPS"
-          description: Current values are "VIPS" (manual), "ICBC" (coming from divers). May need a new code for DF??
         firstGivenNm:
           type: string
           maxLength: 35

@@ -405,9 +405,9 @@ and non-string JSON values return 400 Problem Details with the public field path
 and the allowed values, without echoing the rejected value or calling VIPS/ORDS.
 Required JSON enums still reject missing/null values.
 
-`dataSourceCd` remains a required registration field with the existing four-character
-limit; the separate Digital Forms source-lifecycle change is not included here.
-Dynamic code-table values and all GET response types are unchanged.
+`dataSourceCd` is now server-owned for create requests. Clients must omit it; VI/IRP
+always submits `DGTLFRM` downstream for each registration. GET response fields remain
+unchanged.
 
 **Caller migration:** remove the four server-owned fields, use the exact enum
 values above, and regenerate clients from the updated specification.

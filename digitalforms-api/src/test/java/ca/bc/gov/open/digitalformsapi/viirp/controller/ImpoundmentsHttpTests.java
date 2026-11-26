@@ -23,7 +23,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
                 "judicialOrder": false
               },
               "registrations": [{
-                "dataSourceCd": "VIPS", "registrationRoleCd": "REGOWN",
+                "registrationRoleCd": "REGOWN",
                 "surnameNm": "HTTP TEST", "addresses": [],
                 "licence": {"driverLicenceNo": "00001234", "dlJurisdictionCd": "BC"}
               }],
@@ -51,6 +51,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         assertEquals(json.createArrayNode(), submitted.path("vipsDocumentIdArray"));
         assertEquals(json.readTree("[\"STUNT\"]"), submitted.at("/vipsImpoundCreate/originalCauseCds"));
         assertEquals("00001234", submitted.at("/vipsRegistrationCreateArray/0/vipsLicenceObj/driverLicenceNo").asString());
+        assertEquals("DGTLFRM", submitted.at("/vipsRegistrationCreateArray/0/dataSourceCd").asString());
         assertFalse(submitted.at("/vipsRegistrationCreateArray/0").has("vipsLicenceCreateObj"),
                 "VIPS WS only binds vipsLicenceObj; any other licence property name is silently dropped");
         assertEquals("00005678", submitted.at("/vipsVehicleCreate/registrationNo").asString());
@@ -58,6 +59,7 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
         assertEquals(json.createArrayNode(), submitted.path("vipsImpoundmentArray"));
         assertEquals("IMP", submitted.at("/vipsImpoundCreate/noticeTypeCd").asString());
         assertEquals("VEHI", submitted.at("/vipsImpoundCreate/noticeSubjectCd").asString());
+        assertEquals("DGTLFRM", submitted.at("/vipsImpoundCreate/dataSourceCd").asString());
         assertTrue(submitted.at("/vipsRegistrationCreateArray/0/vipsAddressArray").isArray());
         assertEquals(Set.of("vipsDocumentIdArray", "vipsImpoundCreate", "vipsImpoundmentArray",
                 "vipsRegistrationCreateArray", "vipsVehicleCreate"),
@@ -253,5 +255,17 @@ class ImpoundmentsHttpTests extends HttpApiTestSupport {
                     {"objectCd":"STUNT","objectType":"MV","activeYN":"Y"},
                     {"objectCd":"FLTPOL","objectType":"FVPA","activeYN":"Y"}]}]}}
                 """);
+    }
+
+    @Test
+    void callerCannotOverrideHardcodedRegistrationSource() throws Exception {
+        availableNotice();
+        vips.enqueue(200, "{\"respCd\":0,\"impoundmentId\":123456789012345}");
+        String body = BODY.replace("\"registrationRoleCd\": \"REGOWN\",",
+                "\"dataSourceCd\": \"ICBC\", \"registrationRoleCd\": \"REGOWN\",");
+        responseJson(request("POST", "/impoundments", body, AUTH), 201);
+        checkedNotice("impoundment", NOTICE);
+        JsonNode submitted = json.readTree(downstream("POST", "/cases/impoundments").body());
+        assertEquals("DGTLFRM", submitted.at("/vipsRegistrationCreateArray/0/dataSourceCd").asString());
     }
 }

@@ -94,7 +94,6 @@ public class ProhibitionsApiControllerTests {
 		vipsProhibitionCreate.setProhibitionNoticeNo("21900601");
 		
 		RegistrationCreate vipsRegistrationCreate = new RegistrationCreate();
-		vipsRegistrationCreate.setDataSourceCd("VIPS");
 		vipsRegistrationCreate.setFirstGivenNm("AARON");
 		vipsRegistrationCreate.setIcbcEnterpriseId("123");
 		vipsRegistrationCreate.setRegistrationRoleCd("REGOWN");
